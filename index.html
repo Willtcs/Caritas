@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>廁所馬桶管理系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (xlsx) for Excel files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 適用於 iOS 主畫面 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="toilet_icon.png">
+
+    <!-- 適用於 一般瀏覽器 Favicon (可一併設定) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="toilet_icon.png">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        morandi: {
+                            bg: '#EBECEB',        // iOS neutral gray canvas
+                            card: '#FFFFFF',      // Crisp card bg
+                            dark: '#2F3E46',      // Charcoal header & main text
+                            slate: '#5C6B73',     // Secondary slate text
+                            sky: '#7A8B99',       // Accent blue-gray
+                            light: '#D9DEDE',     // Borders / dividers
+                            rose: '#B86B6B',      // Destructive red
+                            sage: '#7C8C7A',      // Success / Dorm green
+                            amber: '#C59A6F',     // Alert amber
+                            tag: '#F0F2F2'
+                        }
+                    },
+                    boxShadow: {
+                        'ios': '0 4px 18px -2px rgba(47, 62, 70, 0.05)',
+                        'ios-sheet': '0 -10px 30px rgba(0, 0, 0, 0.15)',
+                        'ios-nav': '0 -2px 12px rgba(0,0,0,0.04)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background-color: #EBECEB;
+            color: #2F3E46;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .pb-safe {
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 16px));
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .modal-blur {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-morandi-dark antialiased">
+
+    <!-- App Container -->
+    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-morandi-bg relative shadow-2xl border-x border-morandi-light/30">
+
+        <!-- 第一行：iOS Top Header -->
+        <header class="sticky top-0 z-30 bg-morandi-bg/90 modal-blur border-b border-morandi-light/70 px-4 pt-3 pb-3 no-print">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-2xl bg-morandi-dark text-white flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-toilet text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-tight text-morandi-dark leading-tight">廁所馬桶管理系統</h1>
+                        <p id="syncStatus" class="text-[10px] text-morandi-slate flex items-center gap-1 font-medium mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-morandi-sage inline-block"></span>
+                            <span id="syncText">本地已同步</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <!-- 智慧雙向同步 (優先比較最新時間) -->
+                    <button onclick="smartSync()" title="雙向智慧同步 (最新更新優先)" class="w-8 h-8 rounded-full bg-morandi-card border border-morandi-light text-morandi-slate hover:text-morandi-dark active:scale-95 transition-transform flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-rotate text-xs" id="headerSyncSpinner"></i>
+                    </button>
+
+                    <!-- 重設列表 -->
+                    <button onclick="confirmResetAll()" title="重設列表" class="w-8 h-8 rounded-full bg-morandi-card border border-morandi-light text-morandi-rose hover:text-morandi-rose/80 active:scale-95 transition-transform flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-trash-arrow-up text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 pb-safe space-y-4">
+
+            <!-- 第二行：2個窗口顯示數量 -->
+            <section class="grid grid-cols-2 gap-3 no-print">
+                <div class="bg-morandi-card border border-morandi-light/80 rounded-2xl p-3.5 shadow-ios flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-semibold text-morandi-slate tracking-wide">日校馬桶數量</p>
+                        <h2 id="daySchoolCount" class="text-2xl font-bold text-morandi-dark mt-0.5">0</h2>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-morandi-sky/15 text-morandi-sky flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-school"></i>
+                    </div>
+                </div>
+
+                <div class="bg-morandi-card border border-morandi-light/80 rounded-2xl p-3.5 shadow-ios flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-semibold text-morandi-slate tracking-wide">宿舍馬桶數量</p>
+                        <h2 id="dormCount" class="text-2xl font-bold text-morandi-dark mt-0.5">0</h2>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-morandi-sage/15 text-morandi-sage flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-bed"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Segmented Control -->
+            <section class="no-print">
+                <div class="bg-morandi-light/50 p-1 rounded-xl flex text-xs font-semibold text-morandi-slate">
+                    <button id="segAll" onclick="setSegmentFilter('all')" class="flex-1 py-1.5 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm">
+                        全部
+                    </button>
+                    <button id="segDay" onclick="setSegmentFilter('日校')" class="flex-1 py-1.5 rounded-lg transition-all text-center">
+                        日校
+                    </button>
+                    <button id="segDorm" onclick="setSegmentFilter('宿舍')" class="flex-1 py-1.5 rounded-lg transition-all text-center">
+                        宿舍
+                    </button>
+                </div>
+            </section>
+
+            <!-- 第三行：下拉選單與搜尋列 -->
+            <section class="bg-morandi-card border border-morandi-light/80 rounded-2xl p-3 shadow-ios space-y-2.5 no-print">
+                <div class="relative flex items-center">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 text-morandi-slate/60 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="搜尋關鍵字 (區域, 樓層, 扲掣, 水源)..." class="w-full bg-morandi-bg border border-morandi-light/70 text-morandi-dark text-xs rounded-xl pl-8 pr-8 py-2 focus:outline-none focus:border-morandi-sky transition-colors">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 text-morandi-slate/50 hover:text-morandi-dark p-1">
+                        <i class="fa-solid fa-circle-xmark text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-morandi-slate mb-0.5">1. 所選區域</label>
+                        <select id="filterArea" onchange="applyFilters()" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark rounded-xl px-2 py-1.5 focus:outline-none focus:border-morandi-sky truncate">
+                            <option value="">全部區域</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-semibold text-morandi-slate mb-0.5">2. 所選樓層</label>
+                        <select id="filterFloor" onchange="applyFilters()" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark rounded-xl px-2 py-1.5 focus:outline-none focus:border-morandi-sky truncate">
+                            <option value="">全部樓層</option>
+                            <option value="G/F">G/F</option>
+                            <option value="1/F">1/F</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-semibold text-morandi-slate mb-0.5">3. 所選扲掣位置</label>
+                        <select id="filterFlushBtn" onchange="applyFilters()" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark rounded-xl px-2 py-1.5 focus:outline-none focus:border-morandi-sky truncate">
+                            <option value="">全部扲掣位置</option>
+                            <option value="左側">左側</option>
+                            <option value="頂按壓">頂按壓</option>
+                            <option value="前右側">前右側</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-semibold text-morandi-slate mb-0.5">4. 所選水源</label>
+                        <select id="filterWater" onchange="applyFilters()" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark rounded-xl px-2 py-1.5 focus:outline-none focus:border-morandi-sky truncate">
+                            <option value="">全部水源</option>
+                            <option value="淡水">淡水</option>
+                            <option value="鹹水">鹹水</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-1 border-t border-morandi-light/50">
+                    <button onclick="resetAllFilters()" class="text-[11px] font-semibold text-morandi-rose hover:text-morandi-rose/80 flex items-center gap-1 active:scale-95 transition-transform">
+                        <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                        <span>6. 重設篩選條件</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 第四行：列表清單 -->
+            <section class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-xs font-bold text-morandi-dark">馬桶資料清單</span>
+                        <span id="recordBadge" class="bg-morandi-light/80 text-morandi-dark text-[10px] font-semibold px-2 py-0.5 rounded-full">0 筆</span>
+                    </div>
+                    <button onclick="smartSync()" class="text-[11px] text-morandi-sky font-semibold hover:underline flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-arrows-rotate text-[10px]" id="refreshSpinner"></i>
+                        <span>智慧同步</span>
+                    </button>
+                </div>
+
+                <div id="dataList" class="space-y-2.5"></div>
+
+                <div id="emptyState" class="hidden text-center py-12 px-4 bg-morandi-card rounded-2xl border border-dashed border-morandi-light">
+                    <div class="w-12 h-12 bg-morandi-bg rounded-2xl text-morandi-slate mx-auto flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-morandi-dark">尚未有任何馬桶資料</p>
+                    <p class="text-[11px] text-morandi-slate mt-1">請點擊上方同步按鈕，以同步雲端資料</p>
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+    <!-- 1. 修改資料 Modal -->
+    <div id="editModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-morandi-dark/40 modal-blur hidden opacity-0 transition-opacity duration-200 no-print">
+        <div class="bg-morandi-card w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-ios-sheet transform transition-transform duration-200 border-t sm:border border-morandi-light max-h-[85vh] overflow-y-auto">
+            <div class="w-12 h-1 bg-morandi-light rounded-full mx-auto mb-3 sm:hidden"></div>
+            
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-morandi-light">
+                <h3 class="text-base font-bold text-morandi-dark flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-morandi-sky"></i>
+                    <span>修改馬桶資料</span>
+                </h3>
+                <button onclick="closeModal('editModal')" class="text-morandi-slate hover:text-morandi-dark p-1">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form id="editForm" onsubmit="saveEdit(event)" class="space-y-3">
+                <input type="hidden" id="editRowIndex">
+                <div id="editFormFields" class="space-y-2.5"></div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="closeModal('editModal')" class="flex-1 py-2.5 bg-morandi-bg text-morandi-slate rounded-xl text-xs font-semibold hover:bg-morandi-light transition-colors">
+                        取消 (Esc)
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-morandi-dark text-white rounded-xl text-xs font-semibold hover:bg-morandi-dark/90 transition-colors shadow-sm">
+                        確定更新
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 自訂提示視窗 -->
+    <div id="alertModal" class="fixed inset-0 z-50 flex items-center justify-center bg-morandi-dark/40 modal-blur hidden opacity-0 transition-opacity duration-200 no-print px-6">
+        <div class="bg-morandi-card w-full max-w-xs rounded-2xl p-4 shadow-ios text-center space-y-3 border border-morandi-light">
+            <div id="alertIcon" class="w-10 h-10 rounded-full bg-morandi-rose/15 text-morandi-rose mx-auto flex items-center justify-center text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h4 id="alertTitle" class="text-sm font-bold text-morandi-dark">提示</h4>
+            <p id="alertMessage" class="text-xs text-morandi-slate leading-relaxed">訊息內容</p>
+            <button onclick="closeModal('alertModal')" class="w-full py-2 bg-morandi-dark text-white rounded-xl text-xs font-semibold">
+                確定 (Esc)
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯程式碼 -->
+    <script>
+        function getGoogleSheetUrl() {
+            return "https://script.google.com/macros/s/AKfycbykaagxVH6IBJR8pzlmJ4WifHHgElX4imHDQVDnmT71sVN-fjFMU6AEvF4ZJKmKQMvv/exec";
+        }
+
+        let rawData = [];
+        let headers = [];
+        let activeSegment = 'all';
+        let lastUpdated = 0; // 時間戳記 (最新修改時間優先)
+
+        const sampleData = [
+            { "區域": "日校", "樓層": "1/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "淡水", "水源2": "" },
+            { "區域": "日校", "樓層": "1/F", "扲掣位置1": "頂按壓", "扲掣位置2": "左側", "水源1": "鹹水", "水源2": "淡水" },
+            { "區域": "宿舍", "樓層": "G/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "鹹水", "水源2": "" }
+        ];
+
+        //開啟 App 或 Google Sheets 時不要即時自動同步，只在按下同步按鈕或儲存時才進行同步
+        window.onload = function() {
+    const savedData = localStorage.getItem('toilet_system_data');
+    const savedHeaders = localStorage.getItem('toilet_system_headers');
+    const savedTime = localStorage.getItem('toilet_system_last_updated');
+    const savedChanges = localStorage.getItem('toilet_system_has_changes');
+
+    if (savedData && savedHeaders) {
+        try {
+            rawData = JSON.parse(savedData);
+            headers = JSON.parse(savedHeaders);
+            lastUpdated = parseInt(savedTime || "0");
+            hasUnsavedLocalChanges = (savedChanges === "true");
+        } catch(e) {
+            loadDefaultSample();
+        }
+    } else {
+        loadDefaultSample();
+    }
+
+    filterOutExcludedHeaders();
+    populateDropdownFilters();
+    renderList();
+    updateCounts();
+
+    // 關鍵新增：開啟 App 後自動靜默讀取並同步雲端最新資料
+    smartSync(true);
+};
+
+        function filterOutExcludedHeaders() {
+            headers = headers.filter(h => h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源");
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hrs = String(now.getHours()).padStart(2, '0');
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('currentTime').innerText = `${hrs}:${mins}`;
+        }
+
+        function loadDefaultSample() {
+            rawData = JSON.parse(JSON.stringify(sampleData));
+            headers = ["區域", "樓層", "扲掣位置1", "扲掣位置2", "水源1", "水源2"];
+            markDataModified();
+        }
+
+        // 標記資料已被修改 (更新本地時間戳)
+        function markDataModified() {
+            lastUpdated = new Date().getTime();
+    hasUnsavedLocalChanges = true; // 強制設為 true
+    
+    localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
+    localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
+    localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+    localStorage.setItem('toilet_system_has_changes', "true"); // 寫入標記
+    
+    document.getElementById('syncText').innerText = "本地已修改 (未同步)";
+}
+
+        function saveToLocalStorage() {
+            localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
+            localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
+            localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+            document.getElementById('syncText').innerText = "本地已更新 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+        }
+
+        function confirmResetAll() {
+            if (confirm("確定要重設並清除全部資料嗎？此操作不可復原！")) {
+                rawData = [];
+                headers = [];
+                lastUpdated = new Date().getTime();
+                localStorage.removeItem('toilet_system_data');
+                localStorage.removeItem('toilet_system_headers');
+                localStorage.removeItem('toilet_system_last_updated');
+                populateDropdownFilters();
+                renderList();
+                updateCounts();
+                document.getElementById('syncText').innerText = "已清除全部資料";
+            }
+        }
+
+        function updateCounts() {
+    let dayCount = 0;
+    let dormCount = 0;
+
+    // 動態尋找包含「數量」或「數」的欄位名稱
+    const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
+
+    rawData.forEach(item => {
+        const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
+        // 取得該筆資料的數量，若無設定或非數字則預設為 1
+        const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
+
+        if (areaVal.includes("日校")) {
+            dayCount += qty;
+        } else if (areaVal.includes("宿舍")) {
+            dormCount += qty;
+        }
+    });
+
+    document.getElementById('daySchoolCount').innerText = dayCount;
+    document.getElementById('dormCount').innerText = dormCount;
+}
+
+        function populateDropdownFilters() {
+            const selectArea = document.getElementById('filterArea');
+            const selectFloor = document.getElementById('filterFloor');
+            const selectFlush = document.getElementById('filterFlushBtn');
+            const selectWater = document.getElementById('filterWater');
+
+            const keyArea = headers.find(h => h.includes("區域")) || "區域";
+            const keyFloor = headers.find(h => h.includes("樓層")) || "樓層";
+
+            const getUnique = (key) => [...new Set(rawData.map(r => r[key]).filter(Boolean))];
+
+            const floorValues = [...new Set([...getUnique(keyFloor), "G/F", "1/F"])];
+
+            fillSelectOptions(selectArea, getUnique(keyArea), "全部區域");
+            fillSelectOptions(selectFloor, floorValues, "全部樓層");
+            fillSelectOptions(selectFlush, ["左側", "頂按壓", "前右側"], "全部扲掣位置");
+            fillSelectOptions(selectWater, ["淡水", "鹹水"], "全部水源");
+        }
+
+        function fillSelectOptions(selectElem, values, defaultText) {
+            const currentVal = selectElem.value;
+            selectElem.innerHTML = `<option value="">${defaultText}</option>`;
+            values.sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                selectElem.appendChild(opt);
+            });
+            selectElem.value = values.includes(currentVal) ? currentVal : "";
+        }
+
+        function setSegmentFilter(type) {
+            activeSegment = type;
+            ['segAll', 'segDay', 'segDorm'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = "flex-1 py-1.5 rounded-lg transition-all text-center";
+            });
+
+            if (type === 'all') {
+                document.getElementById('segAll').className += " bg-morandi-card text-morandi-dark shadow-sm font-bold";
+            } else if (type === '日校') {
+                document.getElementById('segDay').className += " bg-morandi-card text-morandi-dark shadow-sm font-bold";
+            } else if (type === '宿舍') {
+                document.getElementById('segDorm').className += " bg-morandi-card text-morandi-dark shadow-sm font-bold";
+            }
+
+            renderList();
+        }
+
+        function resetAllFilters() {
+            document.getElementById('filterArea').value = "";
+            document.getElementById('filterFloor').value = "";
+            document.getElementById('filterFlushBtn').value = "";
+            document.getElementById('filterWater').value = "";
+            document.getElementById('searchInput').value = "";
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            setSegmentFilter('all');
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = "";
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.trim();
+            document.getElementById('clearSearchBtn').classList.toggle('hidden', searchVal === '');
+            renderList();
+        }
+
+        function renderList() {
+            const container = document.getElementById('dataList');
+            const emptyState = document.getElementById('emptyState');
+            container.innerHTML = '';
+
+            const areaVal = document.getElementById('filterArea').value;
+            const floorVal = document.getElementById('filterFloor').value;
+            const flushVal = document.getElementById('filterFlushBtn').value;
+            const waterVal = document.getElementById('filterWater').value;
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            const keyArea = headers.find(h => h.includes("區域")) || "區域";
+            const keyFloor = headers.find(h => h.includes("樓層")) || "樓層";
+
+            let filtered = rawData.filter((row, originalIndex) => {
+                row._origIndex = originalIndex;
+
+                if (activeSegment !== 'all') {
+                    const rowAreaStr = String(row[keyArea] || Object.values(row).join(' '));
+                    if (!rowAreaStr.includes(activeSegment)) return false;
+                }
+
+                if (areaVal && row[keyArea] !== areaVal) return false;
+                if (floorVal && row[keyFloor] !== floorVal) return false;
+
+                // 扲掣位置 智慧匹配 1 或 2
+                if (flushVal) {
+                    const f1 = row["扲掣位置1"] || "";
+                    const f2 = row["扲掣位置2"] || "";
+                    const f3 = row["扲掣位置3"] || "";
+                    if (f1 !== flushVal && f2 !== flushVal && f3 !== flushVal) return false;
+                }
+
+                // 水源 智慧匹配 1 或 2
+                if (waterVal) {
+                    const w1 = row["水源1"] || "";
+                    const w2 = row["水源2"] || "";
+                    const w3 = row["水源3"] || "";
+                    if (w1 !== waterVal && w2 !== waterVal && w3 !== waterVal) return false;
+                }
+
+                if (searchVal) {
+                    const match = Object.values(row).some(v => String(v).toLowerCase().includes(searchVal));
+                    if (!match) return false;
+                }
+
+                return true;
+            });
+
+            document.getElementById('recordBadge').innerText = `${filtered.length} 筆`;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((row) => {
+                const card = document.createElement('div');
+                card.className = "bg-morandi-card border border-morandi-light/80 rounded-2xl p-3.5 shadow-ios flex items-center justify-between print-card";
+
+                const keyArea = headers.find(h => h.includes("區域")) || "區域";
+                const keyFloor = headers.find(h => h.includes("樓層") || h.includes("層樓")) || "樓層";
+                const keyRoomNo = headers.find(h => h.includes("房號")) || "房號";
+                const keyRoomName = headers.find(h => h.includes("房名")) || "房名";
+                const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
+
+                let displayFloor = row[keyFloor] || "";
+                let roomNoVal = row[keyRoomNo] || "";
+                let roomNameVal = row[keyRoomName] || "";
+                let displayRoomCombined = [roomNoVal, roomNameVal].filter(Boolean).join(" ");
+                let displayArea = row[keyArea] || "";
+
+                let flush1 = row["扲掣位置1"] || "";
+                let flush2 = row["扲掣位置2"] || "";
+                let flush3 = row["扲掣位置3"] || "";
+                let water1 = row["水源1"] || "";
+                let water2 = row["水源2"] || "";
+                let water3 = row["水源3"] || "";
+
+                let displayQty = row[keyQty] || "1";
+
+                card.innerHTML = `
+                    <div class="space-y-1.5 pr-2 flex-1">
+                        <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                            ${displayRoomCombined ? `<span class="text-[12px] font-bold text-morandi-dark/90">${displayRoomCombined}</span>` : ''}
+                            ${displayRoomCombined ? `<span>•</span>` : ''}
+                            ${displayFloor ? `<span class="text-xs font-semibold text-morandi-dark">${displayFloor}</span>` : ''}
+                            ${displayArea ? `<span class="text-xs px-2 py-0.5 rounded-full font-semibold ${displayArea.includes('日校') ? 'bg-morandi-sky/15 text-morandi-sky' : 'bg-morandi-sage/15 text-morandi-sage'}">${displayArea}</span>` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-1">
+                            ${flush1 ? `<span class="inline-block bg-morandi-tag text-morandi-slate text-[10px] px-2 py-0.5 rounded-md font-medium">${flush1}</span>` : ''}
+                            ${water1 ? `<span class="inline-block bg-morandi-sky/10 text-morandi-sky text-[10px] px-2 py-0.5 rounded-md font-medium">${water1}</span>` : ''}
+                            ${flush2 ? `<span class="inline-block bg-morandi-tag text-morandi-slate text-[10px] px-2 py-0.5 rounded-md font-medium">${flush2}</span>` : ''}
+                            ${water2 ? `<span class="inline-block bg-morandi-sky/10 text-morandi-sky text-[10px] px-2 py-0.5 rounded-md font-medium">${water2}</span>` : ''}
+                            ${flush3 ? `<span class="inline-block bg-morandi-tag text-morandi-slate text-[10px] px-2 py-0.5 rounded-md font-medium">${flush3}</span>` : ''}
+                            ${water3 ? `<span class="inline-block bg-morandi-sky/10 text-morandi-sky text-[10px] px-2 py-0.5 rounded-md font-medium">${water3}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 pl-2 border-l border-morandi-light/60 no-print">
+                        <div class="flex flex-col items-end pr-1">
+                            <span class="text-[9px] text-morandi-slate font-medium">數量</span>
+                            <span class="text-xs font-bold text-morandi-dark px-2 py-0.5 rounded-lg">${displayQty}</span>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-1.5">
+                            <button onclick="openEditModal(${row._origIndex})" class="w-8 h-8 rounded-xl bg-morandi-bg hover:bg-morandi-sky/20 text-morandi-sky flex items-center justify-center text-xs transition-colors" title="修改">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteRow(${row._origIndex})" class="w-8 h-8 rounded-xl bg-morandi-bg hover:bg-morandi-rose/20 text-morandi-rose flex items-center justify-center text-xs transition-colors" title="刪除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 開啟修改 Modal（包含空白選項的扲掣位置1/2與水源1/2）
+        function openEditModal(index) {
+            const row = rawData[index];
+            if (!row) return;
+
+            document.getElementById('editRowIndex').value = index;
+            const fieldsContainer = document.getElementById('editFormFields');
+            fieldsContainer.innerHTML = '';
+
+            const optionPresets = {
+                "樓層": ["G/F", "1/F"],
+                "區域": ["日校", "宿舍"],
+                "數量": ["1", "2", "3", "4", "5"],
+                "扲掣位置1": ["", "左側", "頂按壓", "前右側"],
+                "扲掣位置2": ["", "左側", "頂按壓", "前右側"],
+                "扲掣位置3": ["", "左側", "頂按壓", "前右側"],
+                "水源1": ["", "淡水", "鹹水"],
+                "水源2": ["", "淡水", "鹹水"],
+                "水源3": ["", "淡水", "鹹水"]
+            };
+
+            headers.forEach(h => {
+                // 自動忽視舊欄位
+                if (h === "馬桶類型" || h === "狀態" || h === "扲掣位置" || h === "水源") return;
+
+                const wrapper = document.createElement('div');
+                const currentValue = row[h] !== undefined ? row[h] : '';
+
+                // 關鍵修改行：如果該欄位存在於選項對照表中，生成 <select> 選單
+                if (optionPresets[h]) {
+                    const optionsList = [...optionPresets[h]];
+                    if (currentValue && !optionsList.includes(currentValue)) {
+                        optionsList.push(currentValue);
+                    }
+
+                    let optionsHtml = optionsList.map(opt => 
+                        `<option value="${opt}" ${opt === currentValue ? 'selected' : ''}>${opt === "" ? "(無/空白)" : opt}</option>`
+                    ).join('');
+
+                    // 核心替換：改為使用 <select> 標籤
+                    wrapper.innerHTML = `
+                        <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
+                        <select name="${h}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
+                            ${optionsHtml}
+                        </select>
+                    `;
+                } else {
+                    // 其餘一般欄位（如房號、房名、數量等）保留文字輸入框
+                    wrapper.innerHTML = `
+                        <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
+                        <input type="text" name="${h}" value="${currentValue}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
+                    `;
+                }
+                fieldsContainer.appendChild(wrapper);
+            });
+
+            openModal('editModal');
+        }
+
+        //修改馬桶資料（或刪除資料）後，僅儲存至本地快取，待按下同步按鈕時才上傳。
+        function saveEdit(e) {
+    e.preventDefault();
+    const index = parseInt(document.getElementById('editRowIndex').value);
+    if (isNaN(index) || !rawData[index]) return;
+
+    const formData = new FormData(e.target);
+    headers.forEach(h => {
+        if (h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源") {
+            rawData[index][h] = formData.get(h) || '';
+        }
+    });
+
+    markDataModified(); // 觸發本地修改標記
+    populateDropdownFilters();
+    renderList();
+    updateCounts();
+    closeModal('editModal');
+}
+
+function deleteRow(index) {
+    if (confirm("確定要刪除此筆馬桶資料嗎？")) {
+        rawData.splice(index, 1);
+        markDataModified(); // 觸發本地修改標記
+        populateDropdownFilters();
+        renderList();
+        updateCounts();
+    }
+}
+
+    // 雙向智慧同步邏輯（以最新更新時間優先）
+    function smartSync(isAuto = false) {
+    const url = getGoogleSheetUrl();
+
+    if (!url || url.includes("PLACEHOLDER")) {
+        if (!isAuto) showAlert("提示", "請先確認程式碼中的 Web App 網址設定正確！");
+        return;
+    }
+
+    const spinner = document.getElementById('refreshSpinner');
+    const headerSpinner = document.getElementById('headerSyncSpinner');
+    if (spinner) spinner.classList.add('fa-spin');
+    if (headerSpinner) headerSpinner.classList.add('fa-spin');
+
+    // 每次同步前，重新從 LocalStorage 確認是否真的有未上傳的改動
+    const storedChanges = localStorage.getItem('toilet_system_has_changes');
+    if (storedChanges === "true") {
+        hasUnsavedLocalChanges = true;
+    }
+
+    // 發送 GET 詢問雲端最新時間
+    fetch(url + "?t=" + new Date().getTime())
+        .then(res => res.json())
+        .then(cloudRes => {
+            const cloudLastUpdated = cloudRes.lastUpdated || 0;
+
+            // 判斷邏輯：
+            // 若為【手動點擊同步 (isAuto === false)】且【本地確實有改動 (hasUnsavedLocalChanges === true)】，強制進行上傳！
+            if (!isAuto && hasUnsavedLocalChanges === true) {
+                pushToGoogleSheets(url, isAuto, spinner, headerSpinner);
+            } 
+            // 否則如果本地修改時間明確大於雲端時間，也進行上傳
+            else if (hasUnsavedLocalChanges === true && lastUpdated > cloudLastUpdated) {
+                pushToGoogleSheets(url, isAuto, spinner, headerSpinner);
+            } 
+            // 開啟 App (isAuto) 或本地無修改時：強制下載雲端資料
+            else {
+                if (cloudRes.data && cloudRes.headers) {
+                    headers = cloudRes.headers;
+                    rawData = cloudRes.data;
+                    filterOutExcludedHeaders();
+                    
+                    lastUpdated = cloudLastUpdated || new Date().getTime();
+                    hasUnsavedLocalChanges = false; // 重置標記
+                    
+                    localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
+                    localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
+                    localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+                    localStorage.setItem('toilet_system_has_changes', "false");
+
+                    populateDropdownFilters();
+                    renderList();
+                    updateCounts();
+                }
+
+                if (spinner) spinner.classList.remove('fa-spin');
+                if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+                
+                document.getElementById('syncText').innerText = "已同步雲端數據 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+                
+                if (!isAuto) {
+                    showAlert("同步成功", "已順利下載雲端最新資料！", "fa-circle-check", "text-morandi-sage");
+                }
+            }
+        })
+        .catch(err => {
+            if (spinner) spinner.classList.remove('fa-spin');
+            if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+            if (!isAuto) showAlert("同步失敗", "無法連接至 Google Sheets，請檢查網絡連線。");
+        });
+}
+
+
+        // 5. 將資料推送到 Google Sheets
+function pushToGoogleSheets(url, isAuto, spinner, headerSpinner) {
+    const payload = JSON.stringify({
+        headers: headers,
+        data: rawData,
+        lastUpdated: lastUpdated
+    });
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: payload
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (spinner) spinner.classList.remove('fa-spin');
+        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+
+        if (res.status === "success") {
+            lastUpdated = res.lastUpdated || lastUpdated;
+            hasUnsavedLocalChanges = false; // 重置未同步標記
+            
+            localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+            localStorage.setItem('toilet_system_has_changes', "false");
+            
+            document.getElementById('syncText').innerText = "已更新至雲端 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+            if (!isAuto) showAlert("同步成功", "已將本地最新修改成功上傳至 Google Sheets！", "fa-circle-check", "text-morandi-sage");
+        } else {
+            if (!isAuto) showAlert("同步提示", "雲端已有更新的資料，請重新整理。");
+        }
+    })
+    .catch(err => {
+        if (spinner) spinner.classList.remove('fa-spin');
+        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+        if (!isAuto) showAlert("同步失敗", "推送資料至雲端時發生錯誤，請檢查網路狀態。");
+    });
+}
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                closeModal('editModal');
+                closeModal('alertModal');
+            }
+        });
+
+        function showAlert(title, message, iconClass = "fa-triangle-exclamation", iconColor = "text-morandi-rose") {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMessage').innerText = message;
+            const iconContainer = document.getElementById('alertIcon');
+            iconContainer.className = `w-10 h-10 rounded-full bg-morandi-bg ${iconColor} mx-auto flex items-center justify-center text-lg`;
+            iconContainer.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            openModal('alertModal');
+        }
+    </script>
+</body>
+</html>
