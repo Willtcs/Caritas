@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>廁所馬桶管理系統</title>
+    <title>廁所馬桶管理系統App</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -113,8 +113,8 @@
                 </div>
 
                 <div class="flex items-center space-x-2">
-                    <!-- 智慧雙向同步 (優先比較最新時間) -->
-                    <button onclick="smartSync()" title="雙向智慧同步 (最新更新優先)" class="w-8 h-8 rounded-full bg-morandi-card border border-morandi-light text-morandi-slate hover:text-morandi-dark active:scale-95 transition-transform flex items-center justify-center shadow-sm">
+                    <!-- 手動點擊同步 (將本地修改同步上傳至雲端) -->
+                    <button onclick="smartSync(false)" title="手動同步更新至雲端" class="w-8 h-8 rounded-full bg-morandi-card border border-morandi-light text-morandi-slate hover:text-morandi-dark active:scale-95 transition-transform flex items-center justify-center shadow-sm">
                         <i class="fa-solid fa-rotate text-xs" id="headerSyncSpinner"></i>
                     </button>
 
@@ -229,9 +229,9 @@
                         <span class="text-xs font-bold text-morandi-dark">馬桶資料清單</span>
                         <span id="recordBadge" class="bg-morandi-light/80 text-morandi-dark text-[10px] font-semibold px-2 py-0.5 rounded-full">0 筆</span>
                     </div>
-                    <button onclick="smartSync()" class="text-[11px] text-morandi-sky font-semibold hover:underline flex items-center gap-1 no-print">
+                    <button onclick="smartSync(false)" class="text-[11px] text-morandi-sky font-semibold hover:underline flex items-center gap-1 no-print">
                         <i class="fa-solid fa-arrows-rotate text-[10px]" id="refreshSpinner"></i>
-                        <span>智慧同步</span>
+                        <span>手動同步上傳</span>
                     </button>
                 </div>
 
@@ -303,7 +303,8 @@
         let rawData = [];
         let headers = [];
         let activeSegment = 'all';
-        let lastUpdated = 0; // 時間戳記 (最新修改時間優先)
+        let lastUpdated = 0;
+        let hasUnsavedLocalChanges = false;
 
         const sampleData = [
             { "區域": "日校", "樓層": "1/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "淡水", "水源2": "" },
@@ -311,44 +312,37 @@
             { "區域": "宿舍", "樓層": "G/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "鹹水", "水源2": "" }
         ];
 
-        //開啟 App 或 Google Sheets 時不要即時自動同步，只在按下同步按鈕或儲存時才進行同步
+        // 開啟 App 時：先載入快取，並自動向雲端抓取下載最新資料
         window.onload = function() {
-    const savedData = localStorage.getItem('toilet_system_data');
-    const savedHeaders = localStorage.getItem('toilet_system_headers');
-    const savedTime = localStorage.getItem('toilet_system_last_updated');
-    const savedChanges = localStorage.getItem('toilet_system_has_changes');
+            const savedData = localStorage.getItem('toilet_system_data');
+            const savedHeaders = localStorage.getItem('toilet_system_headers');
+            const savedTime = localStorage.getItem('toilet_system_last_updated');
+            const savedChanges = localStorage.getItem('toilet_system_has_changes');
 
-    if (savedData && savedHeaders) {
-        try {
-            rawData = JSON.parse(savedData);
-            headers = JSON.parse(savedHeaders);
-            lastUpdated = parseInt(savedTime || "0");
-            hasUnsavedLocalChanges = (savedChanges === "true");
-        } catch(e) {
-            loadDefaultSample();
-        }
-    } else {
-        loadDefaultSample();
-    }
+            if (savedData && savedHeaders) {
+                try {
+                    rawData = JSON.parse(savedData);
+                    headers = JSON.parse(savedHeaders);
+                    lastUpdated = parseInt(savedTime || "0");
+                    hasUnsavedLocalChanges = (savedChanges === "true");
+                } catch(e) {
+                    loadDefaultSample();
+                }
+            } else {
+                loadDefaultSample();
+            }
 
-    filterOutExcludedHeaders();
-    populateDropdownFilters();
-    renderList();
-    updateCounts();
+            filterOutExcludedHeaders();
+            populateDropdownFilters();
+            renderList();
+            updateCounts();
 
-    // 關鍵新增：開啟 App 後自動靜默讀取並同步雲端最新資料
-    smartSync(true);
-};
+            // 開啟 App 時自動執行：強制下載雲端資料 (isAuto = true)
+            smartSync(true);
+        };
 
         function filterOutExcludedHeaders() {
             headers = headers.filter(h => h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源");
-        }
-
-        function updateClock() {
-            const now = new Date();
-            const hrs = String(now.getHours()).padStart(2, '0');
-            const mins = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('currentTime').innerText = `${hrs}:${mins}`;
         }
 
         function loadDefaultSample() {
@@ -357,24 +351,17 @@
             markDataModified();
         }
 
-        // 標記資料已被修改 (更新本地時間戳)
+        // 標記本地資料被修改
         function markDataModified() {
             lastUpdated = new Date().getTime();
-    hasUnsavedLocalChanges = true; // 強制設為 true
-    
-    localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
-    localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
-    localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
-    localStorage.setItem('toilet_system_has_changes', "true"); // 寫入標記
-    
-    document.getElementById('syncText').innerText = "本地已修改 (未同步)";
-}
-
-        function saveToLocalStorage() {
+            hasUnsavedLocalChanges = true;
+            
             localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
             localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
             localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
-            document.getElementById('syncText').innerText = "本地已更新 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+            localStorage.setItem('toilet_system_has_changes', "true");
+            
+            document.getElementById('syncText').innerText = "本地已修改 (未同步)";
         }
 
         function confirmResetAll() {
@@ -382,9 +369,11 @@
                 rawData = [];
                 headers = [];
                 lastUpdated = new Date().getTime();
+                hasUnsavedLocalChanges = false;
                 localStorage.removeItem('toilet_system_data');
                 localStorage.removeItem('toilet_system_headers');
                 localStorage.removeItem('toilet_system_last_updated');
+                localStorage.removeItem('toilet_system_has_changes');
                 populateDropdownFilters();
                 renderList();
                 updateCounts();
@@ -393,27 +382,24 @@
         }
 
         function updateCounts() {
-    let dayCount = 0;
-    let dormCount = 0;
+            let dayCount = 0;
+            let dormCount = 0;
+            const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
 
-    // 動態尋找包含「數量」或「數」的欄位名稱
-    const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
+            rawData.forEach(item => {
+                const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
+                const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
 
-    rawData.forEach(item => {
-        const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
-        // 取得該筆資料的數量，若無設定或非數字則預設為 1
-        const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
+                if (areaVal.includes("日校")) {
+                    dayCount += qty;
+                } else if (areaVal.includes("宿舍")) {
+                    dormCount += qty;
+                }
+            });
 
-        if (areaVal.includes("日校")) {
-            dayCount += qty;
-        } else if (areaVal.includes("宿舍")) {
-            dormCount += qty;
+            document.getElementById('daySchoolCount').innerText = dayCount;
+            document.getElementById('dormCount').innerText = dormCount;
         }
-    });
-
-    document.getElementById('daySchoolCount').innerText = dayCount;
-    document.getElementById('dormCount').innerText = dormCount;
-}
 
         function populateDropdownFilters() {
             const selectArea = document.getElementById('filterArea');
@@ -425,7 +411,6 @@
             const keyFloor = headers.find(h => h.includes("樓層")) || "樓層";
 
             const getUnique = (key) => [...new Set(rawData.map(r => r[key]).filter(Boolean))];
-
             const floorValues = [...new Set([...getUnique(keyFloor), "G/F", "1/F"])];
 
             fillSelectOptions(selectArea, getUnique(keyArea), "全部區域");
@@ -511,7 +496,6 @@
                 if (areaVal && row[keyArea] !== areaVal) return false;
                 if (floorVal && row[keyFloor] !== floorVal) return false;
 
-                // 扲掣位置 智慧匹配 1 或 2
                 if (flushVal) {
                     const f1 = row["扲掣位置1"] || "";
                     const f2 = row["扲掣位置2"] || "";
@@ -519,7 +503,6 @@
                     if (f1 !== flushVal && f2 !== flushVal && f3 !== flushVal) return false;
                 }
 
-                // 水源 智慧匹配 1 或 2
                 if (waterVal) {
                     const w1 = row["水源1"] || "";
                     const w2 = row["水源2"] || "";
@@ -608,7 +591,6 @@
             });
         }
 
-        // 開啟修改 Modal（包含空白選項的扲掣位置1/2與水源1/2）
         function openEditModal(index) {
             const row = rawData[index];
             if (!row) return;
@@ -630,13 +612,11 @@
             };
 
             headers.forEach(h => {
-                // 自動忽視舊欄位
                 if (h === "馬桶類型" || h === "狀態" || h === "扲掣位置" || h === "水源") return;
 
                 const wrapper = document.createElement('div');
                 const currentValue = row[h] !== undefined ? row[h] : '';
 
-                // 關鍵修改行：如果該欄位存在於選項對照表中，生成 <select> 選單
                 if (optionPresets[h]) {
                     const optionsList = [...optionPresets[h]];
                     if (currentValue && !optionsList.includes(currentValue)) {
@@ -647,7 +627,6 @@
                         `<option value="${opt}" ${opt === currentValue ? 'selected' : ''}>${opt === "" ? "(無/空白)" : opt}</option>`
                     ).join('');
 
-                    // 核心替換：改為使用 <select> 標籤
                     wrapper.innerHTML = `
                         <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
                         <select name="${h}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
@@ -655,7 +634,6 @@
                         </select>
                     `;
                 } else {
-                    // 其餘一般欄位（如房號、房名、數量等）保留文字輸入框
                     wrapper.innerHTML = `
                         <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
                         <input type="text" name="${h}" value="${currentValue}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
@@ -667,148 +645,129 @@
             openModal('editModal');
         }
 
-        //修改馬桶資料（或刪除資料）後，僅儲存至本地快取，待按下同步按鈕時才上傳。
         function saveEdit(e) {
-    e.preventDefault();
-    const index = parseInt(document.getElementById('editRowIndex').value);
-    if (isNaN(index) || !rawData[index]) return;
+            e.preventDefault();
+            const index = parseInt(document.getElementById('editRowIndex').value);
+            if (isNaN(index) || !rawData[index]) return;
 
-    const formData = new FormData(e.target);
-    headers.forEach(h => {
-        if (h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源") {
-            rawData[index][h] = formData.get(h) || '';
-        }
-    });
-
-    markDataModified(); // 觸發本地修改標記
-    populateDropdownFilters();
-    renderList();
-    updateCounts();
-    closeModal('editModal');
-}
-
-function deleteRow(index) {
-    if (confirm("確定要刪除此筆馬桶資料嗎？")) {
-        rawData.splice(index, 1);
-        markDataModified(); // 觸發本地修改標記
-        populateDropdownFilters();
-        renderList();
-        updateCounts();
-    }
-}
-
-    // 雙向智慧同步邏輯（以最新更新時間優先）
-    function smartSync(isAuto = false) {
-    const url = getGoogleSheetUrl();
-
-    if (!url || url.includes("PLACEHOLDER")) {
-        if (!isAuto) showAlert("提示", "請先確認程式碼中的 Web App 網址設定正確！");
-        return;
-    }
-
-    const spinner = document.getElementById('refreshSpinner');
-    const headerSpinner = document.getElementById('headerSyncSpinner');
-    if (spinner) spinner.classList.add('fa-spin');
-    if (headerSpinner) headerSpinner.classList.add('fa-spin');
-
-    // 每次同步前，重新從 LocalStorage 確認是否真的有未上傳的改動
-    const storedChanges = localStorage.getItem('toilet_system_has_changes');
-    if (storedChanges === "true") {
-        hasUnsavedLocalChanges = true;
-    }
-
-    // 發送 GET 詢問雲端最新時間
-    fetch(url + "?t=" + new Date().getTime())
-        .then(res => res.json())
-        .then(cloudRes => {
-            const cloudLastUpdated = cloudRes.lastUpdated || 0;
-
-            // 判斷邏輯：
-            // 若為【手動點擊同步 (isAuto === false)】且【本地確實有改動 (hasUnsavedLocalChanges === true)】，強制進行上傳！
-            if (!isAuto && hasUnsavedLocalChanges === true) {
-                pushToGoogleSheets(url, isAuto, spinner, headerSpinner);
-            } 
-            // 否則如果本地修改時間明確大於雲端時間，也進行上傳
-            else if (hasUnsavedLocalChanges === true && lastUpdated > cloudLastUpdated) {
-                pushToGoogleSheets(url, isAuto, spinner, headerSpinner);
-            } 
-            // 開啟 App (isAuto) 或本地無修改時：強制下載雲端資料
-            else {
-                if (cloudRes.data && cloudRes.headers) {
-                    headers = cloudRes.headers;
-                    rawData = cloudRes.data;
-                    filterOutExcludedHeaders();
-                    
-                    lastUpdated = cloudLastUpdated || new Date().getTime();
-                    hasUnsavedLocalChanges = false; // 重置標記
-                    
-                    localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
-                    localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
-                    localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
-                    localStorage.setItem('toilet_system_has_changes', "false");
-
-                    populateDropdownFilters();
-                    renderList();
-                    updateCounts();
+            const formData = new FormData(e.target);
+            headers.forEach(h => {
+                if (h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源") {
+                    rawData[index][h] = formData.get(h) || '';
                 }
+            });
 
+            markDataModified();
+            populateDropdownFilters();
+            renderList();
+            updateCounts();
+            closeModal('editModal');
+        }
+
+        function deleteRow(index) {
+            if (confirm("確定要刪除此筆馬桶資料嗎？")) {
+                rawData.splice(index, 1);
+                markDataModified();
+                populateDropdownFilters();
+                renderList();
+                updateCounts();
+            }
+        }
+
+        // 同步邏輯：
+        // isAuto = true （開啟 App 時呼叫）：直接強制從雲端下載最新資料覆蓋本地。
+        // isAuto = false（點擊按鈕手動觸發）：把本地資料推送更新上傳至雲端。
+        function smartSync(isAuto = false) {
+            const url = getGoogleSheetUrl();
+
+            if (!url || url.includes("PLACEHOLDER")) {
+                if (!isAuto) showAlert("提示", "請先確認程式碼中的 Web App 網址設定正確！");
+                return;
+            }
+
+            const spinner = document.getElementById('refreshSpinner');
+            const headerSpinner = document.getElementById('headerSyncSpinner');
+            if (spinner) spinner.classList.add('fa-spin');
+            if (headerSpinner) headerSpinner.classList.add('fa-spin');
+
+            if (!isAuto) {
+                // 手動按鈕同步：將本地最新資料上傳至雲端
+                pushToGoogleSheets(url, isAuto, spinner, headerSpinner);
+            } else {
+                // 自動開啟 App 時：強制從雲端讀取下載最新數據
+                fetch(url + "?t=" + new Date().getTime())
+                    .then(res => res.json())
+                    .then(cloudRes => {
+                        if (cloudRes.data && cloudRes.headers) {
+                            headers = cloudRes.headers;
+                            rawData = cloudRes.data;
+                            filterOutExcludedHeaders();
+                            
+                            lastUpdated = cloudRes.lastUpdated || new Date().getTime();
+                            hasUnsavedLocalChanges = false;
+                            
+                            localStorage.setItem('toilet_system_data', JSON.stringify(rawData));
+                            localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
+                            localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+                            localStorage.setItem('toilet_system_has_changes', "false");
+
+                            populateDropdownFilters();
+                            renderList();
+                            updateCounts();
+                        }
+
+                        if (spinner) spinner.classList.remove('fa-spin');
+                        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+                        
+                        document.getElementById('syncText').innerText = "已從雲端下載最新數據 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+                    })
+                    .catch(err => {
+                        if (spinner) spinner.classList.remove('fa-spin');
+                        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+                        document.getElementById('syncText').innerText = "離線狀態 (使用本地資料)";
+                    });
+            }
+        }
+
+        // 推送資料至 Google Sheets
+        function pushToGoogleSheets(url, isAuto, spinner, headerSpinner) {
+            const payload = JSON.stringify({
+                headers: headers,
+                data: rawData,
+                lastUpdated: lastUpdated
+            });
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: payload
+            })
+            .then(res => res.json())
+            .then(res => {
                 if (spinner) spinner.classList.remove('fa-spin');
                 if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-                
-                document.getElementById('syncText').innerText = "已同步雲端數據 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
-                
-                if (!isAuto) {
-                    showAlert("同步成功", "已順利下載雲端最新資料！", "fa-circle-check", "text-morandi-sage");
+
+                if (res.status === "success") {
+                    lastUpdated = res.lastUpdated || lastUpdated;
+                    hasUnsavedLocalChanges = false;
+                    
+                    localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
+                    localStorage.setItem('toilet_system_has_changes', "false");
+                    
+                    document.getElementById('syncText').innerText = "已成功上傳更新至雲端 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
+                    if (!isAuto) showAlert("同步成功", "已將本地最新修改成功上傳至 Google Sheets！", "fa-circle-check", "text-morandi-sage");
+                } else {
+                    if (!isAuto) showAlert("同步提示", "雲端已有更新的資料，請重新整理。");
                 }
-            }
-        })
-        .catch(err => {
-            if (spinner) spinner.classList.remove('fa-spin');
-            if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-            if (!isAuto) showAlert("同步失敗", "無法連接至 Google Sheets，請檢查網絡連線。");
-        });
-}
-
-
-        // 5. 將資料推送到 Google Sheets
-function pushToGoogleSheets(url, isAuto, spinner, headerSpinner) {
-    const payload = JSON.stringify({
-        headers: headers,
-        data: rawData,
-        lastUpdated: lastUpdated
-    });
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: payload
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (spinner) spinner.classList.remove('fa-spin');
-        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-
-        if (res.status === "success") {
-            lastUpdated = res.lastUpdated || lastUpdated;
-            hasUnsavedLocalChanges = false; // 重置未同步標記
-            
-            localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
-            localStorage.setItem('toilet_system_has_changes', "false");
-            
-            document.getElementById('syncText').innerText = "已更新至雲端 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
-            if (!isAuto) showAlert("同步成功", "已將本地最新修改成功上傳至 Google Sheets！", "fa-circle-check", "text-morandi-sage");
-        } else {
-            if (!isAuto) showAlert("同步提示", "雲端已有更新的資料，請重新整理。");
+            })
+            .catch(err => {
+                if (spinner) spinner.classList.remove('fa-spin');
+                if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+                if (!isAuto) showAlert("同步失敗", "推送資料至雲端時發生錯誤，請檢查網路狀態。");
+            });
         }
-    })
-    .catch(err => {
-        if (spinner) spinner.classList.remove('fa-spin');
-        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-        if (!isAuto) showAlert("同步失敗", "推送資料至雲端時發生錯誤，請檢查網路狀態。");
-    });
-}
 
         function openModal(id) {
             const modal = document.getElementById(id);
