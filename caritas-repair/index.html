@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>維修板 Mobile App</title>
+  
+  <!-- ========================================== -->
+  <!-- 🎨 自訂 App Icon 設定區 (請在此處替換為你的 Icon 連結) -->
+  <!-- ========================================== -->
+  <!-- 1. 瀏覽器頁籤小圖示 (Favicon) -->
+  <link rel="icon" type="image/png" href="repair_icon.png">
+  
+  <!-- 2. iOS Apple 手機主畫面 App Icon (建議尺寸 180x180 px) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="repair_icon.png">
+  
+  <!-- 3. iOS 全螢幕 Web App 設定 -->
+  <meta name="apple-mobile-web-app-title" content="維修板">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <!-- ========================================== -->
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            morandi: {
+              50: '#f4f7f9',
+              100: '#e5ecf0',
+              200: '#cfddf2',
+              300: '#b2c8d8',
+              400: '#8faec4',
+              500: '#6b8ea7',
+              600: '#52728c',
+              700: '#435c72',
+              800: '#384b5c',
+              900: '#2c3e50',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    @keyframes zoomIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-zoom-in { animation: zoomIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+
+    .active-scale { transition: transform 0.1s ease; }
+    .active-scale:active { transform: scale(0.94); }
+  </style>
+</head>
+<body class="bg-slate-200/80 min-h-screen font-sans antialiased text-slate-700 flex items-center justify-center p-0 md:p-6">
+
+  <!-- Mobile Simulator Outer Container -->
+  <div class="w-full max-w-md h-screen md:h-[844px] bg-morandi-50 md:rounded-[48px] shadow-xl overflow-hidden border-0 md:border-[10px] border-slate-300 flex flex-col relative">
+
+    <!-- App Header -->
+    <header class="bg-morandi-600 text-white px-4 py-3.5 flex items-center justify-between shrink-0 z-10 shadow-sm">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center shadow-xs overflow-hidden">
+          <!-- 頂部 Header 圖示 -->
+          <i class="fa-solid fa-clipboard-list text-white text-base"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-wide text-white leading-tight">維修板</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnSync" onclick="syncData()" class="active-scale flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-morandi-500 hover:bg-morandi-400 text-xs font-medium text-white shadow-xs transition" title="重新整理">
+          <i id="syncIcon" class="fa-solid fa-rotate text-xs"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 篩選列 & 重設按鈕 (Filter Bar) -->
+    <div class="bg-white border-b border-morandi-100 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 shadow-xs">
+      <div class="flex items-center gap-1 bg-morandi-50 p-1 rounded-xl border border-morandi-200/60">
+        <button id="filterAll" onclick="setFilter('全部')" class="px-3 py-1 rounded-lg text-xs font-bold transition active-scale bg-morandi-600 text-white shadow-xs">
+          全部
+        </button>
+        <button id="filterPending" onclick="setFilter('待處理')" class="px-3 py-1 rounded-lg text-xs font-semibold text-morandi-700 hover:bg-morandi-200/50 transition active-scale">
+          待處理
+        </button>
+        <button id="filterCompleted" onclick="setFilter('已完成')" class="px-3 py-1 rounded-lg text-xs font-semibold text-morandi-700 hover:bg-morandi-200/50 transition active-scale">
+          已完成
+        </button>
+      </div>
+
+      <button onclick="resetFilter()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition active-scale border border-slate-200 shrink-0" title="重設篩選">
+        <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+        <span>重設</span>
+      </button>
+    </div>
+
+    <!-- Notification / Toast Bar -->
+    <div id="toast" class="hidden text-xs px-4 py-2 text-center font-medium shadow-sm transition-all duration-300 flex items-center justify-center gap-2 shrink-0 bg-emerald-100 text-emerald-800">
+      <i id="toastIcon" class="fa-solid fa-circle-check"></i>
+      <span id="toastMessage">資料更新成功！</span>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-3 bg-morandi-50" id="listContainer">
+      <p class="text-center text-xs text-slate-400 py-8">載入資料中...</p>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-morandi-100 text-morandi-700 text-[11px] px-4 py-2.5 flex justify-between items-center shrink-0">
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+        <span id="displayCountText">系統正常運作中</span>
+      </span>
+      <span id="lastUpdatedTime">最後更新: --</span>
+    </footer>
+
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="modalOverlay" class="fixed inset-0 bg-morandi-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 animate-fade-in" onclick="closeModalOnOverlay(event)">
+    <div id="modalContent" class="bg-white border border-morandi-200 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl text-slate-700 animate-zoom-in relative max-h-[90vh] flex flex-col">
+      
+      <div class="px-5 py-4 border-b border-morandi-100 flex justify-between items-center bg-morandi-50/80">
+        <h2 class="text-base font-bold text-morandi-900 flex items-center gap-2">
+          <i class="fa-solid fa-file-lines text-morandi-500"></i>
+          須維修項目具體資料：
+        </h2>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-morandi-100 text-morandi-600 hover:text-morandi-900 hover:bg-morandi-200 flex items-center justify-center transition active-scale">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 text-sm flex-1">
+        <div class="grid grid-cols-1 gap-3 p-3.5 rounded-xl bg-morandi-50 border border-morandi-200/60">
+          <div>
+            <div class="text-[11px] text-morandi-600 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-user-gear text-morandi-500"></i> 呈報人：
+            </div>
+            <div id="modalReporter" class="font-bold text-morandi-900 mt-1 text-sm">--</div>
+          </div>
+          <div class="pt-2 border-t border-morandi-200/50">
+            <div class="text-[11px] text-morandi-600 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-rose-500"></i> 須維修項目位置：
+            </div>
+            <div id="modalLocation" class="font-bold text-morandi-900 mt-1 text-sm">--</div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex justify-between items-center py-2 border-b border-morandi-100">
+            <span class="text-morandi-600 text-xs font-medium">呈報時間：</span>
+            <span id="modalTime" class="text-xs font-mono text-slate-600">--</span>
+          </div>
+
+          <div class="flex justify-between items-center py-2 border-b border-morandi-100">
+            <span class="text-morandi-600 text-xs font-medium">目前進度狀態：</span>
+            <select id="modalStatusSelect" onchange="handleStatusChange(this.value)" class="text-xs font-semibold px-2.5 py-1 rounded-lg border bg-white focus:outline-none transition cursor-pointer">
+              <option value="待處理">待處理</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+
+          <div class="flex justify-between items-center py-2 border-b border-morandi-100">
+            <span class="text-morandi-600 text-xs font-medium">完成日期：</span>
+            <span id="modalCompletedDate" class="text-xs font-mono font-bold text-emerald-700">--</span>
+          </div>
+
+          <div>
+            <span class="text-morandi-600 text-xs font-medium block mb-1">須維修項目具體資料：</span>
+            <p id="modalDescription" class="text-slate-700 text-xs leading-relaxed p-3 bg-morandi-50/70 rounded-xl border border-morandi-200/80">--</p>
+          </div>
+
+          <div>
+            <label for="modalNoteInput" class="text-morandi-700 text-xs font-semibold flex items-center justify-between mb-1.5">
+              <span><i class="fa-regular fa-pen-to-square text-morandi-500 mr-1"></i>備註欄：</span>
+              <span class="text-[10px] text-morandi-400 font-normal">可直接編輯修改</span>
+            </label>
+            <textarea id="modalNoteInput" rows="3" placeholder="請輸入備註內容..." class="w-full text-xs p-2.5 rounded-xl border border-morandi-300 focus:border-morandi-500 focus:ring-1 focus:ring-morandi-500 focus:outline-none transition bg-white text-slate-800 resize-none"></textarea>
+          </div>
+
+          <div class="pt-2 border-t border-morandi-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-morandi-700 text-xs font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-camera text-morandi-500"></i> 維修現場照片：
+              </span>
+              <span class="text-[10px] text-morandi-400 font-normal">支援圖庫與拍照上傳</span>
+            </div>
+
+            <label class="flex items-center justify-center gap-2 p-2.5 border-2 border-dashed border-morandi-300 rounded-xl cursor-pointer hover:bg-morandi-50 hover:border-morandi-400 transition active-scale">
+              <i class="fa-solid fa-images text-morandi-600 text-sm"></i>
+              <span class="text-xs font-semibold text-morandi-700">選擇照片 / 現場拍照</span>
+              <input type="file" id="cameraInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+            </label>
+
+            <div id="photoPreviewContainer" class="grid grid-cols-3 gap-2 mt-3"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-4 border-t border-morandi-100 bg-white flex gap-2">
+        <button id="btnSave" onclick="saveModalChanges()" class="w-full py-2.5 rounded-xl bg-morandi-600 hover:bg-morandi-700 text-white text-xs font-bold transition active-scale shadow-xs flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-floppy-disk"></i> 儲存修改
+        </button>
+        <button onclick="closeModal()" class="w-24 py-2.5 rounded-xl bg-morandi-100 hover:bg-morandi-200 text-morandi-800 text-xs font-bold transition active-scale">
+          關閉
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxBX6gjcd2pTRd-xLhVKxDGGIJlPpC5vCClom1O1NpSUsHsqBp7X8gl93j7UOyASj8/exec";
+    
+    let currentData = [];
+    let currentFilter = "全部";
+    let currentActiveRowIndex = null;
+    let selectedPhotoBase64 = "";
+    let selectedPhotoName = "";
+    let selectedPhotoType = "";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      syncData();
+    });
+
+    function syncData() {
+      const syncIcon = document.getElementById("syncIcon");
+      syncIcon.classList.add("fa-spin");
+
+      fetch(GAS_URL)
+        .then(res => res.json())
+        .then(data => {
+          syncIcon.classList.remove("fa-spin");
+          if (Array.isArray(data)) {
+            currentData = data;
+            applyFilterAndRender();
+            showToast("成功讀取最新資料！", "success");
+            document.getElementById("lastUpdatedTime").innerText = "最後更新: " + new Date().toLocaleTimeString();
+          }
+        })
+        .catch(err => {
+          syncIcon.classList.remove("fa-spin");
+          showToast("資料讀取失敗", "error");
+        });
+    }
+
+    function checkStatusFromCompletionDate(dateVal) {
+      if (!dateVal) return "待處理";
+      const str = String(dateVal).trim();
+      return (str !== "" && str !== "--" && str !== "null" && str !== "undefined") ? "已完成" : "待處理";
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      
+      const btnAll = document.getElementById("filterAll");
+      const btnPending = document.getElementById("filterPending");
+      const btnCompleted = document.getElementById("filterCompleted");
+
+      const activeClass = "px-3 py-1 rounded-lg text-xs font-bold transition active-scale bg-morandi-600 text-white shadow-xs";
+      const inactiveClass = "px-3 py-1 rounded-lg text-xs font-semibold text-morandi-700 hover:bg-morandi-200/50 transition active-scale";
+
+      btnAll.className = (status === "全部") ? activeClass : inactiveClass;
+      btnPending.className = (status === "待處理") ? activeClass : inactiveClass;
+      btnCompleted.className = (status === "已完成") ? activeClass : inactiveClass;
+
+      applyFilterAndRender();
+    }
+
+    function resetFilter() {
+      setFilter("全部");
+      showToast("已重設篩選條件", "success");
+    }
+
+    function applyFilterAndRender() {
+      let filtered = currentData;
+      
+      if (currentFilter !== "全部") {
+        filtered = currentData.filter(item => {
+          const itemStatus = checkStatusFromCompletionDate(item.completionDate);
+          return itemStatus === currentFilter;
+        });
+      }
+
+      document.getElementById("displayCountText").innerText = `顯示 ${filtered.length} 筆資料 (${currentFilter})`;
+      renderList(filtered);
+    }
+
+    function renderList(list) {
+      const container = document.getElementById("listContainer");
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-center text-xs text-slate-400 py-8">無符合「${currentFilter}」條件的維修項目</p>`;
+        return;
+      }
+
+      container.innerHTML = list.map((item) => {
+        const rowIndex = item.rowIndex;
+        const status = checkStatusFromCompletionDate(item.completionDate);
+        const isCompleted = (status === "已完成");
+        const statusClass = isCompleted ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200";
+
+        return `
+          <div onclick="openModal(${rowIndex})" class="bg-white p-4 rounded-2xl border border-morandi-200 shadow-xs hover:shadow-md transition active-scale cursor-pointer space-y-2">
+            <div class="flex justify-between items-start">
+              <div class="space-y-1.5 pr-2">
+                <div class="text-xs text-morandi-700">
+                  <span class="font-semibold text-morandi-900">呈報人：</span>${item.reporter || '未知'}
+                </div>
+                <div class="text-xs text-morandi-700">
+                  <span class="font-semibold text-morandi-900">須維修項目位置：</span>${item.location || '未定位置'}
+                </div>
+                <div class="text-xs text-morandi-700">
+                  <span class="font-semibold text-morandi-900">須維修項目具體資料：</span>${item.description || '無具體資料'}
+                </div>
+              </div>
+              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 ${statusClass}">${status}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function formatDateToYYYYMMDD(dateStr) {
+      if (!dateStr) return "--";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) {
+        const parts = String(dateStr).split(' ')[0].replace(/-/g, '/');
+        return parts || "--";
+      }
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    }
+
+    function openModal(rowIndex) {
+      currentActiveRowIndex = rowIndex;
+      const item = currentData.find(d => d.rowIndex === rowIndex) || {};
+
+      document.getElementById("modalReporter").innerText = item.reporter || "--";
+      document.getElementById("modalLocation").innerText = item.location || "--";
+      
+      document.getElementById("modalTime").innerText = formatDateToYYYYMMDD(item.timestamp);
+      document.getElementById("modalDescription").innerText = item.description || "--";
+      
+      const currentStatus = checkStatusFromCompletionDate(item.completionDate);
+      document.getElementById("modalStatusSelect").value = currentStatus;
+      document.getElementById("modalCompletedDate").innerText = (currentStatus === "已完成") ? item.completionDate : "--";
+      document.getElementById("modalNoteInput").value = item.remark || "";
+
+      selectedPhotoBase64 = "";
+      document.getElementById("photoPreviewContainer").innerHTML = item.photoUrl 
+        ? `<a href="${item.photoUrl}" target="_blank" class="block col-span-3 text-xs text-morandi-600 underline text-center">檢視現有照片連結</a>` 
+        : "";
+
+      document.getElementById("modalOverlay").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("modalOverlay").classList.add("hidden");
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.id === "modalOverlay") closeModal();
+    }
+
+    function handleStatusChange(val) {
+      if (val === "已完成") {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("modalCompletedDate").innerText = today;
+      } else {
+        document.getElementById("modalCompletedDate").innerText = "--";
+      }
+    }
+
+    function handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      selectedPhotoName = file.name;
+      selectedPhotoType = file.type;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        selectedPhotoBase64 = evt.target.result;
+        document.getElementById("photoPreviewContainer").innerHTML = `
+          <div class="relative col-span-1 rounded-lg overflow-hidden border border-morandi-300">
+            <img src="${selectedPhotoBase64}" class="w-full h-20 object-cover">
+          </div>
+        `;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveModalChanges() {
+      if (!currentActiveRowIndex) return;
+
+      const btnSave = document.getElementById("btnSave");
+      btnSave.disabled = true;
+      btnSave.innerText = "儲存中...";
+
+      const item = currentData.find(d => d.rowIndex === currentActiveRowIndex) || {};
+      const selectedStatus = document.getElementById("modalStatusSelect").value;
+      const completedDateText = document.getElementById("modalCompletedDate").innerText;
+
+      const payload = {
+        rowIndex: currentActiveRowIndex,
+        timestamp: item.timestamp || "",
+        status: selectedStatus,
+        completionDate: (selectedStatus === "已完成") ? (completedDateText === "--" ? "" : completedDateText) : "",
+        remark: document.getElementById("modalNoteInput").value,
+        photoBase64: selectedPhotoBase64,
+        photoName: selectedPhotoName,
+        mimeType: selectedPhotoType
+      };
+
+      fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        btnSave.disabled = false;
+        btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> 儲存修改`;
+
+        if (data.status === "success") {
+          showToast(data.message, "success");
+          closeModal();
+          syncData();
+        } else {
+          showToast("儲存失敗: " + data.message, "error");
+        }
+      })
+      .catch(err => {
+        btnSave.disabled = false;
+        btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> 儲存修改`;
+        showToast("發生錯誤：" + err, "error");
+      });
+    }
+
+    function showToast(msg, type) {
+      const toast = document.getElementById("toast");
+      const toastMessage = document.getElementById("toastMessage");
+      const toastIcon = document.getElementById("toastIcon");
+
+      toastMessage.innerText = msg;
+      toast.classList.remove("hidden");
+
+      if (type === "success") {
+        toast.className = "text-xs px-4 py-2 text-center font-medium shadow-sm flex items-center justify-center gap-2 shrink-0 bg-emerald-100 text-emerald-800";
+        toastIcon.className = "fa-solid fa-circle-check";
+      } else {
+        toast.className = "text-xs px-4 py-2 text-center font-medium shadow-sm flex items-center justify-center gap-2 shrink-0 bg-rose-100 text-rose-800";
+        toastIcon.className = "fa-solid fa-triangle-exclamation";
+      }
+
+      setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
