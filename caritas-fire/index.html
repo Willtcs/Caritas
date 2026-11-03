@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>消防設備管理App</title>
+    <title>消防設備管理 App</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (xlsx) -->
@@ -83,54 +83,54 @@
     </header>
 
     <!-- 主內容區 -->
-    <main class="px-4 py-4 space-y-4 pb-safe max-w-md mx-auto">
+    <main class="px-3 py-4 space-y-4 pb-safe max-w-md mx-auto">
 
-        <!-- 區塊 1: 數量統計（改為全寬度網格 Grid，不需滑動） -->
+        <!-- 區塊 1: 數量統計（微調為 5 欄網格適應 iPhone 6.1" 螢幕） -->
         <section>
             <div class="flex items-center justify-between mb-2 px-1">
                 <h2 class="text-xs font-bold text-ios-subtext uppercase tracking-wider">設備總數量統計</h2>
             </div>
-            <!-- 採用 Grid 網格佈局，一排 2~3 個，完整展示 -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <!-- 5 欄單行佈局 -->
+            <div class="grid grid-cols-5 gap-1.5">
                 <!-- 乾粉滅火器 -->
-                <div class="bg-ios-card p-3 rounded-2xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-sm">
+                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
+                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
                         <i class="fa-solid fa-bottle-droplet"></i>
                     </div>
-                    <p class="text-[11px] text-ios-subtext font-medium truncate w-full">乾粉滅火器</p>
-                    <p id="count-dry-powder" class="text-lg font-bold text-ios-morandi">0</p>
+                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">乾粉</p>
+                    <p id="count-dry-powder" class="text-base font-bold text-ios-morandi">0</p>
                 </div>
                 <!-- CO2 滅火器 -->
-                <div class="bg-ios-card p-3 rounded-2xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-sm">
+                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
+                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
                         <i class="fa-solid fa-cloud"></i>
                     </div>
-                    <p class="text-[11px] text-ios-subtext font-medium truncate w-full">二氧化碳滅火器</p>
-                    <p id="count-co2" class="text-lg font-bold text-ios-morandi">0</p>
+                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">二氧化碳</p>
+                    <p id="count-co2" class="text-base font-bold text-ios-morandi">0</p>
                 </div>
                 <!-- 泡沫滅火器 -->
-                <div class="bg-ios-card p-3 rounded-2xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-sm">
+                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
+                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
                         <i class="fa-solid fa-soap"></i>
                     </div>
-                    <p class="text-[11px] text-ios-subtext font-medium truncate w-full">泡沫滅火器</p>
-                    <p id="count-foam" class="text-lg font-bold text-ios-morandi">0</p>
+                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">泡沫</p>
+                    <p id="count-foam" class="text-base font-bold text-ios-morandi">0</p>
                 </div>
                 <!-- 防火沙 -->
-                <div class="bg-ios-card p-3 rounded-2xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-sm">
+                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
+                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
                         <i class="fa-solid fa-mound"></i>
                     </div>
-                    <p class="text-[11px] text-ios-subtext font-medium truncate w-full">防火沙</p>
-                    <p id="count-sand" class="text-lg font-bold text-ios-morandi">0</p>
+                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">防火沙</p>
+                    <p id="count-sand" class="text-base font-bold text-ios-morandi">0</p>
                 </div>
-                <!-- 防火毯 (在 2 欄模式下自動佔滿第 5 個位置) -->
-                <div class="col-span-2 sm:col-span-1 bg-ios-card p-3 rounded-2xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-sm">
+                <!-- 防火毯 -->
+                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
+                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
                         <i class="fa-solid fa-rug"></i>
                     </div>
-                    <p class="text-[11px] text-ios-subtext font-medium truncate w-full">防火毯</p>
-                    <p id="count-blanket" class="text-lg font-bold text-ios-morandi">0</p>
+                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">防火毯</p>
+                    <p id="count-blanket" class="text-base font-bold text-ios-morandi">0</p>
                 </div>
             </div>
         </section>
