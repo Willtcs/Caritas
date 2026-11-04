@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>抽氣扇管理系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- 適用於 iOS 主畫面 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="Exhaust-fan_icon.png">
+
+    <!-- 適用於 一般瀏覽器 Favicon (可一併設定) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="Exhaust-fan_icon.png">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        morandi: {
+                            50: '#f4f7f9',
+                            100: '#e5ecf1',
+                            200: '#d5e2eb',
+                            300: '#adbfcb',
+                            400: '#839ba8',
+                            500: '#5b7b93', // Primary Morandi Dusty Blue
+                            600: '#4a6984', // Darker Dusty Blue
+                            700: '#3c5369',
+                            800: '#344557',
+                            900: '#2c3e50', // Main Text color
+                        },
+                        roseDust: {
+                            50: '#fdf7f7',
+                            100: '#f9ecec',
+                            500: '#c07070', // Morandi Rose Red for Pending Replacement
+                            600: '#aa5c5c',
+                        },
+                        sage: {
+                            50: '#f2f7f5',
+                            100: '#e1ede7',
+                            500: '#5f8d7b', // Morandi Sage Green for Completed
+                            600: '#4d7565',
+                        },
+                        lavender: {
+                            50: '#f6f5f9',
+                            100: '#eae7f2',
+                            500: '#7b7393', // Morandi Lavender for Hostel
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #eef2f5;
+            color: #2c3e50;
+        }
+        
+        /* Custom scrollbar matching Morandi Theme */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e8eef3;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #adbfcb;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #839ba8;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 antialiased flex flex-col items-center justify-start">
+
+    <!-- iPhone 6.1" (390px~430px) 外框容器 -->
+    <div class="w-full max-w-[430px] min-h-screen bg-slate-50 shadow-2xl flex flex-col border-x border-morandi-200 relative pb-16">
+
+        <!-- 1. 頂部標題與工具列 -->
+        <header class="bg-morandi-500 text-white shadow-sm border-b border-morandi-600 sticky top-0 z-30 px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                        <i class="fa-solid fa-fan text-base text-morandi-100"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-wide text-white leading-tight">抽氣扇管理系統</h1>
+                        <p class="text-[10px] text-morandi-100/80 font-light tracking-tight">Exhaust Fan Management System</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 頁面 1：總覽與統計 (Tab 1) -->
+        <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3">
+
+            <!-- 2. 全校抽氣扇總數 (精簡邊距與高度) -->
+            <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-3.5 py-2 flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-1.5 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
+                        <i class="fa-solid fa-building-columns text-morandi-100 text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-bold text-white tracking-wide">全校抽氣扇總數</h2>
+                    </div>
+                </div>
+                <div id="schoolTotalQty" class="text-xl font-black tracking-tight text-amber-100 drop-shadow-sm">
+                    0 <span class="text-xs font-normal text-morandi-100">部</span>
+                </div>
+            </section>
+
+            <!-- 3. 日校與宿舍數量區塊 (4個獨立卡片單欄垂直排列，移除左側邊框飾條) -->
+            <section class="grid grid-cols-1 gap-2">
+                <!-- 日校抽氣扇數量 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
+                            <i class="fa-solid fa-sun text-xs"></i>
+                        </div>
+                        <span class="text-xs font-bold text-morandi-900">日校抽氣扇數量</span>
+                    </div>
+                    <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
+                </div>
+
+                <!-- 日校需更換抽氣扇數量 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        </div>
+                        <span class="text-xs font-bold text-roseDust-600">日校需更換抽氣扇數量</span>
+                    </div>
+                    <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
+                </div>
+
+                <!-- 宿舍抽氣扇數量 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
+                            <i class="fa-solid fa-bed text-xs"></i>
+                        </div>
+                        <span class="text-xs font-bold text-morandi-900">宿舍抽氣扇數量</span>
+                    </div>
+                    <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
+                </div>
+
+                <!-- 宿舍需更換抽氣扇數量 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        </div>
+                        <span class="text-xs font-bold text-roseDust-600">宿舍需更換抽氣扇數量</span>
+                    </div>
+                    <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- 頁面 2：資料清單 (Tab 2) -->
+        <main id="tabViewList" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
+
+            <!-- 4. 頂部控制列：[搜尋輸入框] + [展開/折疊箭頭] + [重設按鈕] -->
+            <section class="bg-white rounded-xl shadow-sm border border-morandi-100 p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <!-- 左側全域搜尋框 -->
+                    <div class="relative flex-1">
+                        <input type="text" id="searchInput" placeholder="搜尋房號、房名、型號..." class="w-full bg-morandi-50/50 border border-morandi-200 text-morandi-900 rounded-lg pl-7 pr-2 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none placeholder:text-morandi-300">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-morandi-300 text-xs"></i>
+                    </div>
+
+                    <!-- 展開/折疊箭頭按鈕 -->
+                    <button id="toggleFilterBtn" class="p-1.5 bg-morandi-50 hover:bg-morandi-100 text-morandi-600 rounded-lg border border-morandi-200/50 text-xs flex items-center justify-center shrink-0">
+                        <i id="toggleFilterIcon" class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
+                    </button>
+
+                    <!-- 最右側重設按鈕 -->
+                    <button id="btnResetFilters" class="text-xs bg-morandi-100 hover:bg-morandi-200 text-morandi-700 font-medium px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
+                        <i class="fa-solid fa-filter-circle-xmark text-morandi-500"></i> 重設
+                    </button>
+                </div>
+
+                <!-- 折疊篩選面板：獨立 3 行（樓層、區域、牌子）無標題按鈕組 -->
+                <div id="filterCollapseArea" class="hidden border-t border-morandi-100 pt-2.5 space-y-2">
+                    <!-- 1. 樓層膠囊按鈕組 -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterFloorContainer">
+                        <button type="button" onclick="setFilterBtn('floor', '')" id="btn-floor-all" class="filter-btn filter-btn-floor active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部樓層</button>
+                        <button type="button" onclick="setFilterBtn('floor', 'G/F')" id="btn-floor-GF" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">G/F</button>
+                        <button type="button" onclick="setFilterBtn('floor', '1/F')" id="btn-floor-1F" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">1/F</button>
+                    </div>
+
+                    <!-- 2. 區域膠囊按鈕組 -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterAreaContainer">
+                        <button type="button" onclick="setFilterBtn('area', '')" id="btn-area-all" class="filter-btn filter-btn-area active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部區域</button>
+                        <button type="button" onclick="setFilterBtn('area', '日校')" id="btn-area-day" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">日校</button>
+                        <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">宿舍</button>
+                    </div>
+
+                    <!-- 3. 牌子膠囊按鈕組 -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterBrandContainer">
+                        <button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部牌子</button>
+                        <button type="button" onclick="setFilterBtn('brand', 'KDK')" id="btn-brand-KDK" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">KDK</button>
+                        <button type="button" onclick="setFilterBtn('brand', 'Panasonic')" id="btn-brand-Panasonic" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">Panasonic</button>
+                        <button type="button" onclick="setFilterBtn('brand', 'Cata')" id="btn-brand-Cata" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">Cata</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 卡片列表區塊 -->
+            <section id="cardsListContainer" class="space-y-2 mb-4">
+                <!-- 動態渲染卡片列表 -->
+            </section>
+
+            <!-- 無資料狀態顯示 -->
+            <div id="emptyState" class="hidden py-10 text-center text-morandi-400 bg-white rounded-xl border border-morandi-100">
+                <i class="fa-solid fa-box-open text-3xl mb-2 text-morandi-300"></i>
+                <p class="text-xs font-medium text-morandi-600">尚無抽氣扇資料或查無符合條件數據</p>
+            </div>
+        </main>
+
+        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar (2 個頁籤：總覽、資料清單) -->
+        <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 border border-morandi-200/80 shadow-lg flex items-center justify-around w-44">
+            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
+                <i class="fa-solid fa-chart-simple text-base"></i>
+            </button>
+            <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900">
+                <i class="fa-solid fa-list-check text-base"></i>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- 7. 修改抽氣扇記錄彈出視窗 (Modal Form: 欄位每行2個並排，底部滿版置中「確定更改」與「刪除」，無取消按鈕) -->
+    <div id="modalForm" class="fixed inset-0 bg-morandi-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all border border-morandi-100">
+            <div class="px-4 py-3 border-b border-morandi-100 flex justify-between items-center bg-morandi-50/80 sticky top-0 bg-white z-10">
+                <h3 id="modalTitle" class="text-sm font-bold text-morandi-900">修改抽氣扇記錄</h3>
+                <button id="btnCloseModal" type="button" class="text-morandi-400 hover:text-morandi-600 p-1 rounded-lg focus:outline-none">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form id="fanForm" class="p-4 space-y-3">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">樓層 <span class="text-roseDust-500">*</span></label>
+                        <select id="formFloorSelect" required class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="G/F">G/F</option>
+                            <option value="1/F">1/F</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">房號</label>
+                        <input type="text" id="formRoomNo" placeholder="例: 101" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">區域 <span class="text-roseDust-500">*</span></label>
+                        <select id="formAreaSelect" required class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="日校">日校</option>
+                            <option value="宿舍">宿舍</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">房名</label>
+                        <input type="text" id="formRoomName" placeholder="例: 洗手間" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">牌子</label>
+                        <select id="formBrandSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="AIRMATE">AIRMATE</option>
+                            <option value="Cata">Cata</option>
+                            <option value="KDK">KDK</option>
+                            <option value="National">National</option>
+                            <option value="Panasonic">Panasonic</option>
+                            <option value="Xpelair">Xpelair</option>
+                            <option value="-">-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">型號</label>
+                        <input type="text" id="formModel" placeholder="例: 20ALH" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">尺寸</label>
+                        <select id="formSizeSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value='5"'>5"</option>
+                            <option value='6"'>6"</option>
+                            <option value='8"'>8"</option>
+                            <option value='9"'>9"</option>
+                            <option value='10"'>10"</option>
+                            <option value='12"'>12"</option>
+                            <option value="-">-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">開孔</label>
+                        <select id="formHoleSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="方">方</option>
+                            <option value="圓">圓</option>
+                            <option value="-">-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">數量</label>
+                        <select id="formQtySelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">窗</label>
+                        <select id="formWindowSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="鋁塑板">鋁塑板</option>
+                            <option value="玻璃窗">玻璃窗</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="col-span-2">
+                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">更換狀態</label>
+                        <select id="formStatus" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                            <option value="-">-</option>
+                            <option value="需更換1部">需更換1部</option>
+                            <option value="需更換2部">需更換2部</option>
+                            <option value="需更換3部">需更換3部</option>
+                            <option value="需更換4部">需更換4部</option>
+                            <option value="已更換">已更換</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 底部按鈕：滿版延伸等寬置中並排「確定更改」與「刪除」（無取消按鈕） -->
+                <div class="pt-3 flex justify-between items-center gap-3 border-t border-morandi-100 w-full">
+                    <button type="submit" class="flex-1 py-2.5 bg-morandi-500 hover:bg-morandi-600 active:bg-morandi-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm text-center">
+                        確定更改
+                    </button>
+                    <button type="button" onclick="handleModalDelete()" class="flex-1 py-2.5 bg-roseDust-500 hover:bg-roseDust-600 active:bg-roseDust-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm text-center">
+                        刪除
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Message -->
+    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-morandi-800 text-white px-3.5 py-2.5 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 text-xs max-w-[320px]">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-morandi-300"></i>
+        <span id="toastMsg" class="font-medium">訊息提示</span>
+    </div>
+
+    <script>
+        // Data State
+        let fanList = [];
+        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v10';
+
+        // Active Filter States
+        let activeFilters = {
+            floor: '',
+            area: '',
+            brand: ''
+        };
+
+        // System Startup
+        window.onload = function() {
+            loadData();
+            initEventListeners();
+            calculateStatistics();
+            renderCardsList();
+        };
+
+        // Attach Event Listeners
+        function initEventListeners() {
+            // Toggle Filter Panel
+            document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterPanel);
+
+            // Search Input Filter
+            document.getElementById('searchInput').addEventListener('input', renderCardsList);
+            document.getElementById('btnResetFilters').addEventListener('click', resetFilters);
+
+            // Modal Form Controls
+            document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+            document.getElementById('fanForm').addEventListener('submit', handleFormSubmit);
+
+            // Keyboard ESC key cancels/closes modal
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        }
+
+        // Load persisted data or default initial set
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    fanList = JSON.parse(stored);
+                } catch (e) {
+                    console.error("Error loading localStorage data", e);
+                    fanList = [];
+                }
+            } else {
+                // Default Morandi Demo Dataset
+                fanList = [
+                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '需更換1部', isDone: false },
+                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '1樓課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '已更換', isDone: true },
+                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '需更換2部', isDone: false }
+                ];
+                saveData();
+            }
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(fanList));
+        }
+
+        // Switch Main Tabs (Summary vs List)
+        function switchTab(tabName) {
+            const summaryView = document.getElementById('tabViewSummary');
+            const listView = document.getElementById('tabViewList');
+
+            const tabBtnSummary = document.getElementById('tabBtnSummary');
+            const tabBtnList = document.getElementById('tabBtnList');
+
+            if (tabName === 'summary') {
+                summaryView.classList.remove('hidden');
+                listView.classList.add('hidden');
+
+                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
+                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
+            } else if (tabName === 'list') {
+                summaryView.classList.add('hidden');
+                listView.classList.remove('hidden');
+
+                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
+                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
+
+                renderCardsList();
+            }
+        }
+
+        // Handle Pill Button Filter Selection
+        function setFilterBtn(type, val) {
+            activeFilters[type] = val;
+
+            const buttons = document.querySelectorAll(`.filter-btn-${type}`);
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-morandi-500', 'text-white');
+                btn.classList.add('bg-white', 'text-morandi-700');
+            });
+
+            if (val === '') {
+                const allBtn = document.getElementById(`btn-${type}-all`);
+                if (allBtn) {
+                    allBtn.classList.remove('bg-white', 'text-morandi-700');
+                    allBtn.classList.add('bg-morandi-500', 'text-white');
+                }
+            } else {
+                let targetId = `btn-${type}-${val.replace('/', '')}`;
+                if (type === 'area') targetId = val === '日校' ? 'btn-area-day' : 'btn-area-hostel';
+
+                const activeBtn = document.getElementById(targetId);
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-white', 'text-morandi-700');
+                    activeBtn.classList.add('bg-morandi-500', 'text-white');
+                }
+            }
+
+            renderCardsList();
+        }
+
+        function resetFilters() {
+            activeFilters = { floor: '', area: '', brand: '' };
+            document.getElementById('searchInput').value = '';
+
+            ['floor', 'area', 'brand'].forEach(type => setFilterBtn(type, ''));
+            renderCardsList();
+        }
+
+        // Render Card List
+        function renderCardsList() {
+            const container = document.getElementById('cardsListContainer');
+            const emptyState = document.getElementById('emptyState');
+            const searchKey = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            let filtered = fanList.filter(item => {
+                const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
+                const matchArea = !activeFilters.area || item.area === activeFilters.area;
+                const matchBrand = !activeFilters.brand || item.brand === activeFilters.brand;
+                const matchSearch = !searchKey || 
+                    (item.roomNo && item.roomNo.toLowerCase().includes(searchKey)) ||
+                    (item.roomName && item.roomName.toLowerCase().includes(searchKey)) ||
+                    (item.model && item.model.toLowerCase().includes(searchKey)) ||
+                    (item.brand && item.brand.toLowerCase().includes(searchKey));
+
+                return matchFloor && matchArea && matchBrand && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = buildCardsHtml(filtered);
+        }
+
+        // Generate Card List HTML
+        function buildCardsHtml(list) {
+            return list.map(item => {
+                const index = fanList.indexOf(item);
+                const isHostel = item.area === '宿舍';
+                const isNeedReplace = item.status && item.status.startsWith('需更換');
+
+                return `
+                    <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-morandi-100 p-3 hover:border-morandi-300 transition-all cursor-pointer active:scale-[0.99]">
+                        <div class="flex justify-between items-center gap-2">
+                            <!-- 第一行：房號 房名 | 樓層 | 區域 -->
+                            <div class="space-y-1.5 flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-xs text-morandi-900 truncate">
+                                        ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
+                                    </span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-morandi-100/80 text-morandi-800 font-semibold shrink-0">
+                                        ${escapeHtml(item.floor || '-')}
+                                    </span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-lavender-50 text-lavender-500 border border-lavender-100' : 'bg-morandi-50 text-morandi-600 border border-morandi-100'}">
+                                        ${escapeHtml(item.area || '-')}
+                                    </span>
+                                </div>
+
+                                <!-- 第二行：牌子 | 尺寸 -->
+                                <div class="flex items-center gap-3 text-[11px] text-morandi-600">
+                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
+                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
+                                    ${isNeedReplace ? `<span class="text-[10px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">${escapeHtml(item.status)}</span>` : ''}
+                                </div>
+                            </div>
+
+                            <!-- 最右側：純數字數量 -->
+                            <div class="shrink-0 text-right pl-2 pr-1">
+                                <span class="text-lg font-extrabold text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Calculate System Metrics
+        function calculateStatistics() {
+            let schoolTotalQtySum = 0;
+            let daySchoolTotal = 0;
+            let daySchoolNeed = 0;
+            let hostelTotal = 0;
+            let hostelNeed = 0;
+
+            fanList.forEach(item => {
+                const qtyVal = parseInt(item.qty, 10) || 0;
+                schoolTotalQtySum += qtyVal;
+
+                const isHostel = item.area && item.area.includes('宿舍');
+                if (isHostel) {
+                    hostelTotal += qtyVal;
+                } else {
+                    daySchoolTotal += qtyVal;
+                }
+
+                const st = item.status || '-';
+                let rowNeedVal = 0;
+                if (st === '需更換1部') rowNeedVal = 1;
+                else if (st === '需更換2部') rowNeedVal = 2;
+                else if (st === '需更換3部') rowNeedVal = 3;
+                else if (st === '需更換4部') rowNeedVal = 4;
+
+                if (!item.isDone && st !== '已更換' && rowNeedVal > 0) {
+                    if (isHostel) hostelNeed += rowNeedVal;
+                    else daySchoolNeed += rowNeedVal;
+                }
+            });
+
+            document.getElementById('schoolTotalQty').innerHTML = `${schoolTotalQtySum} <span class="text-xs font-normal text-morandi-100">部</span>`;
+            document.getElementById('daySchoolTotal').innerText = daySchoolTotal;
+            document.getElementById('daySchoolNeed').innerText = daySchoolNeed;
+            document.getElementById('hostelTotal').innerText = hostelTotal;
+            document.getElementById('hostelNeed').innerText = hostelNeed;
+        }
+
+        // Toggle Filter Panel Display
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterCollapseArea');
+            const icon = document.getElementById('toggleFilterIcon');
+
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.className = 'fa-solid fa-chevron-up text-xs transition-transform duration-300';
+            } else {
+                panel.classList.add('hidden');
+                icon.className = 'fa-solid fa-chevron-down text-xs transition-transform duration-300';
+            }
+        }
+
+        function setSelectValue(selectId, val, defaultVal) {
+            const select = document.getElementById(selectId);
+            const target = (val !== undefined && val !== null && String(val).trim() !== '') ? String(val).trim() : defaultVal;
+            
+            let exists = Array.from(select.options).some(opt => opt.value === target);
+            if (!exists && target) {
+                const opt = document.createElement('option');
+                opt.value = target;
+                opt.innerText = target;
+                select.appendChild(opt);
+            }
+            select.value = target;
+        }
+
+        // Open Modal Dialog for Editing
+        function openModal(index) {
+            if (index < 0 || index >= fanList.length) return;
+
+            const modal = document.getElementById('modalForm');
+            const item = fanList[index];
+
+            document.getElementById('editIndex').value = index;
+
+            setSelectValue('formFloorSelect', item.floor, 'G/F');
+            document.getElementById('formRoomNo').value = item.roomNo || '';
+            setSelectValue('formAreaSelect', item.area, '日校');
+            document.getElementById('formRoomName').value = item.roomName || '';
+            setSelectValue('formBrandSelect', item.brand, 'KDK');
+            document.getElementById('formModel').value = item.model || '';
+            setSelectValue('formSizeSelect', item.size, '6"');
+            setSelectValue('formHoleSelect', item.hole, '圓');
+
+            let qtyStr = '1';
+            const parsedQty = parseInt(item.qty, 10);
+            if (!isNaN(parsedQty) && parsedQty >= 0 && parsedQty <= 10) {
+                qtyStr = String(parsedQty);
+            }
+            document.getElementById('formQtySelect').value = qtyStr;
+
+            setSelectValue('formWindowSelect', item.window, '鋁塑板');
+            document.getElementById('formStatus').value = item.status || '-';
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modalForm').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const index = parseInt(document.getElementById('editIndex').value, 10);
+            if (index < 0) return;
+
+            const qtyVal = document.getElementById('formQtySelect').value;
+            const statusVal = document.getElementById('formStatus').value;
+
+            fanList[index] = {
+                floor: document.getElementById('formFloorSelect').value,
+                roomNo: document.getElementById('formRoomNo').value.trim(),
+                area: document.getElementById('formAreaSelect').value,
+                roomName: document.getElementById('formRoomName').value.trim(),
+                brand: document.getElementById('formBrandSelect').value,
+                model: document.getElementById('formModel').value.trim(),
+                size: document.getElementById('formSizeSelect').value,
+                hole: document.getElementById('formHoleSelect').value,
+                qty: parseInt(qtyVal, 10) || 0,
+                window: document.getElementById('formWindowSelect').value,
+                status: statusVal,
+                isDone: statusVal === '已更換'
+            };
+
+            showToast('已成功更新抽氣扇資料', 'success');
+
+            saveData();
+            calculateStatistics();
+            renderCardsList();
+            closeModal();
+        }
+
+        function handleModalDelete() {
+            const index = parseInt(document.getElementById('editIndex').value, 10);
+            if (index >= 0 && confirm('確定要刪除這筆記錄嗎？')) {
+                fanList.splice(index, 1);
+                saveData();
+                calculateStatistics();
+                renderCardsList();
+                closeModal();
+                showToast('已刪除記錄', 'info');
+            }
+        }
+
+        // HTML Sanitizer
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Custom Toast Helper
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = msg;
+
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-roseDust-500';
+            } else if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-sage-500';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-morandi-300';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
