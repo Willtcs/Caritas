@@ -447,52 +447,36 @@
     let saltCount = 0;
     let freshCount = 0;
 
-    rawData.forEach(item => {
-        // 尋找數量欄位（若沒有或非數字預設為 1）
-        let qty = 1;
-        Object.keys(item).forEach(k => {
-            if (k.trim().includes("數量") || k.trim().includes("數")) {
-                const parsed = parseInt(item[k], 10);
-                if (!isNaN(parsed) && parsed > 0) qty = parsed;
-            }
-        });
+    const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
 
-        // 1. 計算區域總數
+    rawData.forEach(item => {
+        // 1. 計算區域總數（日校 / 宿舍）
         const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
+        const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
+
         if (areaVal.includes("日校")) {
             dayCount += qty;
         } else if (areaVal.includes("宿舍")) {
             dormCount += qty;
         }
 
-        // 2. 提取這筆馬桶資料包含的所有扲掣與水源值（自動 去除重複 與 去除空白）
-        let flushTypes = new Set();
-        let waterTypes = new Set();
-
-        Object.keys(item).forEach(key => {
-            const cleanKey = key.trim();
-            const val = String(item[key] || '').trim();
-
-            if (!val) return;
-
-            if (cleanKey.includes("扲掣") || cleanKey.includes("位置")) {
-                flushTypes.add(val);
-            }
-            if (cleanKey.includes("水源")) {
-                waterTypes.add(val);
+        // 2. 獨立統計 扲掣位置 1、2、3 每個儲存格出現的次數 (自動去除空白)
+        ['扲掣位置1', '扲掣位置2', '扲掣位置3', '扲掣位置 1', '扲掣位置 2', '扲掣位置 3'].forEach(fKey => {
+            if (item[fKey] !== undefined) {
+                const val = String(item[fKey]).trim();
+                if (val === '左側') leftCount++;
+                if (val === '頂按壓') topCount++;
+                if (val === '前右側') frontRightCount++;
             }
         });
 
-        // 3. 依據該筆資料的馬桶數量 qty 進行統計
-        flushTypes.forEach(val => {
-            if (val === '左側') leftCount += qty;
-            if (val === '頂按壓') topCount += qty;
-            if (val === '前右側') frontRightCount += qty;
-        });
-
-        waterTypes.forEach(val => {
-            if (val === '鹹水') saltCount += qty;
-            if (val === '淡水') freshCount += qty;
+        // 3. 獨立統計 水源 1、2、3 每個儲存格出現的次數 (自動去除空白)
+        ['水源1', '水源2', '水源3', '水源 1', '水源 2', '水源 3'].forEach(wKey => {
+            if (item[wKey] !== undefined) {
+                const val = String(item[wKey]).trim();
+                if (val === '鹹水') saltCount++;
+                if (val === '淡水') freshCount++;
+            }
         });
     });
     
