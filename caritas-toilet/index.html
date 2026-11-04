@@ -119,7 +119,6 @@
         </header>
 
         <!-- Main Content Area -->
-        <!--區塊與頂部邊距 -->
         <main class="flex-1 p-4 pt-1.5 pb-28 space-y-1.5">
 
             <!-- 總覽區域視圖容器 (Tab 1: 總覽) -->
@@ -199,60 +198,73 @@
             <!-- 馬桶資料清單區域 (僅在 Tab 2: 資料 顯示) -->
             <div id="tabDataSection" class="space-y-2 hidden -mt-2.5">
                 
-                <!-- 全按鈕式分段篩選區塊 -->
-                <section class="bg-morandi-card border border-morandi-light/80 rounded-2xl p-3 shadow-ios space-y-2.5 no-print !mt-0">
+                <!-- 展開/收疊式篩選區塊 -->
+                <section class="bg-morandi-card border border-morandi-light/80 rounded-2xl shadow-ios no-print !mt-0 overflow-hidden transition-all duration-200">
                     
-                    <!-- 1. 區域切換按鈕 -->
-                    <div class="space-y-1">
-                        <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                            <button id="btnAreaAll" onclick="setFilterBtn('Area', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                            <button id="btnAreaDay" onclick="setFilterBtn('Area', '日校')" class="flex-1 py-1 rounded-lg transition-all text-center">日校</button>
-                            <button id="btnAreaDorm" onclick="setFilterBtn('Area', '宿舍')" class="flex-1 py-1 rounded-lg transition-all text-center">宿舍</button>
-                        </div>
-                    </div>
+                    <!-- 篩選卡片頂部標題與常駐搜尋列 -->
+                    <div class="p-3 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <button onclick="toggleFilterAccordion()" class="flex items-center space-x-2 text-morandi-dark hover:opacity-80 transition-opacity">
+                                <i class="fa-solid fa-sliders text-morandi-sky text-xs"></i>
+                                <span class="text-xs font-bold">進階篩選</span>
+                                <span id="activeFilterBadge" class="hidden bg-morandi-sky text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">已套用</span>
+                                <i id="filterAccordionArrow" class="fa-solid fa-chevron-down text-[10px] text-morandi-slate/60 transition-transform duration-200 ml-1"></i>
+                            </button>
 
-                    <!-- 2. 樓層切換按鈕 -->
-                    <div class="space-y-1">
-                        <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                            <button id="btnFloorAll" onclick="setFilterBtn('Floor', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                            <button id="btnFloorGF" onclick="setFilterBtn('Floor', 'G/F')" class="flex-1 py-1 rounded-lg transition-all text-center">G/F</button>
-                            <button id="btnFloor1F" onclick="setFilterBtn('Floor', '1/F')" class="flex-1 py-1 rounded-lg transition-all text-center">1/F</button>
+                            <button onclick="resetAllFilters()" title="重置篩選" class="text-[11px] text-morandi-rose hover:underline font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                <span>重置</span>
+                            </button>
                         </div>
-                    </div>
 
-                    <!-- 3. 扲掣位置切換按鈕 -->
-                    <div class="space-y-1">
-                        <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                            <button id="btnFlushAll" onclick="setFilterBtn('Flush', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                            <button id="btnFlushFR" onclick="setFilterBtn('Flush', '前右側')" class="flex-1 py-1 rounded-lg transition-all text-center">前右側</button>
-                            <button id="btnFlushLeft" onclick="setFilterBtn('Flush', '左側')" class="flex-1 py-1 rounded-lg transition-all text-center">左側</button>
-                            <button id="btnFlushTop" onclick="setFilterBtn('Flush', '頂按壓')" class="flex-1 py-1 rounded-lg transition-all text-center">頂按壓</button>
-                        </div>
-                    </div>
-
-                    <!-- 4. 水源切換按鈕 -->
-                    <div class="space-y-1">
-                        <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                            <button id="btnWaterAll" onclick="setFilterBtn('Water', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                            <button id="btnWaterFresh" onclick="setFilterBtn('Water', '淡水')" class="flex-1 py-1 rounded-lg transition-all text-center">淡水</button>
-                            <button id="btnWaterSalt" onclick="setFilterBtn('Water', '鹹水')" class="flex-1 py-1 rounded-lg transition-all text-center">鹹水</button>
-                        </div>
-                    </div>
-
-                    <!-- 下方：左側搜尋功能，右側僅圖示重置按鈕 -->
-                    <div class="flex items-center space-x-2 pt-1 border-t border-morandi-light/50">
-                        <div class="relative flex-1 flex items-center">
+                        <!-- 搜尋關鍵字欄位 -->
+                        <div class="relative flex items-center">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 text-morandi-slate/60 text-xs"></i>
                             <input type="text" id="searchInput" oninput="applyFilters()" placeholder="搜尋關鍵字..." class="w-full bg-morandi-bg border border-morandi-light/70 text-morandi-dark text-xs rounded-xl pl-8 pr-8 py-1.5 focus:outline-none focus:border-morandi-sky transition-colors">
                             <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 text-morandi-slate/50 hover:text-morandi-dark p-1">
                                 <i class="fa-solid fa-circle-xmark text-xs"></i>
                             </button>
                         </div>
+                    </div>
 
-                        <!-- 右側重置按鈕 (僅顯示 Icon) -->
-                        <button onclick="resetAllFilters()" title="重置篩選" class="w-8 h-8 rounded-xl bg-morandi-bg border border-morandi-light text-morandi-rose hover:bg-morandi-rose/10 active:scale-95 transition-all flex items-center justify-center shrink-0">
-                            <i class="fa-solid fa-rotate-left text-xs"></i>
-                        </button>
+                    <!-- 可收疊的按鈕篩選內容區域 (預設隱藏 hidden) -->
+                    <div id="filterAccordionContent" class="hidden border-t border-morandi-light/50 p-3 pt-2.5 space-y-2.5 bg-morandi-bg/30">
+                        <!-- 1. 區域切換按鈕 -->
+                        <div class="space-y-1">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
+                                <button id="btnAreaAll" onclick="setFilterBtn('Area', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
+                                <button id="btnAreaDay" onclick="setFilterBtn('Area', '日校')" class="flex-1 py-1 rounded-lg transition-all text-center">日校</button>
+                                <button id="btnAreaDorm" onclick="setFilterBtn('Area', '宿舍')" class="flex-1 py-1 rounded-lg transition-all text-center">宿舍</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. 樓層切換按鈕 -->
+                        <div class="space-y-1">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
+                                <button id="btnFloorAll" onclick="setFilterBtn('Floor', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
+                                <button id="btnFloorGF" onclick="setFilterBtn('Floor', 'G/F')" class="flex-1 py-1 rounded-lg transition-all text-center">G/F</button>
+                                <button id="btnFloor1F" onclick="setFilterBtn('Floor', '1/F')" class="flex-1 py-1 rounded-lg transition-all text-center">1/F</button>
+                            </div>
+                        </div>
+
+                        <!-- 3. 扲掣位置切換按鈕 -->
+                        <div class="space-y-1">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
+                                <button id="btnFlushAll" onclick="setFilterBtn('Flush', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
+                                <button id="btnFlushFR" onclick="setFilterBtn('Flush', '前右側')" class="flex-1 py-1 rounded-lg transition-all text-center">前右側</button>
+                                <button id="btnFlushLeft" onclick="setFilterBtn('Flush', '左側')" class="flex-1 py-1 rounded-lg transition-all text-center">左側</button>
+                                <button id="btnFlushTop" onclick="setFilterBtn('Flush', '頂按壓')" class="flex-1 py-1 rounded-lg transition-all text-center">頂按壓</button>
+                            </div>
+                        </div>
+
+                        <!-- 4. 水源切換按鈕 -->
+                        <div class="space-y-1">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
+                                <button id="btnWaterAll" onclick="setFilterBtn('Water', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
+                                <button id="btnWaterFresh" onclick="setFilterBtn('Water', '淡水')" class="flex-1 py-1 rounded-lg transition-all text-center">淡水</button>
+                                <button id="btnWaterSalt" onclick="setFilterBtn('Water', '鹹水')" class="flex-1 py-1 rounded-lg transition-all text-center">鹹水</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -312,7 +324,7 @@
 
             <form id="editForm" onsubmit="saveEdit(event)" class="space-y-3">
                 <input type="hidden" id="editRowIndex">
-                <div id="editFormFields" class="space-y-2.5"></div>
+                <div id="editFormFields" class="grid grid-cols-2 gap-2.5"></div>
 
                 <!-- 底部按鈕區：左確認、右刪除 -->
                 <div class="pt-3 flex gap-2">
@@ -364,6 +376,29 @@
             { "區域": "日校", "樓層": "1/F", "扲掣位置1": "頂按壓", "扲掣位置2": "左側", "水源1": "鹹水", "水源2": "淡水" },
             { "區域": "宿舍", "樓層": "G/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "鹹水", "水源2": "" }
         ];
+
+        // 切換篩選展開/收疊
+        function toggleFilterAccordion() {
+            const content = document.getElementById('filterAccordionContent');
+            const arrow = document.getElementById('filterAccordionArrow');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // 更新篩選徽章狀態
+        function checkActiveFilterBadge() {
+            const badge = document.getElementById('activeFilterBadge');
+            if (selectedArea || selectedFloor || selectedFlush || selectedWater) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
 
         // 底部 Tab 切換
         function switchMainTab(tab) {
@@ -438,58 +473,58 @@
         }
 
         function updateCounts() {
-    let dayCount = 0;
-    let dormCount = 0;
+            let dayCount = 0;
+            let dormCount = 0;
 
-    let leftCount = 0;
-    let topCount = 0;
-    let frontRightCount = 0;
-    let saltCount = 0;
-    let freshCount = 0;
+            let leftCount = 0;
+            let topCount = 0;
+            let frontRightCount = 0;
+            let saltCount = 0;
+            let freshCount = 0;
 
-    const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
+            const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
 
-    rawData.forEach(item => {
-        // 1. 計算區域總數（日校 / 宿舍）
-        const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
-        const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
+            rawData.forEach(item => {
+                // 1. 計算區域總數（日校 / 宿舍）
+                const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
+                const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
 
-        if (areaVal.includes("日校")) {
-            dayCount += qty;
-        } else if (areaVal.includes("宿舍")) {
-            dormCount += qty;
+                if (areaVal.includes("日校")) {
+                    dayCount += qty;
+                } else if (areaVal.includes("宿舍")) {
+                    dormCount += qty;
+                }
+
+                // 2. 獨立統計 扲掣位置 1、2、3 每個儲存格出現的次數 (自動去除空白)
+                ['扲掣位置1', '扲掣位置2', '扲掣位置3', '扲掣位置 1', '扲掣位置 2', '扲掣位置 3'].forEach(fKey => {
+                    if (item[fKey] !== undefined) {
+                        const val = String(item[fKey]).trim();
+                        if (val === '左側') leftCount++;
+                        if (val === '頂按壓') topCount++;
+                        if (val === '前右側') frontRightCount++;
+                    }
+                });
+
+                // 3. 獨立統計 水源 1、2、3 每個儲存格出現的次數 (自動去除空白)
+                ['水源1', '水源2', '水源3', '水源 1', '水源 2', '水源 3'].forEach(wKey => {
+                    if (item[wKey] !== undefined) {
+                        const val = String(item[wKey]).trim();
+                        if (val === '鹹水') saltCount++;
+                        if (val === '淡水') freshCount++;
+                    }
+                });
+            });
+            
+            // 更新 DOM 顯示
+            document.getElementById('daySchoolCount').innerText = dayCount;
+            document.getElementById('dormCount').innerText = dormCount;
+
+            document.getElementById('countFlushLeft').innerText = leftCount;
+            document.getElementById('countFlushTop').innerText = topCount;
+            document.getElementById('countFlushFrontRight').innerText = frontRightCount;
+            document.getElementById('countWaterSalt').innerText = saltCount;
+            document.getElementById('countWaterFresh').innerText = freshCount;
         }
-
-        // 2. 獨立統計 扲掣位置 1、2、3 每個儲存格出現的次數 (自動去除空白)
-        ['扲掣位置1', '扲掣位置2', '扲掣位置3', '扲掣位置 1', '扲掣位置 2', '扲掣位置 3'].forEach(fKey => {
-            if (item[fKey] !== undefined) {
-                const val = String(item[fKey]).trim();
-                if (val === '左側') leftCount++;
-                if (val === '頂按壓') topCount++;
-                if (val === '前右側') frontRightCount++;
-            }
-        });
-
-        // 3. 獨立統計 水源 1、2、3 每個儲存格出現的次數 (自動去除空白)
-        ['水源1', '水源2', '水源3', '水源 1', '水源 2', '水源 3'].forEach(wKey => {
-            if (item[wKey] !== undefined) {
-                const val = String(item[wKey]).trim();
-                if (val === '鹹水') saltCount++;
-                if (val === '淡水') freshCount++;
-            }
-        });
-    });
-    
-    // 更新 DOM 顯示
-    document.getElementById('daySchoolCount').innerText = dayCount;
-    document.getElementById('dormCount').innerText = dormCount;
-
-    document.getElementById('countFlushLeft').innerText = leftCount;
-    document.getElementById('countFlushTop').innerText = topCount;
-    document.getElementById('countFlushFrontRight').innerText = frontRightCount;
-    document.getElementById('countWaterSalt').innerText = saltCount;
-    document.getElementById('countWaterFresh').innerText = freshCount;
-}
 
         // 按鈕式篩選切換邏輯
         function setFilterBtn(type, val) {
@@ -519,6 +554,7 @@
                 document.getElementById('btnWaterSalt').className = val === '鹹水' ? activeClass : inactiveClass;
             }
 
+            checkActiveFilterBadge();
             renderList();
         }
 
@@ -552,7 +588,7 @@
             const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
 
             const keyArea = headers.find(h => h.includes("區域")) || "區域";
-            // 修正：同時支援「樓層」與「層樓」
+            // 同時支援「樓層」與「層樓」
             const keyFloor = headers.find(h => h.includes("樓層") || h.includes("層樓")) || "層樓";
 
             // 根據篩選條件設定標籤背景顏色
@@ -575,17 +611,17 @@
                 if (selectedFloor && String(row[keyFloor] || '').trim() !== selectedFloor) return false;
 
                 if (selectedFlush) {
-                    const f1 = row["扲掣位置1"] || "";
-                    const f2 = row["扲掣位置2"] || "";
-                    const f3 = row["扲掣位置3"] || "";
-                    if (f1 !== selectedFlush && f2 !== selectedFlush && f3 !== selectedFlush) return false;
+                    const f1 = row["扲掣位置1"] || row["扲掣位置 1"] || "";
+                    const f2 = row["扲掣位置2"] || row["扲掣位置 2"] || "";
+                    const f3 = row["扲掣位置3"] || row["扲掣位置 3"] || "";
+                    if (f1.trim() !== selectedFlush && f2.trim() !== selectedFlush && f3.trim() !== selectedFlush) return false;
                 }
 
                 if (selectedWater) {
-                    const w1 = row["水源1"] || "";
-                    const w2 = row["水源2"] || "";
-                    const w3 = row["水源3"] || "";
-                    if (w1 !== selectedWater && w2 !== selectedWater && w3 !== selectedWater) return false;
+                    const w1 = row["水源1"] || row["水源 1"] || "";
+                    const w2 = row["水源2"] || row["水源 2"] || "";
+                    const w3 = row["水源3"] || row["水源 3"] || "";
+                    if (w1.trim() !== selectedWater && w2.trim() !== selectedWater && w3.trim() !== selectedWater) return false;
                 }
 
                 if (searchVal) {
@@ -622,12 +658,12 @@
                 let displayRoomCombined = [roomNoVal, roomNameVal].filter(Boolean).join(" ");
                 let displayArea = row[keyArea] || "";
 
-                let flush1 = row["扲掣位置1"] || "";
-                let flush2 = row["扲掣位置2"] || "";
-                let flush3 = row["扲掣位置3"] || "";
-                let water1 = row["水源1"] || "";
-                let water2 = row["水源2"] || "";
-                let water3 = row["水源3"] || "";
+                let flush1 = row["扲掣位置1"] || row["扲掣位置 1"] || "";
+                let flush2 = row["扲掣位置2"] || row["扲掣位置 2"] || "";
+                let flush3 = row["扲掣位置3"] || row["扲掣位置 3"] || "";
+                let water1 = row["水源1"] || row["水源 1"] || "";
+                let water2 = row["水源2"] || row["水源 2"] || "";
+                let water3 = row["水源3"] || row["水源 3"] || "";
 
                 let displayQty = row[keyQty] || "1";
 
@@ -650,12 +686,9 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-2 pl-3 border-l border-morandi-light/60 no-print">
-                        <div class="flex flex-col items-end">
-                            <span class="text-[9px] text-morandi-slate font-medium">數量</span>
-                            <span class="text-xs font-bold text-morandi-dark px-1.5 py-0.5 rounded-lg">${displayQty}</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-[10px] text-morandi-slate/40 ml-1"></i>
+                    <!-- 右側僅保留數量數字 -->
+                    <div class="flex items-center pl-2 no-print">
+                        <span class="text-xs font-bold text-morandi-dark bg-morandi-light/50 px-2 py-0.5 rounded-lg">${displayQty}</span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -669,9 +702,11 @@
             document.getElementById('editRowIndex').value = index;
             const fieldsContainer = document.getElementById('editFormFields');
             fieldsContainer.innerHTML = '';
+            fieldsContainer.className = "grid grid-cols-2 gap-2.5";
 
             const optionPresets = {
                 "樓層": ["G/F", "1/F"],
+                "層樓": ["G/F", "1/F"],
                 "區域": ["日校", "宿舍"],
                 "數量": ["1", "2", "3", "4", "5"],
                 "扲掣位置1": ["", "左側", "頂按壓", "前右側"],
@@ -686,6 +721,8 @@
                 if (h === "馬桶類型" || h === "狀態" || h === "扲掣位置" || h === "水源") return;
 
                 const wrapper = document.createElement('div');
+                wrapper.className = h.includes("備註") ? "col-span-2" : "col-span-1";
+
                 const currentValue = row[h] !== undefined ? row[h] : '';
 
                 if (optionPresets[h]) {
