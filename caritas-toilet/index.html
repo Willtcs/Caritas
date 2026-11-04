@@ -438,52 +438,74 @@
         }
 
         function updateCounts() {
-            let dayCount = 0;
-            let dormCount = 0;
+    let dayCount = 0;
+    let dormCount = 0;
 
-            let leftCount = 0;
-            let topCount = 0;
-            let frontRightCount = 0;
-            let saltCount = 0;
-            let freshCount = 0;
+    let leftCount = 0;
+    let topCount = 0;
+    let frontRightCount = 0;
+    let saltCount = 0;
+    let freshCount = 0;
 
-            const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
+    rawData.forEach(item => {
+        // 尋找數量欄位（若沒有或非數字預設為 1）
+        let qty = 1;
+        Object.keys(item).forEach(k => {
+            if (k.trim().includes("數量") || k.trim().includes("數")) {
+                const parsed = parseInt(item[k], 10);
+                if (!isNaN(parsed) && parsed > 0) qty = parsed;
+            }
+        });
 
-            rawData.forEach(item => {
-                const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
-                const qty = parseInt(item[keyQty] || item["數量"], 10) || 1;
-
-                if (areaVal.includes("日校")) {
-                    dayCount += qty;
-                } else if (areaVal.includes("宿舍")) {
-                    dormCount += qty;
-                }
-
-                // 計算扲掣位置 1~3 相加
-                ['扲掣位置1', '扲掣位置2', '扲掣位置3'].forEach(fKey => {
-                    const val = item[fKey];
-                    if (val === '左側') leftCount += qty;
-                    if (val === '頂按壓') topCount += qty;
-                    if (val === '前右側') frontRightCount += qty;
-                });
-
-                // 計算水源 1~3 相加
-                ['水源1', '水源2', '水源3'].forEach(wKey => {
-                    const val = item[wKey];
-                    if (val === '鹹水') saltCount += qty;
-                    if (val === '淡水') freshCount += qty;
-                });
-            });
-
-            document.getElementById('daySchoolCount').innerText = dayCount;
-            document.getElementById('dormCount').innerText = dormCount;
-
-            document.getElementById('countFlushLeft').innerText = leftCount;
-            document.getElementById('countFlushTop').innerText = topCount;
-            document.getElementById('countFlushFrontRight').innerText = frontRightCount;
-            document.getElementById('countWaterSalt').innerText = saltCount;
-            document.getElementById('countWaterFresh').innerText = freshCount;
+        // 1. 計算區域總數
+        const areaVal = String(item["區域"] || item["區域類別"] || Object.values(item).join(' '));
+        if (areaVal.includes("日校")) {
+            dayCount += qty;
+        } else if (areaVal.includes("宿舍")) {
+            dormCount += qty;
         }
+
+        // 2. 提取這筆馬桶資料包含的所有扲掣與水源值（自動 去除重複 與 去除空白）
+        let flushTypes = new Set();
+        let waterTypes = new Set();
+
+        Object.keys(item).forEach(key => {
+            const cleanKey = key.trim();
+            const val = String(item[key] || '').trim();
+
+            if (!val) return;
+
+            if (cleanKey.includes("扲掣") || cleanKey.includes("位置")) {
+                flushTypes.add(val);
+            }
+            if (cleanKey.includes("水源")) {
+                waterTypes.add(val);
+            }
+        });
+
+        // 3. 依據該筆資料的馬桶數量 qty 進行統計
+        flushTypes.forEach(val => {
+            if (val === '左側') leftCount += qty;
+            if (val === '頂按壓') topCount += qty;
+            if (val === '前右側') frontRightCount += qty;
+        });
+
+        waterTypes.forEach(val => {
+            if (val === '鹹水') saltCount += qty;
+            if (val === '淡水') freshCount += qty;
+        });
+    });
+    
+    // 更新 DOM 顯示
+    document.getElementById('daySchoolCount').innerText = dayCount;
+    document.getElementById('dormCount').innerText = dormCount;
+
+    document.getElementById('countFlushLeft').innerText = leftCount;
+    document.getElementById('countFlushTop').innerText = topCount;
+    document.getElementById('countFlushFrontRight').innerText = frontRightCount;
+    document.getElementById('countWaterSalt').innerText = saltCount;
+    document.getElementById('countWaterFresh').innerText = freshCount;
+}
 
         // 按鈕式篩選切換邏輯
         function setFilterBtn(type, val) {
