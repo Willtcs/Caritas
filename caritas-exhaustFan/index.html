@@ -6,13 +6,6 @@
     <title>抽氣扇管理系統</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-        <!-- 適用於 iOS 主畫面 -->
-    <link rel="apple-touch-icon" sizes="180x180" href="Exhaust-fan_icon.png">
-
-    <!-- 適用於 一般瀏覽器 Favicon (可一併設定) -->
-    <link rel="icon" type="image/png" sizes="32x32" href="Exhaust-fan_icon.png">
-
     <script>
         tailwind.config = {
             theme: {
@@ -96,6 +89,11 @@
                         <p class="text-[10px] text-morandi-100/80 font-light tracking-tight">Exhaust Fan Management System</p>
                     </div>
                 </div>
+
+                <!-- 頂部右側同步雲端按鈕（只顯示圖示） -->
+                <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
+                    <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                </button>
             </div>
         </header>
 
@@ -386,6 +384,14 @@
         let fanList = [];
         const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v10';
 
+        // Google Sheets ID
+        const SPREADSHEET_ID = '1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs';
+        // 正確的 CSV 下載 API 網址
+        const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
+
+        // 請在此填寫您發布的 Apps Script Web App 網址以啟動上傳同步
+        const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
+
         // Active Filter States
         let activeFilters = {
             floor: '',
@@ -399,26 +405,137 @@
             initEventListeners();
             calculateStatistics();
             renderCardsList();
+
+            // 開啟 App 時自動由 Google Sheets 下載最新資料
+            fetchFromCloud(true);
         };
+
+        // 自動由 Google Sheets 下載資料至手機
+        async function fetchFromCloud(silent = false) {
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
+
+            try {
+                // 優先嘗試由 Google Apps Script 直接獲取 JSON 或經由 CSV 下載
+                let parsedData = null;
+
+                if (APPS_SCRIPT_WEB_APP_URL) {
+                    try {
+                        const appScriptRes = await fetch(APPS_SCRIPT_WEB_APP_URL, { method: 'GET' });
+                        if (appScriptRes.ok) {
+                            const resJson = await appScriptRes.json();
+                            if (Array.isArray(resJson) && resJson.length > 0) {
+                                parsedData = resJson;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('AppsScript GET Fallback to CSV API');
+                    }
+                }
+
+                if (!parsedData) {
+                    const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                    if (!response.ok) throw new Error('雲端連線失敗');
+                    const csvText = await response.text();
+                    parsedData = parseCSV(csvText);
+                }
+
+                if (parsedData && parsedData.length > 0) {
+                    fanList = parsedData;
+                    saveData();
+                    calculateStatistics();
+                    renderCardsList();
+                    if (!silent) showToast('已成功從 Google Sheets 下載最新資料', 'success');
+                } else if (!silent) {
+                    showToast('雲端無數據，已載入本地備份', 'info');
+                }
+            } catch (err) {
+                console.warn('自動同步雲端數據提示：', err.message);
+                if (!silent) showToast('雲端讀取失敗，已載入本地數據', 'info');
+            } finally {
+                if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+            }
+        }
+
+        // 手動點擊右側圖示按鈕上傳並完整寫入 Google Sheets (相容跨網域 CORS 規範)
+        async function syncToCloud() {
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.className = 'fa-solid fa-spinner fa-spin text-sm';
+
+            saveData();
+            calculateStatistics();
+
+            if (!APPS_SCRIPT_WEB_APP_URL || APPS_SCRIPT_WEB_APP_URL.trim() === '') {
+                setTimeout(() => {
+                    if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+                    showToast('已更新本地數據！請設定 Apps Script Web App URL 以寫入 Google Sheets', 'info');
+                }, 600);
+                return;
+            }
+
+            try {
+                // 使用 Form Data 格式發送，可完美防護跨網域（CORS）轉向阻擋問題
+                const payloadData = new URLSearchParams();
+                payloadData.append('data', JSON.stringify(fanList));
+
+                await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 使用 no-cors 模式繞過瀏覽器對 Apps Script 302 重定向的限制
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: payloadData.toString()
+                });
+
+                showToast('已發送同步請求至 Google Sheets！', 'success');
+            } catch (err) {
+                console.error('同步至 Google Sheets 失敗:', err);
+                showToast('同步至 Google Sheets 失敗，請確認網路連線', 'error');
+            } finally {
+                if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+            }
+        }
+
+        // CSV 解析邏輯處理
+        function parseCSV(csvText) {
+            const lines = csvText.split(/\r\n|\n/);
+            if (lines.length < 2) return null;
+
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const cols = lines[i].match(/(?:\"([^\"]*)\")|([^\",]+)/g);
+                if (!cols) continue;
+
+                const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+
+                result.push({
+                    floor: cleanCols[0] || 'G/F',
+                    roomNo: cleanCols[1] || '',
+                    area: cleanCols[2] || '日校',
+                    roomName: cleanCols[3] || '',
+                    brand: cleanCols[4] || '-',
+                    model: cleanCols[5] || '',
+                    size: cleanCols[6] || '-',
+                    hole: cleanCols[7] || '-',
+                    qty: parseInt(cleanCols[8], 10) || 0,
+                    window: cleanCols[9] || '玻璃窗',
+                    status: cleanCols[10] || '-',
+                    isDone: cleanCols[10] === '已更換'
+                });
+            }
+            return result;
+        }
 
         // Attach Event Listeners
         function initEventListeners() {
-            // Toggle Filter Panel
             document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterPanel);
-
-            // Search Input Filter
             document.getElementById('searchInput').addEventListener('input', renderCardsList);
             document.getElementById('btnResetFilters').addEventListener('click', resetFilters);
-
-            // Modal Form Controls
             document.getElementById('btnCloseModal').addEventListener('click', closeModal);
             document.getElementById('fanForm').addEventListener('submit', handleFormSubmit);
 
-            // Keyboard ESC key cancels/closes modal
             window.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
+                if (e.key === 'Escape') closeModal();
             });
         }
 
@@ -433,7 +550,6 @@
                     fanList = [];
                 }
             } else {
-                // Default Morandi Demo Dataset
                 fanList = [
                     { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '需更換1部', isDone: false },
                     { floor: '1/F', roomNo: '102', area: '日校', roomName: '1樓課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '已更換', isDone: true },
@@ -443,40 +559,32 @@
             }
         }
 
-        // Save data to LocalStorage
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(fanList));
         }
 
-        // Switch Main Tabs (Summary vs List)
         function switchTab(tabName) {
             const summaryView = document.getElementById('tabViewSummary');
             const listView = document.getElementById('tabViewList');
-
             const tabBtnSummary = document.getElementById('tabBtnSummary');
             const tabBtnList = document.getElementById('tabBtnList');
 
             if (tabName === 'summary') {
                 summaryView.classList.remove('hidden');
                 listView.classList.add('hidden');
-
                 tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
                 tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
             } else if (tabName === 'list') {
                 summaryView.classList.add('hidden');
                 listView.classList.remove('hidden');
-
                 tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
                 tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
-
                 renderCardsList();
             }
         }
 
-        // Handle Pill Button Filter Selection
         function setFilterBtn(type, val) {
             activeFilters[type] = val;
-
             const buttons = document.querySelectorAll(`.filter-btn-${type}`);
             buttons.forEach(btn => {
                 btn.classList.remove('bg-morandi-500', 'text-white');
@@ -492,26 +600,22 @@
             } else {
                 let targetId = `btn-${type}-${val.replace('/', '')}`;
                 if (type === 'area') targetId = val === '日校' ? 'btn-area-day' : 'btn-area-hostel';
-
                 const activeBtn = document.getElementById(targetId);
                 if (activeBtn) {
                     activeBtn.classList.remove('bg-white', 'text-morandi-700');
                     activeBtn.classList.add('bg-morandi-500', 'text-white');
                 }
             }
-
             renderCardsList();
         }
 
         function resetFilters() {
             activeFilters = { floor: '', area: '', brand: '' };
             document.getElementById('searchInput').value = '';
-
             ['floor', 'area', 'brand'].forEach(type => setFilterBtn(type, ''));
             renderCardsList();
         }
 
-        // Render Card List
         function renderCardsList() {
             const container = document.getElementById('cardsListContainer');
             const emptyState = document.getElementById('emptyState');
@@ -540,7 +644,6 @@
             container.innerHTML = buildCardsHtml(filtered);
         }
 
-        // Generate Card List HTML
         function buildCardsHtml(list) {
             return list.map(item => {
                 const index = fanList.indexOf(item);
@@ -550,7 +653,6 @@
                 return `
                     <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-morandi-100 p-3 hover:border-morandi-300 transition-all cursor-pointer active:scale-[0.99]">
                         <div class="flex justify-between items-center gap-2">
-                            <!-- 第一行：房號 房名 | 樓層 | 區域 -->
                             <div class="space-y-1.5 flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-bold text-xs text-morandi-900 truncate">
@@ -563,16 +665,12 @@
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
-
-                                <!-- 第二行：牌子 | 尺寸 -->
                                 <div class="flex items-center gap-3 text-[11px] text-morandi-600">
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
                                     ${isNeedReplace ? `<span class="text-[10px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">${escapeHtml(item.status)}</span>` : ''}
                                 </div>
                             </div>
-
-                            <!-- 最右側：純數字數量 -->
                             <div class="shrink-0 text-right pl-2 pr-1">
                                 <span class="text-lg font-extrabold text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
                             </div>
@@ -582,7 +680,6 @@
             }).join('');
         }
 
-        // Calculate System Metrics
         function calculateStatistics() {
             let schoolTotalQtySum = 0;
             let daySchoolTotal = 0;
@@ -621,7 +718,6 @@
             document.getElementById('hostelNeed').innerText = hostelNeed;
         }
 
-        // Toggle Filter Panel Display
         function toggleFilterPanel() {
             const panel = document.getElementById('filterCollapseArea');
             const icon = document.getElementById('toggleFilterIcon');
@@ -649,7 +745,6 @@
             select.value = target;
         }
 
-        // Open Modal Dialog for Editing
         function openModal(index) {
             if (index < 0 || index >= fanList.length) return;
 
@@ -728,7 +823,6 @@
             }
         }
 
-        // HTML Sanitizer
         function escapeHtml(str) {
             return String(str)
                 .replace(/&/g, "&amp;")
@@ -738,7 +832,6 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // Custom Toast Helper
         function showToast(msg, type = 'info') {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
