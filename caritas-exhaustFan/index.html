@@ -91,17 +91,17 @@
                 </div>
 
                 <!-- 頂部右側同步雲端按鈕（只顯示圖示） -->
-        <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
-            <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
-        </button>
-    </div>
-</header>
+                <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
+                    <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                </button>
+            </div>
+        </header>
 
-<!-- 隱藏式 Form & iframe 解決 Apps Script CORS POST 與 Failed to fetch 錯誤 -->
-<iframe name="hidden_sync_iframe" id="hidden_sync_iframe" style="display:none;" onload="onSyncIframeLoaded()"></iframe>
-<form id="hiddenSyncForm" method="POST" target="hidden_sync_iframe" style="display:none;">
-    <input type="hidden" name="data" id="hiddenSyncData">
-</form>
+        <!-- 隱藏式 Form & iframe 解決 Apps Script CORS POST 與 Failed to fetch 錯誤 -->
+        <iframe name="hidden_sync_iframe" id="hidden_sync_iframe" style="display:none;" onload="onSyncIframeLoaded()"></iframe>
+        <form id="hiddenSyncForm" method="POST" target="hidden_sync_iframe" style="display:none;">
+            <input type="hidden" name="data" id="hiddenSyncData">
+        </form>
 
         <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
 
@@ -120,50 +120,50 @@
                 </div>
             </section>
 
-            <!-- 3. 日校與宿舍數量區塊 (4個獨立卡片單欄垂直排列，移除左側邊框飾條) -->
-            <section class="grid grid-cols-1 gap-2">
-                <!-- 日校抽氣扇數量 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
-                            <i class="fa-solid fa-sun text-xs"></i>
+            <!-- 3. 日校與宿舍合併卡片區塊 -->
+            <section class="space-y-3">
+                <!-- 日校區塊（合併卡片） -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden divide-y divide-morandi-100">
+                    <div class="px-3 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
+                                <i class="fa-solid fa-sun text-xs"></i>
+                            </div>
+                            <span class="text-xs font-bold text-morandi-900">日校抽氣扇數量</span>
                         </div>
-                        <span class="text-xs font-bold text-morandi-900">日校抽氣扇數量</span>
+                        <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
                     </div>
-                    <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
+                    <div class="px-3 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                            </div>
+                            <span class="text-xs font-bold text-roseDust-600">日校需更換抽氣扇數量</span>
+                        </div>
+                        <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
+                    </div>
                 </div>
 
-                <!-- 日校需更換抽氣扇數量 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
-                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                <!-- 宿舍區塊（合併卡片） -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden divide-y divide-morandi-100">
+                    <div class="px-3 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
+                                <i class="fa-solid fa-bed text-xs"></i>
+                            </div>
+                            <span class="text-xs font-bold text-morandi-900">宿舍抽氣扇數量</span>
                         </div>
-                        <span class="text-xs font-bold text-roseDust-600">日校需更換抽氣扇數量</span>
+                        <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
                     </div>
-                    <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
-                </div>
-
-                <!-- 宿舍抽氣扇數量 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
-                            <i class="fa-solid fa-bed text-xs"></i>
+                    <div class="px-3 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                            </div>
+                            <span class="text-xs font-bold text-roseDust-600">宿舍需更換抽氣扇數量</span>
                         </div>
-                        <span class="text-xs font-bold text-morandi-900">宿舍抽氣扇數量</span>
+                        <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
                     </div>
-                    <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
-                </div>
-
-                <!-- 宿舍需更換抽氣扇數量 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 px-3 py-2 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
-                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                        </div>
-                        <span class="text-xs font-bold text-roseDust-600">宿舍需更換抽氣扇數量</span>
-                    </div>
-                    <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
                 </div>
             </section>
 
@@ -246,7 +246,7 @@
 
     </div>
 
-    <!-- 7. 修改抽氣扇記錄彈出視窗 (Modal Form: 欄位每行2個並排，底部滿版置中「確定更改」與「刪除」，無取消按鈕) -->
+    <!-- 7. 修改抽氣扇記錄彈出視窗 -->
     <div id="modalForm" class="fixed inset-0 bg-morandi-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all border border-morandi-100">
             <div class="px-4 py-3 border-b border-morandi-100 flex justify-between items-center bg-morandi-50/80 sticky top-0 bg-white z-10">
@@ -369,7 +369,7 @@
                     </div>
                 </div>
 
-                <!-- 底部按鈕：滿版延伸等寬置中並排「確定更改」與「刪除」（無取消按鈕） -->
+                <!-- 底部按鈕 -->
                 <div class="pt-3 flex justify-between items-center gap-3 border-t border-morandi-100 w-full">
                     <button type="submit" class="flex-1 py-2.5 bg-morandi-500 hover:bg-morandi-600 active:bg-morandi-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm text-center">
                         確定更改
@@ -401,7 +401,7 @@
         // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
 
-        // Active Filter States 初始化篩選狀態
+        // Active Filter States
         let activeFilters = {
             floor: '',
             area: '',
@@ -409,7 +409,6 @@
             status: ''
         };
 
-        // Iframe 回應載入完成處理 (解決 ReferenceError: onSyncIframeLoaded is not defined)
         function onSyncIframeLoaded() {
             if (!isSyncing) return;
             isSyncing = false;
@@ -426,16 +425,13 @@
             renderBrandFilterButtons();
             renderCardsList();
 
-            // 開啟 App 時自動由 Google Sheets 下載最新資料
             fetchFromCloud(true);
         };
 
-        // 動態根據 Google Sheets 所有牌子生成按鈕
         function renderBrandFilterButtons() {
             const container = document.getElementById('filterBrandContainer');
             if (!container) return;
 
-            // 提取所有不重複且有效的牌子
             const brandsSet = new Set();
             fanList.forEach(item => {
                 if (item.brand && item.brand.trim() !== '' && item.brand.trim() !== '-') {
@@ -458,19 +454,16 @@
             container.innerHTML = html;
         }
 
-        // 自動由 Google Sheets 下載資料至手機
         async function fetchFromCloud(silent = false) {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
             let success = false;
 
-            // 1. 優先嘗試合法的 Google CSV 輸出
             try {
                 const response = await fetch(GOOGLE_SHEETS_CSV_URL);
                 if (response.ok) {
                     const csvText = await response.text();
-                    // 驗證是否拿到有效的 CSV 而非 Google 登入 HTML 頁面
                     if (csvText && !csvText.includes('<!DOCTYPE html>') && !csvText.includes('<html')) {
                         const parsedData = parseCSV(csvText);
                         if (parsedData && parsedData.length > 0) {
@@ -483,7 +476,6 @@
                 console.warn('CSV 讀取受阻，準備切換至 Apps Script API 端點...', err);
             }
 
-            // 2. 若 CSV 讀取失敗，自動改用 Apps Script Web App JSON 端點下載
             if (!success && APPS_SCRIPT_WEB_APP_URL && APPS_SCRIPT_WEB_APP_URL.trim() !== '') {
                 try {
                     const response = await fetch(APPS_SCRIPT_WEB_APP_URL);
@@ -499,7 +491,6 @@
                 }
             }
 
-            // 3. 處理讀取結果
             if (success) {
                 saveData();
                 calculateStatistics();
@@ -513,7 +504,6 @@
             if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
         }
 
-        // 手動點擊右側圖示按鈕上傳並完整寫入 Google Sheets
         function syncToCloud() {
             if (isSyncing) return;
             const syncIcon = document.getElementById('syncIcon');
@@ -538,7 +528,6 @@
                 form.action = APPS_SCRIPT_WEB_APP_URL;
                 dataInput.value = JSON.stringify(fanList);
                 
-                // 提交隱藏表單至隱藏 iframe (無 CORS 阻攔)
                 form.submit();
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
@@ -548,7 +537,6 @@
             }
         }
 
-        // CSV 解析邏輯處理
         function parseCSV(csvText) {
             const lines = csvText.split(/\r\n|\n/);
             if (lines.length < 2) return null;
@@ -580,7 +568,6 @@
             return result;
         }
 
-        // Attach Event Listeners
         function initEventListeners() {
             document.getElementById('toggleFilterBtn').addEventListener('click', toggleFilterPanel);
             document.getElementById('searchInput').addEventListener('input', renderCardsList);
@@ -593,7 +580,6 @@
             });
         }
 
-        // Load persisted data or default initial set
         function loadData() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
@@ -654,7 +640,7 @@
             } else {
                 let targetId = `btn-${type}-${val.replace('/', '')}`;
                 if (type === 'area') targetId = val === '日校' ? 'btn-area-day' : 'btn-area-hostel';
-                if (type === 'status') targetId = 'btn-status-need'; // 處理更換狀態按鈕 Target ID
+                if (type === 'status') targetId = 'btn-status-need';
                 const activeBtn = document.getElementById(targetId);
                 if (activeBtn) {
                     activeBtn.classList.remove('bg-white', 'text-morandi-700');
@@ -664,7 +650,6 @@
             renderCardsList();
         }
 
-        // 重設篩選條件函式 (resetFilters)
         function resetFilters() {
             activeFilters = { floor: '', area: '', brand: '', status: '' };
             document.getElementById('searchInput').value = '';
@@ -682,10 +667,8 @@
                 const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
                 const matchArea = !activeFilters.area || item.area === activeFilters.area;
                 const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
-                // 新增：更換狀態比對（只要狀態包含「需更換」即可匹配）
                 const matchStatus = !activeFilters.status || (item.status && item.status.startsWith('需更換'));
                 
-                // 擴大搜尋涵蓋範圍：房號、房名、型號、牌子、樓層、區域、尺寸、狀態
                 const matchSearch = !searchKey || 
                     (item.roomNo && String(item.roomNo).toLowerCase().includes(searchKey)) ||
                     (item.roomName && String(item.roomName).toLowerCase().includes(searchKey)) ||
@@ -715,13 +698,12 @@
                 const isHostel = item.area === '宿舍';
                 const isNeedReplace = item.status && item.status.startsWith('需更換');
 
-                // 根據樓層判斷顯示不同背景顏色標籤
                 const floorVal = (item.floor || '-').trim();
-                let floorClass = "bg-morandi-100 text-morandi-800 border-morandi-200"; // 預設莫蘭迪灰藍
+                let floorClass = "bg-morandi-100 text-morandi-800 border-morandi-200";
                 if (floorVal === 'G/F' || floorVal === 'GF' || floorVal === 'G') {
-                    floorClass = "bg-[#FFDBBA]/30 text-amber-900 border-amber-200/80"; // G/F 
+                    floorClass = "bg-[#FFDBBA]/30 text-amber-900 border-amber-200/80";
                 } else if (floorVal === '1/F' || floorVal === '1F') {
-                    floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200"; // 1/F 
+                    floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200";
                 }
 
                 return `
@@ -732,7 +714,6 @@
                                     <span class="text-base font-semibold text-morandi-900 truncate">
                                         ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
                                     </span>
-                                    <!-- 樓層標籤：依據 G/F 與 1/F 分別套用獨立配色 -->
                                     <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
                                     </span>
