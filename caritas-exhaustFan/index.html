@@ -212,6 +212,13 @@
                     <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer">
                         <!-- 動態生成按鈕區塊 -->
                     </div>
+
+                    <!-- 4. 更換狀態膠囊按鈕組 -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
+                        <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部狀態</button>
+                        <button type="button" onclick="setFilterBtn('status', '需更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">需更換</button>
+                    </div>
+
                 </div>
             </section>
 
@@ -394,11 +401,12 @@
         // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
 
-        // Active Filter States
+        // Active Filter States 初始化篩選狀態
         let activeFilters = {
             floor: '',
             area: '',
-            brand: ''
+            brand: '',
+            status: ''
         };
 
         // Iframe 回應載入完成處理 (解決 ReferenceError: onSyncIframeLoaded is not defined)
@@ -646,6 +654,7 @@
             } else {
                 let targetId = `btn-${type}-${val.replace('/', '')}`;
                 if (type === 'area') targetId = val === '日校' ? 'btn-area-day' : 'btn-area-hostel';
+                if (type === 'status') targetId = 'btn-status-need'; // 處理更換狀態按鈕 Target ID
                 const activeBtn = document.getElementById(targetId);
                 if (activeBtn) {
                     activeBtn.classList.remove('bg-white', 'text-morandi-700');
@@ -655,10 +664,11 @@
             renderCardsList();
         }
 
+        // 重設篩選條件函式 (resetFilters)
         function resetFilters() {
-            activeFilters = { floor: '', area: '', brand: '' };
+            activeFilters = { floor: '', area: '', brand: '', status: '' };
             document.getElementById('searchInput').value = '';
-            ['floor', 'area', 'brand'].forEach(type => setFilterBtn(type, ''));
+            ['floor', 'area', 'brand', 'status'].forEach(type => setFilterBtn(type, ''));
             renderCardsList();
         }
 
@@ -672,6 +682,8 @@
                 const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
                 const matchArea = !activeFilters.area || item.area === activeFilters.area;
                 const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
+                // 新增：更換狀態比對（只要狀態包含「需更換」即可匹配）
+                const matchStatus = !activeFilters.status || (item.status && item.status.startsWith('需更換'));
                 
                 // 擴大搜尋涵蓋範圍：房號、房名、型號、牌子、樓層、區域、尺寸、狀態
                 const matchSearch = !searchKey || 
@@ -684,7 +696,7 @@
                     (item.size && String(item.size).toLowerCase().includes(searchKey)) ||
                     (item.status && String(item.status).toLowerCase().includes(searchKey));
 
-                return matchFloor && matchArea && matchBrand && matchSearch;
+                return matchFloor && matchArea && matchBrand && matchStatus && matchSearch;
             });
 
             if (filtered.length === 0) {
