@@ -290,18 +290,19 @@
             </div>
         </main>
 
-        <!-- 底部浮動藥丸式 Tab Bar -->
+        <!-- 底部浮動藥丸式 Tab Bar (預設高亮左側資料 TAB) -->
         <nav class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 no-print">
             <div class="bg-morandi-dark/90 tab-blur border border-white/20 rounded-full p-1.5 shadow-pill flex items-center space-x-1">
-                <!-- Tab 1: 總覽 (左側 Icon) -->
-                <button id="navTabOverview" onclick="switchMainTab('overview')" title="總覽" class="w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90">
+                <!-- Tab 1: 資料 (左側 Icon) -->
+                <button id="navTabData" onclick="switchMainTab('data')" title="資料" class="w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90">
+                    <i class="fa-solid fa-list-check text-base"></i>
+                </button>
+
+                <!-- Tab 2: 總覽 (右側 Icon) -->
+                <button id="navTabOverview" onclick="switchMainTab('overview')" title="總覽" class="w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90">
                     <i class="fa-solid fa-gauge-high text-base"></i>
                 </button>
                 
-                <!-- Tab 2: 資料 (右側 Icon) -->
-                <button id="navTabData" onclick="switchMainTab('data')" title="資料" class="w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90">
-                    <i class="fa-solid fa-list-check text-base"></i>
-                </button>
             </div>
         </nav>
 
@@ -361,7 +362,7 @@
 
         let rawData = [];
         let headers = [];
-        let currentTab = 'overview';
+        let currentTab = 'data'; // 預設顯示資料清單 Tab
         let lastUpdated = 0;
         let hasUnsavedLocalChanges = false;
 
@@ -408,16 +409,20 @@
             const navOverview = document.getElementById('navTabOverview');
             const navData = document.getElementById('navTabData');
 
-            if (tab === 'overview') {
+            if (tab === 'data') {
+                // 顯示資料，隱藏總覽
+                overviewSec.classList.add('hidden'); 
+                dataSec.classList.remove('hidden');
+                // 設定左側「資料」按鈕為高亮 (bg-white/20, text-white)
+                navData.className = "w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90";
+                navOverview.className = "w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90";
+            } else {
+                // 顯示總覽，隱藏資料
                 overviewSec.classList.remove('hidden');
                 dataSec.classList.add('hidden');
+                // 設定右側「總覽」按鈕為高亮 (bg-white/20, text-white)
                 navOverview.className = "w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90";
                 navData.className = "w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90";
-            } else {
-                overviewSec.classList.add('hidden');
-                dataSec.classList.remove('hidden');
-                navOverview.className = "w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90";
-                navData.className = "w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90";
             }
         }
 
@@ -444,6 +449,9 @@
             filterOutExcludedHeaders();
             renderList();
             updateCounts();
+
+            // 強制進入「資料」頁籤
+            switchMainTab('data');
 
             // 強制下載雲端資料 (isAuto = true)
             smartSync(true);
