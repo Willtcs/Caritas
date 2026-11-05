@@ -389,7 +389,7 @@
 
         // Google Sheets ID
         const SPREADSHEET_ID = '1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs';
-        const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
+        const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs/gviz/tq?tqx=out:csv`;
 
         // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
@@ -496,7 +496,7 @@
                 form.action = APPS_SCRIPT_WEB_APP_URL;
                 dataInput.value = JSON.stringify(fanList);
                 
-                // 提交隱藏表單至隱藏 iframe
+                // 提交隱藏表單至隱藏 iframe，完美避開 CORS 的跨域封鎖問題
                 form.submit();
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
