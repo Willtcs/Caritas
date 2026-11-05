@@ -692,25 +692,25 @@
                         <div class="flex justify-between items-center gap-2">
                             <div class="space-y-1.5 flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-lg text-morandi-900 truncate">
+                                    <span class="text-base font-semibold text-morandi-900 truncate">
                                         ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
                                     </span>
                                     <!-- 樓層標籤：依據 G/F 與 1/F 分別套用獨立配色 -->
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
+                                    <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
                                     </span>
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-3 text-[11px] text-morandi-600">
+                                <div class="flex items-center gap-3 text-[10px] text-morandi-600">
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
                                     ${isNeedReplace ? `<span class="text-[10px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">${escapeHtml(item.status)}</span>` : ''}
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
-                                <span class="text-sm text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
+                                <span class="text-base font-bold text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
                             </div>
                         </div>
                     </div>
