@@ -401,6 +401,15 @@
             brand: ''
         };
 
+        // Iframe 回應載入完成處理 (解決 ReferenceError: onSyncIframeLoaded is not defined)
+        function onSyncIframeLoaded() {
+            if (!isSyncing) return;
+            isSyncing = false;
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+            showToast('資料已成功同步更新至 Google Sheets！', 'success');
+        }
+
         // System Startup
         window.onload = function() {
             loadData();
@@ -446,29 +455,54 @@
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
+            let success = false;
+
+            // 1. 優先嘗試合法的 Google CSV 輸出
             try {
                 const response = await fetch(GOOGLE_SHEETS_CSV_URL);
-                if (!response.ok) throw new Error('雲端連線失敗');
-                
-                const csvText = await response.text();
-                const parsedData = parseCSV(csvText);
-
-                if (parsedData && parsedData.length > 0) {
-                    fanList = parsedData;
-                    saveData();
-                    calculateStatistics();
-                    renderBrandFilterButtons();
-                    renderCardsList();
-                    if (!silent) showToast('已成功從 Google Sheets 下載最新資料', 'success');
-                } else if (!silent) {
-                    showToast('雲端無數據，已載入本地備份', 'info');
+                if (response.ok) {
+                    const csvText = await response.text();
+                    // 驗證是否拿到有效的 CSV 而非 Google 登入 HTML 頁面
+                    if (csvText && !csvText.includes('<!DOCTYPE html>') && !csvText.includes('<html')) {
+                        const parsedData = parseCSV(csvText);
+                        if (parsedData && parsedData.length > 0) {
+                            fanList = parsedData;
+                            success = true;
+                        }
+                    }
                 }
             } catch (err) {
-                console.warn('自動同步雲端數據提示：', err.message);
-                if (!silent) showToast('雲端讀取失敗，已載入本地數據', 'info');
-            } finally {
-                if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+                console.warn('CSV 讀取受阻，準備切換至 Apps Script API 端點...', err);
             }
+
+            // 2. 若 CSV 讀取失敗，自動改用 Apps Script Web App JSON 端點下載
+            if (!success && APPS_SCRIPT_WEB_APP_URL && APPS_SCRIPT_WEB_APP_URL.trim() !== '') {
+                try {
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL);
+                    if (response.ok) {
+                        const jsonData = await response.json();
+                        if (Array.isArray(jsonData) && jsonData.length > 0) {
+                            fanList = jsonData;
+                            success = true;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Apps Script JSON API 讀取失敗：', err);
+                }
+            }
+
+            // 3. 處理讀取結果
+            if (success) {
+                saveData();
+                calculateStatistics();
+                renderBrandFilterButtons();
+                renderCardsList();
+                if (!silent) showToast('已成功從 Google Sheets 下載最新資料', 'success');
+            } else if (!silent) {
+                showToast('雲端讀取失敗，已載入本地備份資料', 'info');
+            }
+
+            if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
         }
 
         // 手動點擊右側圖示按鈕上傳並完整寫入 Google Sheets
@@ -496,7 +530,7 @@
                 form.action = APPS_SCRIPT_WEB_APP_URL;
                 dataInput.value = JSON.stringify(fanList);
                 
-                // 提交隱藏表單至隱藏 iframe，完美避開 CORS 的跨域封鎖問題
+                // 提交隱藏表單至隱藏 iframe (無 CORS 阻攔)
                 form.submit();
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
@@ -504,15 +538,6 @@
                 isSyncing = false;
                 if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
             }
-        }
-
-        // Iframe 回應載入完成處理 (修正 ReferenceError)
-        function onSyncIframeLoaded() {
-            if (!isSyncing) return;
-            isSyncing = false;
-            const syncIcon = document.getElementById('syncIcon');
-            if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
-            showToast('資料已成功同步更新至 Google Sheets！', 'success');
         }
 
         // CSV 解析邏輯處理
@@ -699,7 +724,7 @@
                                     <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
                                     </span>
-                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}  ">
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
