@@ -692,7 +692,7 @@
                         <div class="flex justify-between items-center gap-2">
                             <div class="space-y-1.5 flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-bold text-xs text-morandi-900 truncate">
+                                    <span class="text-sm text-morandi-900 truncate">
                                         ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
                                     </span>
                                     <!-- 樓層標籤：依據 G/F 與 1/F 分別套用獨立配色 -->
@@ -710,7 +710,7 @@
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
-                                <span class="text-lg font-extrabold text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
+                                <span class="text-sm text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
                             </div>
                         </div>
                     </div>
