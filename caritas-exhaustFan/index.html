@@ -105,7 +105,7 @@
 
         <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
 
-            <!-- 2. 全校抽氣扇總數 (精簡邊距與高度) -->
+            <!-- 2. 全校抽氣扇總數 -->
             <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-3.5 py-2 flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
                     <div class="p-1.5 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
@@ -120,49 +120,57 @@
                 </div>
             </section>
 
-            <!-- 3. 日校與宿舍合併卡片區塊 -->
+            <!-- 3. 日校與宿舍 3 行卡片區塊 -->
             <section class="space-y-3">
-                <!-- 日校區塊（合併卡片） -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden divide-y divide-morandi-100">
-                    <div class="px-3 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
-                                <i class="fa-solid fa-sun text-xs"></i>
-                            </div>
-                            <span class="text-xs font-bold text-morandi-900">日校抽氣扇數量</span>
+                <!-- 日校區塊 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden px-3.5 py-2.5">
+                    <!-- 第 1 行：區塊標題（日校） -->
+                    <div class="flex items-center gap-2 pb-1.5">
+                        <div class="p-1 bg-morandi-50 text-morandi-500 rounded-md">
+                            <i class="fa-solid fa-sun text-xs"></i>
                         </div>
-                        <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
+                        <span class="text-xs font-bold text-morandi-800">日校</span>
                     </div>
-                    <div class="px-3 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
-                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                            </div>
-                            <span class="text-xs font-bold text-roseDust-600">日校需更換抽氣扇數量</span>
+
+                    <!-- 第 2 行：抽氣扇數量（與標題間無分隔線） -->
+                    <div class="flex items-center justify-between py-1.5">
+                        <span class="text-xs font-medium text-morandi-700">抽氣扇數量</span>
+                        <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-1">0</div>
+                    </div>
+
+                    <!-- 第 3 行：需更換數量（與上一行有橫向分隔線） -->
+                    <div class="flex items-center justify-between pt-2 mt-0.5 border-t border-morandi-100">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-[11px] text-roseDust-500"></i>
+                            <span class="text-xs font-medium text-roseDust-600">需更換數量</span>
                         </div>
-                        <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
+                        <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-1">0</div>
                     </div>
                 </div>
 
-                <!-- 宿舍區塊（合併卡片） -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden divide-y divide-morandi-100">
-                    <div class="px-3 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
-                                <i class="fa-solid fa-bed text-xs"></i>
-                            </div>
-                            <span class="text-xs font-bold text-morandi-900">宿舍抽氣扇數量</span>
+                <!-- 宿舍區塊 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden px-3.5 py-2.5">
+                    <!-- 第 1 行：區塊標題（宿舍） -->
+                    <div class="flex items-center gap-2 pb-1.5">
+                        <div class="p-1 bg-lavender-50 text-lavender-500 rounded-md">
+                            <i class="fa-solid fa-bed text-xs"></i>
                         </div>
-                        <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-2">0</div>
+                        <span class="text-xs font-bold text-morandi-800">宿舍</span>
                     </div>
-                    <div class="px-3 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
-                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                            </div>
-                            <span class="text-xs font-bold text-roseDust-600">宿舍需更換抽氣扇數量</span>
+
+                    <!-- 第 2 行：抽氣扇數量（與標題間無分隔線） -->
+                    <div class="flex items-center justify-between py-1.5">
+                        <span class="text-xs font-medium text-morandi-700">抽氣扇數量</span>
+                        <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-1">0</div>
+                    </div>
+
+                    <!-- 第 3 行：需更換數量（與上一行有橫向分隔線） -->
+                    <div class="flex items-center justify-between pt-2 mt-0.5 border-t border-morandi-100">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-[11px] text-roseDust-500"></i>
+                            <span class="text-xs font-medium text-roseDust-600">需更換數量</span>
                         </div>
-                        <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-2">0</div>
+                        <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-1">0</div>
                     </div>
                 </div>
             </section>
@@ -192,7 +200,7 @@
                     </button>
                 </div>
 
-                <!-- 折疊篩選面板：獨立 3 行（樓層、區域、牌子）無標題按鈕組 -->
+                <!-- 折疊篩選面板 -->
                 <div id="filterCollapseArea" class="hidden border-t border-morandi-100 pt-2.5 space-y-2">
                     <!-- 1. 樓層膠囊按鈕組 -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterFloorContainer">
@@ -208,7 +216,7 @@
                         <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">宿舍</button>
                     </div>
 
-                    <!-- 3. 牌子膠囊按鈕組（允許長內容自動隔行 wrap 排列） -->
+                    <!-- 3. 牌子膠囊按鈕組 -->
                     <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer">
                         <!-- 動態生成按鈕區塊 -->
                     </div>
@@ -234,7 +242,7 @@
             </div>
         </main>
 
-        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar (2 個頁籤對調：左為資料清單，右為總覽) -->
+        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar -->
         <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 border border-morandi-200/80 shadow-lg flex items-center justify-around w-44">
             <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
                 <i class="fa-solid fa-list-check text-base"></i>
