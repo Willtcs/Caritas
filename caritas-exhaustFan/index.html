@@ -91,14 +91,19 @@
                 </div>
 
                 <!-- 頂部右側同步雲端按鈕（只顯示圖示） -->
-                <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
-                    <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
-                </button>
-            </div>
-        </header>
+        <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
+            <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
+        </button>
+    </div>
+</header>
 
-        <!-- 頁面 1：總覽與統計 (Tab 1) -->
-        <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3">
+<!-- 隱藏式 Form & iframe 解決 Apps Script CORS POST 與 Failed to fetch 錯誤 -->
+<iframe name="hidden_sync_iframe" id="hidden_sync_iframe" style="display:none;" onload="onSyncIframeLoaded()"></iframe>
+<form id="hiddenSyncForm" method="POST" target="hidden_sync_iframe" style="display:none;">
+    <input type="hidden" name="data" id="hiddenSyncData">
+</form>
+
+        <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
 
             <!-- 2. 全校抽氣扇總數 (精簡邊距與高度) -->
             <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-3.5 py-2 flex justify-between items-center">
@@ -165,7 +170,7 @@
         </main>
 
         <!-- 頁面 2：資料清單 (Tab 2) -->
-        <main id="tabViewList" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
+        <main id="tabViewList" class="flex-1 px-3.5 pt-3.5 space-y-3">
 
             <!-- 4. 頂部控制列：[搜尋輸入框] + [展開/折疊箭頭] + [重設按鈕] -->
             <section class="bg-white rounded-xl shadow-sm border border-morandi-100 p-2.5 space-y-2">
@@ -203,12 +208,9 @@
                         <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">宿舍</button>
                     </div>
 
-                    <!-- 3. 牌子膠囊按鈕組 -->
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterBrandContainer">
-                        <button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部牌子</button>
-                        <button type="button" onclick="setFilterBtn('brand', 'KDK')" id="btn-brand-KDK" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">KDK</button>
-                        <button type="button" onclick="setFilterBtn('brand', 'Panasonic')" id="btn-brand-Panasonic" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">Panasonic</button>
-                        <button type="button" onclick="setFilterBtn('brand', 'Cata')" id="btn-brand-Cata" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">Cata</button>
+                    <!-- 3. 牌子膠囊按鈕組（允許長內容自動隔行 wrap 排列） -->
+                    <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer">
+                        <!-- 動態生成按鈕區塊 -->
                     </div>
                 </div>
             </section>
@@ -225,13 +227,13 @@
             </div>
         </main>
 
-        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar (2 個頁籤：總覽、資料清單) -->
+        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar (2 個頁籤對調：左為資料清單，右為總覽) -->
         <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 border border-morandi-200/80 shadow-lg flex items-center justify-around w-44">
-            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
-                <i class="fa-solid fa-chart-simple text-base"></i>
-            </button>
-            <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900">
+            <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
                 <i class="fa-solid fa-list-check text-base"></i>
+            </button>
+            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900">
+                <i class="fa-solid fa-chart-simple text-base"></i>
             </button>
         </nav>
 
@@ -382,14 +384,14 @@
     <script>
         // Data State
         let fanList = [];
+        let isSyncing = false;
         const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v10';
 
         // Google Sheets ID
         const SPREADSHEET_ID = '1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs';
-        // 正確的 CSV 下載 API 網址
         const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
 
-        // 請在此填寫您發布的 Apps Script Web App 網址以啟動上傳同步
+        // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
 
         // Active Filter States
@@ -404,11 +406,40 @@
             loadData();
             initEventListeners();
             calculateStatistics();
+            renderBrandFilterButtons();
             renderCardsList();
 
             // 開啟 App 時自動由 Google Sheets 下載最新資料
             fetchFromCloud(true);
         };
+
+        // 動態根據 Google Sheets 所有牌子生成按鈕
+        function renderBrandFilterButtons() {
+            const container = document.getElementById('filterBrandContainer');
+            if (!container) return;
+
+            // 提取所有不重複且有效的牌子
+            const brandsSet = new Set();
+            fanList.forEach(item => {
+                if (item.brand && item.brand.trim() !== '' && item.brand.trim() !== '-') {
+                    brandsSet.add(item.brand.trim());
+                }
+            });
+
+            const brands = Array.from(brandsSet).sort();
+
+            let html = `<button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border border-morandi-200 ${activeFilters.brand === '' ? 'bg-morandi-500 text-white' : 'bg-white text-morandi-700'} font-medium shrink-0">全部牌子</button>`;
+
+            brands.forEach(brand => {
+                const safeId = `btn-brand-${brand.replace(/[^a-zA-Z0-9]/g, '')}`;
+                const isActive = activeFilters.brand === brand;
+                const activeClass = isActive ? 'bg-morandi-500 text-white' : 'bg-white text-morandi-700';
+                
+                html += `<button type="button" onclick="setFilterBtn('brand', '${escapeHtml(brand)}')" id="${safeId}" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 ${activeClass} font-medium shrink-0">${escapeHtml(brand)}</button>`;
+            });
+
+            container.innerHTML = html;
+        }
 
         // 自動由 Google Sheets 下載資料至手機
         async function fetchFromCloud(silent = false) {
@@ -416,34 +447,17 @@
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
             try {
-                // 優先嘗試由 Google Apps Script 直接獲取 JSON 或經由 CSV 下載
-                let parsedData = null;
-
-                if (APPS_SCRIPT_WEB_APP_URL) {
-                    try {
-                        const appScriptRes = await fetch(APPS_SCRIPT_WEB_APP_URL, { method: 'GET' });
-                        if (appScriptRes.ok) {
-                            const resJson = await appScriptRes.json();
-                            if (Array.isArray(resJson) && resJson.length > 0) {
-                                parsedData = resJson;
-                            }
-                        }
-                    } catch (e) {
-                        console.log('AppsScript GET Fallback to CSV API');
-                    }
-                }
-
-                if (!parsedData) {
-                    const response = await fetch(GOOGLE_SHEETS_CSV_URL);
-                    if (!response.ok) throw new Error('雲端連線失敗');
-                    const csvText = await response.text();
-                    parsedData = parseCSV(csvText);
-                }
+                const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                if (!response.ok) throw new Error('雲端連線失敗');
+                
+                const csvText = await response.text();
+                const parsedData = parseCSV(csvText);
 
                 if (parsedData && parsedData.length > 0) {
                     fanList = parsedData;
                     saveData();
                     calculateStatistics();
+                    renderBrandFilterButtons();
                     renderCardsList();
                     if (!silent) showToast('已成功從 Google Sheets 下載最新資料', 'success');
                 } else if (!silent) {
@@ -457,8 +471,9 @@
             }
         }
 
-        // 手動點擊右側圖示按鈕上傳並完整寫入 Google Sheets (相容跨網域 CORS 規範)
-        async function syncToCloud() {
+        // 手動點擊右側圖示按鈕上傳並完整寫入 Google Sheets
+        function syncToCloud() {
+            if (isSyncing) return;
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-spinner fa-spin text-sm';
 
@@ -468,30 +483,36 @@
             if (!APPS_SCRIPT_WEB_APP_URL || APPS_SCRIPT_WEB_APP_URL.trim() === '') {
                 setTimeout(() => {
                     if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
-                    showToast('已更新本地數據！請設定 Apps Script Web App URL 以寫入 Google Sheets', 'info');
+                    showToast('已更新本地數據！請設定 Web App URL 以寫入 Google Sheets', 'info');
                 }, 600);
                 return;
             }
 
             try {
-                // 使用 Form Data 格式發送，可完美防護跨網域（CORS）轉向阻擋問題
-                const payloadData = new URLSearchParams();
-                payloadData.append('data', JSON.stringify(fanList));
-
-                await fetch(APPS_SCRIPT_WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // 使用 no-cors 模式繞過瀏覽器對 Apps Script 302 重定向的限制
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: payloadData.toString()
-                });
-
-                showToast('已發送同步請求至 Google Sheets！', 'success');
+                isSyncing = true;
+                const form = document.getElementById('hiddenSyncForm');
+                const dataInput = document.getElementById('hiddenSyncData');
+                
+                form.action = APPS_SCRIPT_WEB_APP_URL;
+                dataInput.value = JSON.stringify(fanList);
+                
+                // 提交隱藏表單至隱藏 iframe
+                form.submit();
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
-                showToast('同步至 Google Sheets 失敗，請確認網路連線', 'error');
-            } finally {
+                showToast('同步失敗，請確認網路連線', 'error');
+                isSyncing = false;
                 if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
             }
+        }
+
+        // Iframe 回應載入完成處理 (修正 ReferenceError)
+        function onSyncIframeLoaded() {
+            if (!isSyncing) return;
+            isSyncing = false;
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+            showToast('資料已成功同步更新至 Google Sheets！', 'success');
         }
 
         // CSV 解析邏輯處理
@@ -619,17 +640,24 @@
         function renderCardsList() {
             const container = document.getElementById('cardsListContainer');
             const emptyState = document.getElementById('emptyState');
-            const searchKey = document.getElementById('searchInput').value.trim().toLowerCase();
+            const searchInput = document.getElementById('searchInput');
+            const searchKey = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
             let filtered = fanList.filter(item => {
                 const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
                 const matchArea = !activeFilters.area || item.area === activeFilters.area;
-                const matchBrand = !activeFilters.brand || item.brand === activeFilters.brand;
+                const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
+                
+                // 擴大搜尋涵蓋範圍：房號、房名、型號、牌子、樓層、區域、尺寸、狀態
                 const matchSearch = !searchKey || 
-                    (item.roomNo && item.roomNo.toLowerCase().includes(searchKey)) ||
-                    (item.roomName && item.roomName.toLowerCase().includes(searchKey)) ||
-                    (item.model && item.model.toLowerCase().includes(searchKey)) ||
-                    (item.brand && item.brand.toLowerCase().includes(searchKey));
+                    (item.roomNo && String(item.roomNo).toLowerCase().includes(searchKey)) ||
+                    (item.roomName && String(item.roomName).toLowerCase().includes(searchKey)) ||
+                    (item.model && String(item.model).toLowerCase().includes(searchKey)) ||
+                    (item.brand && String(item.brand).toLowerCase().includes(searchKey)) ||
+                    (item.floor && String(item.floor).toLowerCase().includes(searchKey)) ||
+                    (item.area && String(item.area).toLowerCase().includes(searchKey)) ||
+                    (item.size && String(item.size).toLowerCase().includes(searchKey)) ||
+                    (item.status && String(item.status).toLowerCase().includes(searchKey));
 
                 return matchFloor && matchArea && matchBrand && matchSearch;
             });
@@ -650,6 +678,15 @@
                 const isHostel = item.area === '宿舍';
                 const isNeedReplace = item.status && item.status.startsWith('需更換');
 
+                // 根據樓層判斷顯示不同背景顏色標籤
+                const floorVal = (item.floor || '-').trim();
+                let floorClass = "bg-morandi-100 text-morandi-800 border-morandi-200"; // 預設莫蘭迪灰藍
+                if (floorVal === 'G/F' || floorVal === 'GF' || floorVal === 'G') {
+                    floorClass = "bg-[#FFDBBA]/30 text-amber-900 border-amber-200/80"; // G/F 
+                } else if (floorVal === '1/F' || floorVal === '1F') {
+                    floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200"; // 1/F 
+                }
+
                 return `
                     <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-morandi-100 p-3 hover:border-morandi-300 transition-all cursor-pointer active:scale-[0.99]">
                         <div class="flex justify-between items-center gap-2">
@@ -658,10 +695,11 @@
                                     <span class="font-bold text-xs text-morandi-900 truncate">
                                         ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
                                     </span>
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-morandi-100/80 text-morandi-800 font-semibold shrink-0">
-                                        ${escapeHtml(item.floor || '-')}
+                                    <!-- 樓層標籤：依據 G/F 與 1/F 分別套用獨立配色 -->
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
+                                        ${escapeHtml(floorVal)}
                                     </span>
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-lavender-50 text-lavender-500 border border-lavender-100' : 'bg-morandi-50 text-morandi-600 border border-morandi-100'}">
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
@@ -807,6 +845,7 @@
 
             saveData();
             calculateStatistics();
+            renderBrandFilterButtons();
             renderCardsList();
             closeModal();
         }
@@ -817,6 +856,7 @@
                 fanList.splice(index, 1);
                 saveData();
                 calculateStatistics();
+                renderBrandFilterButtons();
                 renderCardsList();
                 closeModal();
                 showToast('已刪除記錄', 'info');
