@@ -90,7 +90,7 @@
                     </div>
                 </div>
 
-                <!-- 頂部右側同步雲端按鈕（只顯示圖示） -->
+                <!-- 頂部右側同步雲端按鈕 -->
                 <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
                     <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
                 </button>
@@ -103,74 +103,87 @@
             <input type="hidden" name="data" id="hiddenSyncData">
         </form>
 
-        <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-3 hidden">
+        <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-4 hidden">
 
-            <!-- 2. 全校抽氣扇總數 -->
-            <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-3.5 py-2 flex justify-between items-center">
+            <!-- 1. 全校抽氣扇總數 (所有文字統一為 text-base) -->
+            <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
-                    <div class="p-1.5 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
-                        <i class="fa-solid fa-building-columns text-morandi-100 text-sm"></i>
+                    <div class="p-2 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
+                        <i class="fa-solid fa-building-columns text-morandi-100 text-base"></i>
                     </div>
                     <div>
-                        <h2 class="text-xs font-bold text-white tracking-wide">全校抽氣扇總數</h2>
+                        <h2 class="text-base font-bold text-white tracking-wide">全校抽氣扇總數</h2>
                     </div>
                 </div>
-                <div id="schoolTotalQty" class="text-xl font-black tracking-tight text-amber-100 drop-shadow-sm">
-                    0 <span class="text-xs font-normal text-morandi-100">部</span>
+                <div id="schoolTotalQty" class="text-base font-black tracking-tight text-amber-100 drop-shadow-sm">
+                    0 <span class="text-base font-normal text-morandi-100">部</span>
                 </div>
             </section>
 
-            <!-- 3. 日校與宿舍 3 行卡片區塊 -->
-            <section class="space-y-3">
-                <!-- 日校區塊 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden px-3.5 py-2.5">
-                    <!-- 第 1 行：區塊標題（日校） -->
-                    <div class="flex items-center gap-2 pb-1.5">
-                        <div class="p-1 bg-morandi-50 text-morandi-500 rounded-md">
-                            <i class="fa-solid fa-sun text-xs"></i>
-                        </div>
-                        <span class="text-xs font-bold text-morandi-800">日校</span>
-                    </div>
-
-                    <!-- 第 2 行：抽氣扇數量（與標題間無分隔線） -->
-                    <div class="flex items-center justify-between py-1.5">
-                        <span class="text-xs font-medium text-morandi-700">抽氣扇數量</span>
-                        <div id="daySchoolTotal" class="text-sm font-bold text-morandi-900 pr-1">0</div>
-                    </div>
-
-                    <!-- 第 3 行：需更換數量（與上一行有橫向分隔線） -->
-                    <div class="flex items-center justify-between pt-2 mt-0.5 border-t border-morandi-100">
-                        <div class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-[11px] text-roseDust-500"></i>
-                            <span class="text-xs font-medium text-roseDust-600">需更換數量</span>
-                        </div>
-                        <div id="daySchoolNeed" class="text-sm font-bold text-roseDust-600 pr-1">0</div>
-                    </div>
+            <!-- 2. 第二區塊：抽氣扇數量 (標題在框外左上角，框內顯示日校與宿舍 2 行) -->
+            <section class="space-y-1.5">
+                <!-- 框外左上角標題 -->
+                <div class="px-1 text-base font-bold text-morandi-900 flex items-center gap-2">
+                    <i class="fa-solid fa-fan text-morandi-500 text-base"></i>
+                    <span>抽氣扇數量</span>
                 </div>
 
-                <!-- 宿舍區塊 -->
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 overflow-hidden px-3.5 py-2.5">
-                    <!-- 第 1 行：區塊標題（宿舍） -->
-                    <div class="flex items-center gap-2 pb-1.5">
-                        <div class="p-1 bg-lavender-50 text-lavender-500 rounded-md">
-                            <i class="fa-solid fa-bed text-xs"></i>
+                <!-- 框內內容：第一行日校，第二行宿舍 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
+                    <!-- 第一行：日校 -->
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
+                                <i class="fa-solid fa-sun text-base"></i>
+                            </div>
+                            <span class="text-base font-semibold text-morandi-800">日校</span>
                         </div>
-                        <span class="text-xs font-bold text-morandi-800">宿舍</span>
+                        <div id="daySchoolTotal" class="text-base font-bold text-morandi-900 pr-1">0</div>
                     </div>
 
-                    <!-- 第 2 行：抽氣扇數量（與標題間無分隔線） -->
-                    <div class="flex items-center justify-between py-1.5">
-                        <span class="text-xs font-medium text-morandi-700">抽氣扇數量</span>
-                        <div id="hostelTotal" class="text-sm font-bold text-morandi-900 pr-1">0</div>
+                    <!-- 第二行：宿舍 -->
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
+                                <i class="fa-solid fa-bed text-base"></i>
+                            </div>
+                            <span class="text-base font-semibold text-morandi-800">宿舍</span>
+                        </div>
+                        <div id="hostelTotal" class="text-base font-bold text-morandi-900 pr-1">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 第三區塊：需更換數量 (標題在框外左上角，框內顯示日校與宿舍 2 行) -->
+            <section class="space-y-1.5">
+                <!-- 框外左上角標題 -->
+                <div class="px-1 text-base font-bold text-roseDust-600 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-roseDust-500 text-base"></i>
+                    <span>需更換數量</span>
+                </div>
+
+                <!-- 框內內容：第一行日校，第二行宿舍 -->
+                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
+                    <!-- 第一行：日校 -->
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                                <i class="fa-solid fa-sun text-base"></i>
+                            </div>
+                            <span class="text-base font-semibold text-roseDust-600">日校</span>
+                        </div>
+                        <div id="daySchoolNeed" class="text-base font-bold text-roseDust-600 pr-1">0</div>
                     </div>
 
-                    <!-- 第 3 行：需更換數量（與上一行有橫向分隔線） -->
-                    <div class="flex items-center justify-between pt-2 mt-0.5 border-t border-morandi-100">
-                        <div class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-[11px] text-roseDust-500"></i>
-                            <span class="text-xs font-medium text-roseDust-600">需更換數量</span>
+                    <!-- 第二行：宿舍 -->
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                                <i class="fa-solid fa-bed text-base"></i>
+                            </div>
+                            <span class="text-base font-semibold text-roseDust-600">宿舍</span>
                         </div>
-                        <div id="hostelNeed" class="text-sm font-bold text-roseDust-600 pr-1">0</div>
+                        <div id="hostelNeed" class="text-base font-bold text-roseDust-600 pr-1">0</div>
                     </div>
                 </div>
             </section>
@@ -775,7 +788,7 @@
                 }
             });
 
-            document.getElementById('schoolTotalQty').innerHTML = `${schoolTotalQtySum} <span class="text-xs font-normal text-morandi-100">部</span>`;
+            document.getElementById('schoolTotalQty').innerHTML = `${schoolTotalQtySum} <span class="text-base font-normal text-morandi-100">部</span>`;
             document.getElementById('daySchoolTotal').innerText = daySchoolTotal;
             document.getElementById('daySchoolNeed').innerText = daySchoolNeed;
             document.getElementById('hostelTotal').innerText = hostelTotal;
