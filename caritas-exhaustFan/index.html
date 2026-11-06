@@ -24,28 +24,28 @@
                             200: '#d5e2eb',
                             300: '#adbfcb',
                             400: '#839ba8',
-                            500: '#5b7b93', // Primary Morandi Dusty Blue
-                            600: '#4a6984', // Darker Dusty Blue
+                            500: '#5b7b93',
+                            600: '#4a6984',
                             700: '#3c5369',
                             800: '#344557',
-                            900: '#2c3e50', // Main Text color
+                            900: '#2c3e50',
                         },
                         roseDust: {
                             50: '#fdf7f7',
                             100: '#f9ecec',
-                            500: '#c07070', // Morandi Rose Red for Pending Replacement
+                            500: '#c07070',
                             600: '#aa5c5c',
                         },
                         sage: {
                             50: '#f2f7f5',
                             100: '#e1ede7',
-                            500: '#5f8d7b', // Morandi Sage Green for Completed
+                            500: '#5f8d7b',
                             600: '#4d7565',
                         },
                         lavender: {
                             50: '#f6f5f9',
                             100: '#eae7f2',
-                            500: '#7b7393', // Morandi Lavender for Hostel
+                            500: '#7b7393',
                         }
                     }
                 }
@@ -62,7 +62,6 @@
             color: #2c3e50;
         }
         
-        /* Custom scrollbar matching Morandi Theme */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -81,7 +80,7 @@
 </head>
 <body class="min-h-screen pb-20 antialiased flex flex-col items-center justify-start">
 
-    <!-- iPhone 6.1" (390px~430px) 外框容器 -->
+    <!-- iPhone 外框容器 -->
     <div class="w-full max-w-[430px] min-h-screen bg-slate-50 shadow-2xl flex flex-col border-x border-morandi-200 relative pb-16">
 
         <!-- 1. 頂部標題與工具列 -->
@@ -104,13 +103,12 @@
             </div>
         </header>
 
-        <!-- 隱藏式 Form & iframe 解決 Apps Script CORS POST 與 Failed to fetch 錯誤 -->
+        <!-- 隱藏式 Form & iframe -->
         <iframe name="hidden_sync_iframe" id="hidden_sync_iframe" style="display:none;" onload="onSyncIframeLoaded()"></iframe>
         <form id="hiddenSyncForm" method="POST" target="hidden_sync_iframe" style="display:none;">
             <input type="hidden" name="data" id="hiddenSyncData">
         </form>
 
-        <!-- 頁面 1：數據統計 (Tab 1) -->
         <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-4 hidden">
 
             <!-- 1. 全校抽氣扇總數 -->
@@ -128,7 +126,7 @@
                 </div>
             </section>
 
-            <!-- 2. 第二區塊：抽氣扇數量 -->
+            <!-- 2. 抽氣扇數量區塊 -->
             <section class="space-y-1.5">
                 <div class="px-1 text-base font-bold text-morandi-900 flex items-center gap-2">
                     <i class="fa-solid fa-fan text-morandi-500 text-base"></i>
@@ -158,7 +156,7 @@
                 </div>
             </section>
 
-            <!-- 3. 第三區塊：需更換數量 -->
+            <!-- 3. 需更換數量區塊 -->
             <section class="space-y-1.5">
                 <div class="px-1 text-base font-bold text-roseDust-600 flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation text-roseDust-500 text-base"></i>
@@ -212,38 +210,29 @@
 
                 <!-- 折疊篩選面板 -->
                 <div id="filterCollapseArea" class="hidden border-t border-morandi-100 pt-2.5 space-y-2">
-                    <!-- 1. 樓層膠囊按鈕組 -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterFloorContainer">
                         <button type="button" onclick="setFilterBtn('floor', '')" id="btn-floor-all" class="filter-btn filter-btn-floor active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部樓層</button>
                         <button type="button" onclick="setFilterBtn('floor', 'G/F')" id="btn-floor-GF" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">G/F</button>
                         <button type="button" onclick="setFilterBtn('floor', '1/F')" id="btn-floor-1F" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">1/F</button>
                     </div>
 
-                    <!-- 2. 區域膠囊按鈕組 -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterAreaContainer">
                         <button type="button" onclick="setFilterBtn('area', '')" id="btn-area-all" class="filter-btn filter-btn-area active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部區域</button>
                         <button type="button" onclick="setFilterBtn('area', '日校')" id="btn-area-day" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">日校</button>
                         <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">宿舍</button>
                     </div>
 
-                    <!-- 3. 牌子膠囊按鈕組 -->
-                    <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer">
-                        <!-- 動態生成按鈕區塊 -->
-                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer"></div>
 
-                    <!-- 4. 更換狀態膠囊按鈕組 -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
                         <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部狀態</button>
                         <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">需更換</button>
                     </div>
-
                 </div>
             </section>
 
             <!-- 5. 卡片列表區塊 -->
-            <section id="cardsListContainer" class="space-y-2 mb-4">
-                <!-- 動態渲染卡片列表 -->
-            </section>
+            <section id="cardsListContainer" class="space-y-2 mb-4"></section>
 
             <!-- 無資料狀態顯示 -->
             <div id="emptyState" class="hidden py-10 text-center text-morandi-400 bg-white rounded-xl border border-morandi-100">
@@ -252,7 +241,7 @@
             </div>
         </main>
 
-        <!-- 6. iOS 現代純圖示浮動藥丸 Tab Bar -->
+        <!-- 6. iOS 藥丸 Tab Bar -->
         <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 border border-morandi-200/80 shadow-lg flex items-center justify-around w-44">
             <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
                 <i class="fa-solid fa-list-check text-base"></i>
@@ -264,7 +253,7 @@
 
     </div>
 
-    <!-- 7. 修改抽氣扇記錄彈出視窗 -->
+    <!-- 7. 修改記錄彈出視窗 -->
     <div id="modalForm" class="fixed inset-0 bg-morandi-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all border border-morandi-100">
             <div class="px-4 py-3 border-b border-morandi-100 flex justify-between items-center bg-morandi-50/80 sticky top-0 bg-white z-10">
@@ -373,7 +362,6 @@
                     </div>
                 </div>
 
-                <!-- 已修改更換下拉選單，刪除「已更換」選項 -->
                 <div class="grid grid-cols-2 gap-2.5">
                     <div class="col-span-2">
                         <label class="block text-[11px] font-semibold text-morandi-700 mb-1">更換</label>
@@ -410,22 +398,30 @@
         // Data State
         let fanList = [];
         let isSyncing = false;
-        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v11';
+        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v14';
 
-        // Google Sheets ID
-        const SPREADSHEET_ID = '1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs';
+        // Google Sheets CSV 網址
         const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs/gviz/tq?tqx=out:csv`;
 
         // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
 
-        // Active Filter States
         let activeFilters = {
             floor: '',
             area: '',
             brand: '',
             status: ''
         };
+
+        function normalizeStatusValue(rawStatus) {
+            if (!rawStatus) return '-';
+            const str = String(rawStatus).trim();
+            if (str === '需更換1部' || str === '1') return '1';
+            if (str === '需更換2部' || str === '2') return '2';
+            if (str === '需更換3部' || str === '3') return '3';
+            if (str === '需更換4部' || str === '4') return '4';
+            return '-';
+        }
 
         function onSyncIframeLoaded() {
             if (!isSyncing) return;
@@ -435,15 +431,17 @@
             showToast('資料已成功同步更新至 Google Sheets！', 'success');
         }
 
-        // System Startup
-        window.onload = function() {
-            loadData();
+        window.onload = async function() {
             initEventListeners();
+
+            // 1. 先讀取本地快取（做為打底畫面）
+            loadData();
             calculateStatistics();
             renderBrandFilterButtons();
             renderCardsList();
 
-            fetchFromCloud(true);
+            // 2. 強制從雲端抓取最新資料並重新渲染
+            await fetchFromCloud(false);
         };
 
         function renderBrandFilterButtons() {
@@ -472,14 +470,16 @@
             container.innerHTML = html;
         }
 
+        // 強效非同步雲端下載函式
         async function fetchFromCloud(silent = false) {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
             let success = false;
 
+            // 通道 1：從 Google Sheets CSV 直接讀取 (加上 no-store 防止快取阻擋)
             try {
-                const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                const response = await fetch(GOOGLE_SHEETS_CSV_URL, { cache: "no-store" });
                 if (response.ok) {
                     const csvText = await response.text();
                     if (csvText && !csvText.includes('<!DOCTYPE html>') && !csvText.includes('<html')) {
@@ -491,65 +491,82 @@
                     }
                 }
             } catch (err) {
-                console.warn('CSV 讀取受阻，準備切換至 Apps Script API 端點...', err);
+                console.warn('CSV 讀取受阻，切換至 Apps Script API...', err);
             }
 
-            if (!success && APPS_SCRIPT_WEB_APP_URL && APPS_SCRIPT_WEB_APP_URL.trim() !== '') {
+            // 通道 2：從 Apps Script API 讀取
+            if (!success && APPS_SCRIPT_WEB_APP_URL) {
                 try {
-                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL);
+                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, { cache: "no-store" });
                     if (response.ok) {
                         const jsonData = await response.json();
                         if (Array.isArray(jsonData) && jsonData.length > 0) {
-                            fanList = normalizeData(jsonData);
+                            fanList = jsonData.map(item => ({
+                                ...item,
+                                status: normalizeStatusValue(item.status)
+                            }));
                             success = true;
                         }
                     }
                 } catch (err) {
-                    console.warn('Apps Script JSON API 讀取失敗：', err);
+                    console.warn('Apps Script JSON API 讀取失敗，嘗試 JSONP 通道：', err);
+                    
+                    // 通道 3：JSONP Script 備用通道
+                    try {
+                        const jsonpData = await fetchJsonp(APPS_SCRIPT_WEB_APP_URL, 3000);
+                        if (Array.isArray(jsonpData) && jsonpData.length > 0) {
+                            fanList = jsonpData.map(item => ({
+                                ...item,
+                                status: normalizeStatusValue(item.status)
+                            }));
+                            success = true;
+                        }
+                    } catch (jErr) {
+                        console.error('所有雲端通道均無法下載數據：', jErr);
+                    }
                 }
             }
 
             if (success) {
-                saveData();
+                saveData(); // 覆蓋本地 LocalStorage
                 calculateStatistics();
                 renderBrandFilterButtons();
                 renderCardsList();
-                if (!silent) showToast('已成功從 Google Sheets 下載最新資料', 'success');
-            } else if (!silent) {
-                showToast('雲端讀取失敗，已載入本地備份資料', 'info');
+                if (!silent) showToast('已成功從雲端更新數據！', 'success');
+            } else {
+                if (!silent) showToast('雲端讀取失敗，已載入本地備份資料', 'info');
+                calculateStatistics();
+                renderBrandFilterButtons();
+                renderCardsList();
             }
 
             if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
         }
 
-        function normalizeStatusValue(rawStatus) {
-            if (!rawStatus) return '-';
-            const s = String(rawStatus).trim();
-            if (['1', '2', '3', '4'].includes(s)) return s;
-            if (s.includes('1')) return '1';
-            if (s.includes('2')) return '2';
-            if (s.includes('3')) return '3';
-            if (s.includes('4')) return '4';
-            return '-';
-        }
+        function fetchJsonp(url, timeoutMs = 3000) {
+            return new Promise((resolve, reject) => {
+                const cbName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+                const script = document.createElement('script');
+                
+                const timer = setTimeout(() => {
+                    clean();
+                    reject(new Error('JSONP Timeout'));
+                }, timeoutMs);
 
-        function normalizeData(dataArray) {
-            return dataArray.map(item => {
-                const cleanStatus = normalizeStatusValue(item.status);
-                return {
-                    floor: item.floor || 'G/F',
-                    roomNo: item.roomNo || '',
-                    area: item.area || '日校',
-                    roomName: item.roomName || '',
-                    brand: item.brand || '-',
-                    model: item.model || '',
-                    size: item.size || '-',
-                    hole: item.hole || '-',
-                    qty: parseInt(item.qty, 10) || 0,
-                    window: item.window || '玻璃窗',
-                    status: cleanStatus,
-                    isDone: false
+                function clean() {
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    delete window[cbName];
+                    clearTimeout(timer);
+                }
+
+                window[cbName] = function(data) {
+                    clean();
+                    resolve(data);
                 };
+
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+                script.onerror = () => { clean(); reject(new Error('Script Load Error')); };
+                document.body.appendChild(script);
             });
         }
 
@@ -564,7 +581,7 @@
             if (!APPS_SCRIPT_WEB_APP_URL || APPS_SCRIPT_WEB_APP_URL.trim() === '') {
                 setTimeout(() => {
                     if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
-                    showToast('已更新本地數據！請設定 Web App URL 以寫入 Google Sheets', 'info');
+                    showToast('已更新本地數據！', 'info');
                 }, 600);
                 return;
             }
@@ -580,7 +597,7 @@
                 form.submit();
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
-                showToast('同步失敗，請確認網路連線', 'error');
+                showToast('同步失敗，請檢查網路狀態', 'error');
                 isSyncing = false;
                 if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
             }
@@ -598,7 +615,7 @@
                 if (!cols) continue;
 
                 const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
-                const cleanStatus = normalizeStatusValue(cleanCols[10]);
+                const rawStatus = cleanCols[10] || '-';
 
                 result.push({
                     floor: cleanCols[0] || 'G/F',
@@ -611,8 +628,7 @@
                     hole: cleanCols[7] || '-',
                     qty: parseInt(cleanCols[8], 10) || 0,
                     window: cleanCols[9] || '玻璃窗',
-                    status: cleanStatus,
-                    isDone: false
+                    status: normalizeStatusValue(rawStatus)
                 });
             }
             return result;
@@ -634,16 +650,19 @@
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 try {
-                    fanList = JSON.parse(stored);
+                    fanList = JSON.parse(stored).map(item => ({
+                        ...item,
+                        status: normalizeStatusValue(item.status)
+                    }));
                 } catch (e) {
                     console.error("Error loading localStorage data", e);
                     fanList = [];
                 }
             } else {
                 fanList = [
-                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '1', isDone: false },
-                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '1樓課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '-', isDone: false },
-                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '2', isDone: false }
+                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '1' },
+                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '102課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '-' },
+                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '2' }
                 ];
                 saveData();
             }
@@ -718,7 +737,7 @@
                 const matchArea = !activeFilters.area || item.area === activeFilters.area;
                 const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
                 
-                const isNeed = ['1', '2', '3', '4'].includes(String(item.status).trim());
+                const isNeed = item.status && ['1', '2', '3', '4'].includes(String(item.status).trim());
                 const matchStatus = !activeFilters.status || isNeed;
                 
                 const matchSearch = !searchKey || 
@@ -748,6 +767,7 @@
             return list.map(item => {
                 const index = fanList.indexOf(item);
                 const isHostel = item.area === '宿舍';
+                
                 const st = String(item.status || '-').trim();
                 const isNeedReplace = ['1', '2', '3', '4'].includes(st);
 
@@ -759,13 +779,32 @@
                     floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200";
                 }
 
+                const roomNo = (item.roomNo || '').trim();
+                const roomName = (item.roomName || '').trim();
+                
+                let displayName = '';
+                if (!roomNo) {
+                    displayName = roomName || '未命名房間';
+                } else if (!roomName) {
+                    displayName = roomNo;
+                } else {
+                    const cleanNo = roomNo.toLowerCase();
+                    const cleanName = roomName.toLowerCase();
+                    
+                    if (cleanName.includes(cleanNo)) {
+                        displayName = roomName;
+                    } else {
+                        displayName = `${roomNo} ${roomName}`;
+                    }
+                }
+
                 return `
                     <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-morandi-100 p-3 hover:border-morandi-300 transition-all cursor-pointer active:scale-[0.99]">
                         <div class="flex justify-between items-center gap-2">
                             <div class="space-y-1.5 flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-base font-semibold text-morandi-900 truncate">
-                                        ${escapeHtml(item.roomNo ? `${item.roomNo} ` : '')}${escapeHtml(item.roomName || '未命名房間')}
+                                        ${escapeHtml(displayName)}
                                     </span>
                                     <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
@@ -775,9 +814,9 @@
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-3 text-[12px] text-morandi-600">
-                                    <span class="text-morandi-800">${escapeHtml(item.brand || '-')}</span>
-                                    <span class="text-morandi-800">${escapeHtml(item.size || '-')}</span>
-                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded">需更換：${escapeHtml(st)}</span>` : ''}
+                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
+                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
+                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">需更換：${escapeHtml(st)}</span>` : ''}
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
@@ -907,11 +946,10 @@
                 hole: document.getElementById('formHoleSelect').value,
                 qty: parseInt(qtyVal, 10) || 0,
                 window: document.getElementById('formWindowSelect').value,
-                status: statusVal,
-                isDone: false
+                status: statusVal
             };
 
-            showToast('已成功更新記錄', 'success');
+            showToast('已成功更新抽氣扇資料', 'success');
 
             saveData();
             calculateStatistics();
