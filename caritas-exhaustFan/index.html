@@ -226,7 +226,7 @@
 
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
                         <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部狀態</button>
-                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">需更換</button>
+                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">更換</button>
                     </div>
                 </div>
             </section>
@@ -416,10 +416,10 @@
         function normalizeStatusValue(rawStatus) {
             if (!rawStatus) return '-';
             const str = String(rawStatus).trim();
-            if (str === '需更換1部' || str === '1') return '1';
-            if (str === '需更換2部' || str === '2') return '2';
-            if (str === '需更換3部' || str === '3') return '3';
-            if (str === '需更換4部' || str === '4') return '4';
+            if (str === '更換1部' || str === '1') return '1';
+            if (str === '更換2部' || str === '2') return '2';
+            if (str === '更換3部' || str === '3') return '3';
+            if (str === '更換4部' || str === '4') return '4';
             return '-';
         }
 
@@ -816,7 +816,7 @@
                                 <div class="flex items-center gap-3 text-[12px] text-morandi-600">
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
                                     <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
-                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">需更換：${escapeHtml(st)}</span>` : ''}
+                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">更換：${escapeHtml(st)}</span>` : ''}
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
