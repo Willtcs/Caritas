@@ -232,13 +232,13 @@
                         <div class="flex items-center justify-between">
                             <button onclick="toggleFilterAccordion()" class="flex items-center space-x-2 text-morandi-dark hover:opacity-80 transition-opacity">
                                 <i class="fa-solid fa-sliders text-morandi-sky text-xs"></i>
-                                <span class="text-base font-bold">進階篩選</span>
+                                <span class="text-xs font-bold">進階篩選</span>
                                 <span id="activeFilterBadge" class="hidden bg-morandi-sky text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">已套用</span>
                                 <i id="filterAccordionArrow" class="fa-solid fa-chevron-down text-[10px] text-morandi-slate/60 transition-transform duration-200 ml-1"></i>
                             </button>
 
-                            <button onclick="resetAllFilters()" title="重置篩選" class="text-base text-morandi-rose hover:underline font-medium flex items-center gap-1">
-                                <i class="fa-solid fa-rotate-left text-xs"></i>
+                            <button onclick="resetAllFilters()" title="重置篩選" class="text-[11px] text-morandi-rose hover:underline font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left text-[10px]"></i>
                                 <span>重置</span>
                             </button>
                         </div>
@@ -257,7 +257,7 @@
                     <div id="filterAccordionContent" class="hidden border-t border-morandi-light/50 p-3 pt-2.5 space-y-2.5 bg-morandi-bg/30">
                         <!-- 1. 區域切換按鈕 -->
                         <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-base font-medium text-morandi-slate">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
                                 <button id="btnAreaAll" onclick="setFilterBtn('Area', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
                                 <button id="btnAreaDay" onclick="setFilterBtn('Area', '日校')" class="flex-1 py-1 rounded-lg transition-all text-center">日校</button>
                                 <button id="btnAreaDorm" onclick="setFilterBtn('Area', '宿舍')" class="flex-1 py-1 rounded-lg transition-all text-center">宿舍</button>
@@ -266,7 +266,7 @@
 
                         <!-- 2. 樓層切換按鈕 -->
                         <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-base font-medium text-morandi-slate">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
                                 <button id="btnFloorAll" onclick="setFilterBtn('Floor', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
                                 <button id="btnFloorGF" onclick="setFilterBtn('Floor', 'G/F')" class="flex-1 py-1 rounded-lg transition-all text-center">G/F</button>
                                 <button id="btnFloor1F" onclick="setFilterBtn('Floor', '1/F')" class="flex-1 py-1 rounded-lg transition-all text-center">1/F</button>
@@ -275,7 +275,7 @@
 
                         <!-- 3. 扲掣位置切換按鈕 -->
                         <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-base font-medium text-morandi-slate">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
                                 <button id="btnFlushAll" onclick="setFilterBtn('Flush', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
                                 <button id="btnFlushFR" onclick="setFilterBtn('Flush', '前右側')" class="flex-1 py-1 rounded-lg transition-all text-center">前右側</button>
                                 <button id="btnFlushLeft" onclick="setFilterBtn('Flush', '左側')" class="flex-1 py-1 rounded-lg transition-all text-center">左側</button>
@@ -285,7 +285,7 @@
 
                         <!-- 4. 水源切換按鈕 -->
                         <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-base font-medium text-morandi-slate">
+                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
                                 <button id="btnWaterAll" onclick="setFilterBtn('Water', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
                                 <button id="btnWaterFresh" onclick="setFilterBtn('Water', '淡水')" class="flex-1 py-1 rounded-lg transition-all text-center">淡水</button>
                                 <button id="btnWaterSalt" onclick="setFilterBtn('Water', '鹹水')" class="flex-1 py-1 rounded-lg transition-all text-center">鹹水</button>
@@ -298,7 +298,7 @@
                 <section class="space-y-2 pt-1">
                     <div class="flex items-center justify-between px-1">
                         <div class="flex items-center space-x-1.5">
-                            <span class="text-base font-bold text-morandi-dark">馬桶資料清單</span>
+                            <span class="text-xs font-bold text-morandi-dark">馬桶資料清單</span>
                             <span id="recordBadge" class="bg-morandi-light/80 text-morandi-dark text-xs font-semibold px-2 py-0.5 rounded-full">0 筆</span>
                         </div>
                     </div>
@@ -309,14 +309,14 @@
                         <div class="w-12 h-12 bg-morandi-bg rounded-2xl text-morandi-slate mx-auto flex items-center justify-center text-xl mb-2">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
-                        <p class="text-base font-semibold text-morandi-dark">尚未有任何馬桶資料</p>
-                        <p class="text-base text-morandi-slate mt-1">請點擊上方同步按鈕，以同步雲端資料</p>
+                        <p class="text-xs font-semibold text-morandi-dark">尚未有任何馬桶資料</p>
+                        <p class="text-[11px] text-morandi-slate mt-1">請點擊上方同步按鈕，以同步雲端資料</p>
                     </div>
                 </section>
             </div>
         </main>
 
-        <!-- 底部浮動藥丸式 Tab Bar -->
+        <!-- 底部浮動藥丸式 Tab Bar  (預設高亮左側資料 TAB)  -->
         <nav class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 no-print">
             <div class="bg-morandi-dark/90 tab-blur border border-white/20 rounded-full p-1.5 shadow-pill flex items-center space-x-1">
                 <!-- Tab 1: 資料 (左側 Icon) -->
@@ -701,18 +701,18 @@
                     <div class="space-y-1.5 pr-2 flex-1">
                         <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                             ${displayRoomCombined ? `<span class="text-base font-semibold text-morandi-dark/90">${displayRoomCombined}</span>` : ''}
-                            ${displayFloor ? `<span class="text-base px-2 py-0.5 rounded-full font-semibold ${displayFloor.includes('G/F') ? 'bg-[#FFDBBA]' : 'bg-[#FF8894]/70'}">${displayFloor}</span>` : ''}
-                            ${displayArea ? `<span class="text-base px-2 py-0.5 rounded-full font-semibold ${displayArea.includes('日校') ? 'bg-[#A1E0DD]' : 'bg-[#5EA8E6]/50'}">${displayArea}</span>` : ''}
+                            ${displayFloor ? `<span class="text-xs px-2 py-0.5 rounded-full font-semibold ${displayFloor.includes('G/F') ? 'bg-[#FFDBBA]' : 'bg-[#FF8894]/70'}">${displayFloor}</span>` : ''}
+                            ${displayArea ? `<span class="text-xs px-2 py-0.5 rounded-full font-semibold ${displayArea.includes('日校') ? 'bg-[#A1E0DD]' : 'bg-[#5EA8E6]/50'}">${displayArea}</span>` : ''}
                         </div>
 
                         <!-- 扲掣位置與水源標籤區塊 -->
                         <div class="flex flex-wrap items-center gap-1">
-                            ${flush1 ? `<span class="inline-block ${getTagBgColor(flush1)} text-base px-2 py-0.5 rounded-md font-medium">${flush1}</span>` : ''}
-                            ${water1 ? `<span class="inline-block ${getTagBgColor(water1)} text-base px-2 py-0.5 rounded-md font-medium">${water1}</span>` : ''}
-                            ${flush2 ? `<span class="inline-block ${getTagBgColor(flush2)} text-base px-2 py-0.5 rounded-md font-medium">${flush2}</span>` : ''}
-                            ${water2 ? `<span class="inline-block ${getTagBgColor(water2)} text-base px-2 py-0.5 rounded-md font-medium">${water2}</span>` : ''}
-                            ${flush3 ? `<span class="inline-block ${getTagBgColor(flush3)} text-base px-2 py-0.5 rounded-md font-medium">${flush3}</span>` : ''}
-                            ${water3 ? `<span class="inline-block ${getTagBgColor(water3)} text-base px-2 py-0.5 rounded-md font-medium">${water3}</span>` : ''}
+                            ${flush1 ? `<span class="inline-block ${getTagBgColor(flush1)} text-[10px] px-2 py-0.5 rounded-md font-medium">${flush1}</span>` : ''}
+                            ${water1 ? `<span class="inline-block ${getTagBgColor(water1)} text-[10px] px-2 py-0.5 rounded-md font-medium">${water1}</span>` : ''}
+                            ${flush2 ? `<span class="inline-block ${getTagBgColor(flush2)} text-[10px] px-2 py-0.5 rounded-md font-medium">${flush2}</span>` : ''}
+                            ${water2 ? `<span class="inline-block ${getTagBgColor(water2)} text-[10px] px-2 py-0.5 rounded-md font-medium">${water2}</span>` : ''}
+                            ${flush3 ? `<span class="inline-block ${getTagBgColor(flush3)} text-[10px] px-2 py-0.5 rounded-md font-medium">${flush3}</span>` : ''}
+                            ${water3 ? `<span class="inline-block ${getTagBgColor(water3)} text-[10px] px-2 py-0.5 rounded-md font-medium">${water3}</span>` : ''}
                         </div>
                     </div>
 
@@ -766,15 +766,15 @@
                     ).join('');
 
                     wrapper.innerHTML = `
-                        <label class="block text-base font-semibold text-morandi-slate mb-1">${h}</label>
-                        <select name="${h}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-base rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
+                        <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
+                        <select name="${h}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
                             ${optionsHtml}
                         </select>
                     `;
                 } else {
                     wrapper.innerHTML = `
-                        <label class="block text-base font-semibold text-morandi-slate mb-1">${h}</label>
-                        <input type="text" name="${h}" value="${currentValue}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-base rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
+                        <label class="block text-[11px] font-semibold text-morandi-slate mb-1">${h}</label>
+                        <input type="text" name="${h}" value="${currentValue}" class="w-full bg-morandi-bg border border-morandi-light text-morandi-dark text-xs rounded-xl p-2.5 focus:outline-none focus:border-morandi-sky">
                     `;
                 }
                 fieldsContainer.appendChild(wrapper);
