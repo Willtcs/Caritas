@@ -103,9 +103,10 @@
             <input type="hidden" name="data" id="hiddenSyncData">
         </form>
 
+        <!-- 頁面 1：數據統計 (Tab 1) -->
         <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-4 hidden">
 
-            <!-- 1. 全校抽氣扇總數 (所有文字統一為 text-base) -->
+            <!-- 1. 全校抽氣扇總數 -->
             <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
                     <div class="p-2 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
@@ -120,17 +121,14 @@
                 </div>
             </section>
 
-            <!-- 2. 第二區塊：抽氣扇數量 (標題在框外左上角，框內顯示日校與宿舍 2 行) -->
+            <!-- 2. 第二區塊：抽氣扇數量 -->
             <section class="space-y-1.5">
-                <!-- 框外左上角標題 -->
                 <div class="px-1 text-base font-bold text-morandi-900 flex items-center gap-2">
                     <i class="fa-solid fa-fan text-morandi-500 text-base"></i>
                     <span>抽氣扇數量</span>
                 </div>
 
-                <!-- 框內內容：第一行日校，第二行宿舍 -->
                 <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
-                    <!-- 第一行：日校 -->
                     <div class="px-4 py-3 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
@@ -141,7 +139,6 @@
                         <div id="daySchoolTotal" class="text-base font-bold text-morandi-900 pr-1">0</div>
                     </div>
 
-                    <!-- 第二行：宿舍 -->
                     <div class="px-4 py-3 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
@@ -154,17 +151,14 @@
                 </div>
             </section>
 
-            <!-- 3. 第三區塊：需更換數量 (標題在框外左上角，框內顯示日校與宿舍 2 行) -->
+            <!-- 3. 第三區塊：需更換數量 -->
             <section class="space-y-1.5">
-                <!-- 框外左上角標題 -->
                 <div class="px-1 text-base font-bold text-roseDust-600 flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation text-roseDust-500 text-base"></i>
                     <span>需更換數量</span>
                 </div>
 
-                <!-- 框內內容：第一行日校，第二行宿舍 -->
                 <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
-                    <!-- 第一行：日校 -->
                     <div class="px-4 py-3 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
@@ -175,7 +169,6 @@
                         <div id="daySchoolNeed" class="text-base font-bold text-roseDust-600 pr-1">0</div>
                     </div>
 
-                    <!-- 第二行：宿舍 -->
                     <div class="px-4 py-3 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
@@ -193,21 +186,18 @@
         <!-- 頁面 2：資料清單 (Tab 2) -->
         <main id="tabViewList" class="flex-1 px-3.5 pt-3.5 space-y-3">
 
-            <!-- 4. 頂部控制列：[搜尋輸入框] + [展開/折疊箭頭] + [重設按鈕] -->
+            <!-- 4. 頂部控制列 -->
             <section class="bg-white rounded-xl shadow-sm border border-morandi-100 p-2.5 space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                    <!-- 左側全域搜尋框 -->
                     <div class="relative flex-1">
                         <input type="text" id="searchInput" placeholder="搜尋房號、房名、型號..." class="w-full bg-morandi-50/50 border border-morandi-200 text-morandi-900 rounded-lg pl-7 pr-2 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none placeholder:text-morandi-300">
                         <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-morandi-300 text-xs"></i>
                     </div>
 
-                    <!-- 展開/折疊箭頭按鈕 -->
                     <button id="toggleFilterBtn" class="p-1.5 bg-morandi-50 hover:bg-morandi-100 text-morandi-600 rounded-lg border border-morandi-200/50 text-xs flex items-center justify-center shrink-0">
                         <i id="toggleFilterIcon" class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
                     </button>
 
-                    <!-- 最右側重設按鈕 -->
                     <button id="btnResetFilters" class="text-xs bg-morandi-100 hover:bg-morandi-200 text-morandi-700 font-medium px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
                         <i class="fa-solid fa-filter-circle-xmark text-morandi-500"></i> 重設
                     </button>
@@ -237,7 +227,7 @@
                     <!-- 4. 更換狀態膠囊按鈕組 -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
                         <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部狀態</button>
-                        <button type="button" onclick="setFilterBtn('status', '需更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">需更換</button>
+                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">需更換</button>
                     </div>
 
                 </div>
@@ -376,16 +366,16 @@
                     </div>
                 </div>
 
+                <!-- 已修改更換下拉選單，刪除「已更換」選項 -->
                 <div class="grid grid-cols-2 gap-2.5">
                     <div class="col-span-2">
                         <label class="block text-[11px] font-semibold text-morandi-700 mb-1">更換</label>
                         <select id="formStatus" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
                             <option value="-">-</option>
-                            <option value="需更換1部">1</option>
-                            <option value="需更換2部">2</option>
-                            <option value="需更換3部">3</option>
-                            <option value="需更換4部">4</option>
-                            <option value="已更換">已更換</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
                         </select>
                     </div>
                 </div>
@@ -413,7 +403,7 @@
         // Data State
         let fanList = [];
         let isSyncing = false;
-        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v10';
+        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v11';
 
         // Google Sheets ID
         const SPREADSHEET_ID = '1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs';
@@ -503,7 +493,7 @@
                     if (response.ok) {
                         const jsonData = await response.json();
                         if (Array.isArray(jsonData) && jsonData.length > 0) {
-                            fanList = jsonData;
+                            fanList = normalizeData(jsonData);
                             success = true;
                         }
                     }
@@ -523,6 +513,37 @@
             }
 
             if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+        }
+
+        function normalizeStatusValue(rawStatus) {
+            if (!rawStatus) return '-';
+            const s = String(rawStatus).trim();
+            if (['1', '2', '3', '4'].includes(s)) return s;
+            if (s.includes('1')) return '1';
+            if (s.includes('2')) return '2';
+            if (s.includes('3')) return '3';
+            if (s.includes('4')) return '4';
+            return '-';
+        }
+
+        function normalizeData(dataArray) {
+            return dataArray.map(item => {
+                const cleanStatus = normalizeStatusValue(item.status);
+                return {
+                    floor: item.floor || 'G/F',
+                    roomNo: item.roomNo || '',
+                    area: item.area || '日校',
+                    roomName: item.roomName || '',
+                    brand: item.brand || '-',
+                    model: item.model || '',
+                    size: item.size || '-',
+                    hole: item.hole || '-',
+                    qty: parseInt(item.qty, 10) || 0,
+                    window: item.window || '玻璃窗',
+                    status: cleanStatus,
+                    isDone: false
+                };
+            });
         }
 
         function syncToCloud() {
@@ -570,6 +591,7 @@
                 if (!cols) continue;
 
                 const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+                const cleanStatus = normalizeStatusValue(cleanCols[10]);
 
                 result.push({
                     floor: cleanCols[0] || 'G/F',
@@ -582,8 +604,8 @@
                     hole: cleanCols[7] || '-',
                     qty: parseInt(cleanCols[8], 10) || 0,
                     window: cleanCols[9] || '玻璃窗',
-                    status: cleanCols[10] || '-',
-                    isDone: cleanCols[10] === '已更換'
+                    status: cleanStatus,
+                    isDone: false
                 });
             }
             return result;
@@ -612,9 +634,9 @@
                 }
             } else {
                 fanList = [
-                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '需更換1部', isDone: false },
-                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '1樓課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '已更換', isDone: true },
-                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '需更換2部', isDone: false }
+                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '1', isDone: false },
+                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '1樓課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '-', isDone: false },
+                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '2', isDone: false }
                 ];
                 saveData();
             }
@@ -688,7 +710,9 @@
                 const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
                 const matchArea = !activeFilters.area || item.area === activeFilters.area;
                 const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
-                const matchStatus = !activeFilters.status || (item.status && item.status.startsWith('需更換'));
+                
+                const isNeed = ['1', '2', '3', '4'].includes(String(item.status).trim());
+                const matchStatus = !activeFilters.status || isNeed;
                 
                 const matchSearch = !searchKey || 
                     (item.roomNo && String(item.roomNo).toLowerCase().includes(searchKey)) ||
@@ -717,7 +741,8 @@
             return list.map(item => {
                 const index = fanList.indexOf(item);
                 const isHostel = item.area === '宿舍';
-                const isNeedReplace = item.status && item.status.startsWith('需更換');
+                const st = String(item.status || '-').trim();
+                const isNeedReplace = ['1', '2', '3', '4'].includes(st);
 
                 const floorVal = (item.floor || '-').trim();
                 let floorClass = "bg-morandi-100 text-morandi-800 border-morandi-200";
@@ -738,14 +763,14 @@
                                     <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
                                     </span>
-                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}  ">
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-3 text-[10px] text-morandi-600">
-                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
-                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}</span>
-                                    ${isNeedReplace ? `<span class="text-[10px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">${escapeHtml(item.status)}</span>` : ''}
+                                <div class="flex items-center gap-3 text-[12px] text-morandi-600">
+                                    <span class="text-morandi-800">${escapeHtml(item.brand || '-')}</span>
+                                    <span class="text-morandi-800">${escapeHtml(item.size || '-')}</span>
+                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded">需更換：${escapeHtml(st)}</span>` : ''}
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
@@ -775,14 +800,13 @@
                     daySchoolTotal += qtyVal;
                 }
 
-                const st = item.status || '-';
+                const st = String(item.status || '-').trim();
                 let rowNeedVal = 0;
-                if (st === '需更換1部') rowNeedVal = 1;
-                else if (st === '需更換2部') rowNeedVal = 2;
-                else if (st === '需更換3部') rowNeedVal = 3;
-                else if (st === '需更換4部') rowNeedVal = 4;
+                if (['1', '2', '3', '4'].includes(st)) {
+                    rowNeedVal = parseInt(st, 10) || 0;
+                }
 
-                if (!item.isDone && st !== '已更換' && rowNeedVal > 0) {
+                if (rowNeedVal > 0) {
                     if (isHostel) hostelNeed += rowNeedVal;
                     else daySchoolNeed += rowNeedVal;
                 }
@@ -847,7 +871,7 @@
             document.getElementById('formQtySelect').value = qtyStr;
 
             setSelectValue('formWindowSelect', item.window, '鋁塑板');
-            document.getElementById('formStatus').value = item.status || '-';
+            setSelectValue('formStatus', item.status, '-');
 
             modal.classList.remove('hidden');
         }
@@ -877,10 +901,10 @@
                 qty: parseInt(qtyVal, 10) || 0,
                 window: document.getElementById('formWindowSelect').value,
                 status: statusVal,
-                isDone: statusVal === '已更換'
+                isDone: false
             };
 
-            showToast('已成功更新抽氣扇資料', 'success');
+            showToast('已成功更新記錄', 'success');
 
             saveData();
             calculateStatistics();
