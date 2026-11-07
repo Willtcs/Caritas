@@ -779,7 +779,7 @@
                     floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200";
                 }
 
-                const roomNo = (item.roomNo || '').trim();
+                const roomNo = formatRoomNo(item.roomNo); // <--- 在這裡套用格式化
                 const roomName = (item.roomName || '').trim();
                 
                 let displayName = '';
@@ -1002,6 +1002,17 @@
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 2500);
+        }
+
+        // 將純數字房號補齊為 3 位數（例如 "31" -> "031"，"H105" 保持原樣）
+        function formatRoomNo(roomNo) {
+            if (!roomNo) return ''; 
+            const str = String(roomNo).trim();
+            // 如果是純數字，使用 padStart 補足 3 位數
+            if (/^\d+$/.test(str)) {
+                return str.padStart(3, '0');
+            }
+            return str;
         }
     </script>
 </body>
