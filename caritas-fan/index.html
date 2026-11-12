@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="text-[103%]">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>更換風扇管理系統 Mobile</title>
+    <title>風扇管理系統 Mobile</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -12,7 +12,7 @@
 
     <!-- 適用於 一般瀏覽器 Favicon (可一併設定) -->
     <link rel="icon" type="image/png" sizes="32x32" href="fan_icon.png">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -41,10 +41,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        html {
-            font-size: 103%; /* 全局文字放大 3% */
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Inter', "SF Pro Text", "Helvetica Neue", sans-serif;
             background-color: #12181F;
@@ -62,32 +58,34 @@
         .tab-content.active { display: block; }
     </style>
 </head>
-<body class="flex justify-center items-center min-h-screen sm:py-6">
+<body class="bg-[#12181F] sm:py-6 flex justify-center min-h-screen">
 
-    <!-- 主 App 容器 -->
-    <div class="w-full max-w-[430px] h-[100vh] sm:h-[844px] bg-[#E8EFF4] text-slate-800 flex flex-col sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] sm:border-slate-800 overflow-hidden relative">
+    <!-- 主 App 容器：移除 h-[100vh] 與 overflow-hidden，讓頁面跟隨 window 滾動 -->
+    <div class="w-full max-w-[430px] min-h-screen sm:min-h-[844px] bg-[#E8EFF4] text-slate-800 flex flex-col sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] sm:border-slate-800 relative">
 
-        <!-- Header -->
-        <header class="bg-morandi-600 text-white pt-safe px-4 pb-3 flex justify-between items-center shadow-sm z-20 flex-shrink-0">
+        <!-- Header：使用 sticky top-0 固定在頂部，並加上點擊標題列也能平滑回頂部 -->
+        <header onclick="scrollToTop(event)" class="sticky top-0 bg-morandi-600 text-white pt-safe px-4 pb-3 flex justify-between items-center shadow-sm z-20 cursor-pointer">
             <div class="flex items-center space-x-2.5">
                 <div class="w-9 h-9 rounded-xl bg-morandi-500 flex items-center justify-center text-white shadow-inner">
                     <i class="fa-solid fa-fan text-lg animate-spin" style="animation-duration: 9s;"></i>
                 </div>
                 <div>
-                    <h1 class="text-base font-bold leading-tight">更換風扇管理系統</h1>
-                    <p class="text-[11px] text-morandi-100 opacity-90">Fan Replacement App</p>
+                    <h1 class="text-base font-bold leading-tight">風扇管理系統</h1>
+                    <p class="text-[11px] text-morandi-100 opacity-90">Fan Management App</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-1.5">
-                <button onclick="uploadToCloudConfirm()" title="手動同步數據至雲端" class="w-9 h-9 rounded-xl bg-morandi-500 hover:bg-morandi-400 active:scale-95 text-white flex items-center justify-center transition shadow-xs cursor-pointer">
+                <!-- 加上 event.stopPropagation() 避免點擊同步按鈕時觸發回頂部 -->
+                <button onclick="event.stopPropagation(); uploadToCloudConfirm()" title="手動同步數據至雲端" class="w-9 h-9 rounded-xl bg-morandi-500 hover:bg-morandi-400 active:scale-95 text-white flex items-center justify-center transition shadow-xs cursor-pointer">
                     <i id="cloudBtnIcon" class="fa-solid fa-cloud-arrow-up text-base"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-28">
+        <!-- Main Content Area：移除 overflow-y-auto，改由瀏覽器主視窗滾動 -->
+        <main class="flex-1 p-3.5 pb-28">
+            <!-- 裡面的 #tab-list 與 #tab-stats 內容保持完全不變 -->
 
             <!-- PAGE 1: 房間清單頁面 -->
             <div id="tab-list" class="tab-content active space-y-3">
@@ -163,7 +161,7 @@
                 <!-- 清單頁標題 -->
                 <div class="flex justify-between items-center px-1 pt-1">
                     <span class="text-xs font-bold text-morandi-900">房間清單</span>
-                    <span id="recordCountBadge" class="text-[11px] font-semibold bg-morandi-200 text-morandi-800 px-2 py-0.5 rounded-full">0 筆資料</span>
+                    <span id="recordCountBadge" class="text-[10px] font-semibold bg-morandi-200 text-morandi-800 px-2 py-0.5 rounded-full">0 筆資料</span>
                 </div>
 
                 <!-- 卡片化房間清單 -->
@@ -205,19 +203,19 @@
                     </h3>
                     <div class="grid grid-cols-3 gap-2 text-center pt-0.5">
                         <div class="bg-morandi-900/40 p-2 rounded-xl border border-morandi-600/50">
-                            <span class="text-[11px] text-morandi-200 block mb-0.5">樓底扇</span>
+                            <span class="text-[10px] text-morandi-200 block mb-0.5">樓底扇</span>
                             <b id="allSchoolCeiling" class="text-base font-extrabold text-white">0</b>
-                            <span class="text-[10px] text-morandi-300 ml-0.5">台</span>
+                            <span class="text-[9px] text-morandi-300 ml-0.5">台</span>
                         </div>
                         <div class="bg-morandi-900/40 p-2 rounded-xl border border-morandi-600/50">
-                            <span class="text-[11px] text-morandi-200 block mb-0.5">掛牆扇</span>
+                            <span class="text-[10px] text-morandi-200 block mb-0.5">掛牆扇</span>
                             <b id="allSchoolWall" class="text-base font-extrabold text-white">0</b>
-                            <span class="text-[10px] text-morandi-300 ml-0.5">台</span>
+                            <span class="text-[9px] text-morandi-300 ml-0.5">台</span>
                         </div>
                         <div class="bg-morandi-900/40 p-2 rounded-xl border border-morandi-600/50">
-                            <span class="text-[11px] text-morandi-200 block mb-0.5">牛角扇</span>
+                            <span class="text-[10px] text-morandi-200 block mb-0.5">牛角扇</span>
                             <b id="allSchoolHorn" class="text-base font-extrabold text-white">0</b>
-                            <span class="text-[10px] text-morandi-300 ml-0.5">台</span>
+                            <span class="text-[9px] text-morandi-300 ml-0.5">台</span>
                         </div>
                     </div>
                 </section>
@@ -229,6 +227,7 @@
                     </h3>
                     
                     <div class="space-y-2.5">
+                        <!-- 日校單行 -->
                         <div class="bg-morandi-50/70 p-2.5 rounded-xl border border-morandi-100 space-y-1.5">
                             <span class="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>日校風扇數量
@@ -249,6 +248,7 @@
                             </div>
                         </div>
 
+                        <!-- 宿舍單行 -->
                         <div class="bg-morandi-50/70 p-2.5 rounded-xl border border-morandi-100 space-y-1.5">
                             <span class="text-[11px] font-bold text-sky-900 flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-sky-600"></span>宿舍風扇數量
@@ -274,10 +274,11 @@
                 <!-- 4. 預計更換風扇統計 -->
                 <section class="bg-white rounded-2xl p-3.5 border border-morandi-200 shadow-xs space-y-3">
                     <h3 class="text-xs font-extrabold text-morandi-900 flex items-center gap-1.5 border-b border-morandi-100 pb-2">
-                        <i class="fa-solid fa-arrows-rotate text-morandi-600"></i> 預計更換風扇統計
+                        <i class="fa-solid fa-arrows-rotate text-morandi-600"></i> 更換風扇統計
                     </h3>
                     
                     <div class="space-y-2.5">
+                        <!-- 日校單行 -->
                         <div class="bg-rose-50/50 p-2.5 rounded-xl border border-rose-100 space-y-1.5">
                             <span class="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>日校更換數量
@@ -298,6 +299,7 @@
                             </div>
                         </div>
 
+                        <!-- 宿舍單行 -->
                         <div class="bg-rose-50/50 p-2.5 rounded-xl border border-rose-100 space-y-1.5">
                             <span class="text-[11px] font-bold text-sky-900 flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-sky-600"></span>宿舍更換數量
@@ -324,7 +326,7 @@
         </main>
 
         <!-- 底部 Toast 小通知 -->
-        <div id="toastNotification" class="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform opacity-0 translate-y-4 pointer-events-none">
+        <div id="toastNotification" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform opacity-0 translate-y-4 pointer-events-none">
             <div class="bg-morandi-900/90 backdrop-blur-md text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-morandi-700">
                 <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
                 <span id="toastMessage">已成功由雲端載入最新資料</span>
@@ -332,7 +334,7 @@
         </div>
 
         <!-- 純圖示 iOS 藥丸 Bottom Tab Bar -->
-        <div class="absolute bottom-4 left-0 right-0 flex justify-center z-30 px-6 pointer-events-none pb-safe">
+        <div class="fixed bottom-4 left-0 right-0 flex justify-center z-30 px-6 pointer-events-none pb-safe">
             <nav class="pointer-events-auto bg-morandi-800/95 backdrop-blur-md text-white p-1 rounded-full shadow-2xl flex items-center space-x-1 border border-morandi-700/60 w-44">
                 <button onclick="switchTab('tab-list')" id="btn-tab-list" title="房間清單" class="flex-1 py-2 rounded-full flex items-center justify-center transition-all bg-morandi-500 text-white shadow-xs cursor-pointer">
                     <i class="fa-solid fa-list-check text-base"></i>
@@ -489,9 +491,9 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwMUwXvc3JHtn2g9mKNlzwpHGfNf5Hlh_OlM6wJYTiY8wh3hG3ChCLZfliNrvl2X3X9xA/exec';
-        const STORAGE_KEY = 'FAN_MANAGEMENT_SYSTEM_MOBILE_V20';
+        const STORAGE_KEY = 'FAN_MANAGEMENT_SYSTEM_MOBILE_V19';
 
-        const DEFAULT_STATUS_TAGS = ['搖頭異常', '風扇音靜', '風力弱', '高空作業', '缺少配件', '異常噪音', '生鏽', '壞機', '斷框', '原拆卸'];
+        const DEFAULT_STATUS_TAGS = ['搖頭異常', '風扇音靜', '風力弱', '缺少配件', '異常噪音', '生鏽', '壞機', '斷框', '原拆卸'];
 
         const sampleData = [
             { id: '1', floor: 'G/F', roomNo: '1', area: '日校', roomName: '禮堂', brand: 'KDK', originalCeilingFans: 4, originalWallFans: 2, originalHornFans: 1, ceilingFans: 4, wallFans: 2, hornFans: 1, fanSize: '18寸', fanStatusText: '生鏽、壞機、斷框', power: '正常', remark: '大型活動場所', replaced: true },
@@ -500,6 +502,7 @@
         ];
 
         let fanList = [];
+        // 支援多選模式：fanType 與 changeFanType 改為 Set/陣列
         let currentFilters = { 
             area: 'ALL', 
             floor: 'ALL', 
@@ -593,6 +596,7 @@
                 icon.className = 'fa-solid fa-cloud-arrow-up text-base';
                 if (resData.status === 'success') {
                     showToast("最新資料已成功上傳更新至雲端！");
+                    // 同步成功後重新向雲端拉取，確保手機與雲端 100% 同步
                     fetchFromCloudSilent();
                 } else {
                     showAlert("同步失敗", resData.message || "未知錯誤", "error");
@@ -736,8 +740,8 @@
                 if (statusList.length > 0) {
                     statusTagsHtml = `
                         <div class="mt-1 flex flex-wrap gap-1 items-center">
-                            <span class="text-[10px] font-semibold text-morandi-500 mr-0.5"><i class="fa-solid fa-tags text-[9px] mr-1"></i>風扇狀態:</span>
-                            ${statusList.map(st => `<span class="px-1.5 py-0.2 text-[10px] font-medium bg-morandi-100 text-morandi-800 rounded-md border border-morandi-200">${escapeHtml(st)}</span>`).join('')}
+                            <span class="text-[9px] font-semibold text-morandi-500 mr-0.5"><i class="fa-solid fa-tags text-[8px] mr-1"></i>風扇狀態:</span>
+                            ${statusList.map(st => `<span class="px-1.5 py-0.2 text-[9px] font-medium bg-morandi-100 text-morandi-800 rounded-md border border-morandi-200">${escapeHtml(st)}</span>`).join('')}
                         </div>
                     `;
                 }
@@ -753,20 +757,20 @@
                     <div class="space-y-1.5">
                         <!-- 一級卡片：風扇數量 -->
                         <div class="bg-morandi-100/60 border border-morandi-200/80 rounded-xl p-2 shadow-xs space-y-1">
-                            <div class="text-[11px] font-bold text-morandi-700 px-0.5 flex justify-between items-center">
+                            <div class="text-[10px] font-bold text-morandi-700 px-0.5 flex justify-between items-center">
                                 <span><i class="fa-solid fa-cube text-[9px] mr-1 text-morandi-500"></i>風扇數量</span>
                             </div>
                             <div class="grid grid-cols-3 gap-1.5">
                                 <div class="bg-white/90 p-1 rounded-lg border border-morandi-200/60 text-center">
-                                    <span class="text-[10px] text-morandi-500 block">樓底扇</span>
+                                    <span class="text-[9px] text-morandi-500 block">樓底扇</span>
                                     <strong class="text-morandi-800 text-xs font-bold">${displayVal(item.originalCeilingFans)}</strong>
                                 </div>
                                 <div class="bg-white/90 p-1 rounded-lg border border-morandi-200/60 text-center">
-                                    <span class="text-[10px] text-morandi-500 block">掛牆扇</span>
+                                    <span class="text-[9px] text-morandi-500 block">掛牆扇</span>
                                     <strong class="text-morandi-800 text-xs font-bold">${displayVal(item.originalWallFans)}</strong>
                                 </div>
                                 <div class="bg-white/90 p-1 rounded-lg border border-morandi-200/60 text-center">
-                                    <span class="text-[10px] text-morandi-500 block">牛角扇</span>
+                                    <span class="text-[9px] text-morandi-500 block">牛角扇</span>
                                     <strong class="text-morandi-800 text-xs font-bold">${displayVal(item.originalHornFans)}</strong>
                                 </div>
                             </div>
@@ -775,21 +779,21 @@
                         <!-- 二級卡片：更換風扇數量 -->
                         ${totalChangeFans > 0 ? `
                             <div class="bg-rose-50/60 border border-rose-200/60 rounded-xl p-2 shadow-inner space-y-1">
-                                <div class="text-[11px] font-bold text-rose-900 px-0.5 flex justify-between items-center">
+                                <div class="text-[10px] font-bold text-rose-900 px-0.5 flex justify-between items-center">
                                     <span><i class="fa-solid fa-arrows-rotate text-[9px] mr-1 text-rose-600"></i>更換風扇數量</span>
-                                    ${isDone ? '<span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/90 px-1.5 py-0.2 rounded-full"><i class="fa-solid fa-check mr-0.5"></i>已更換完畢</span>' : ''}
+                                    ${isDone ? '<span class="text-[9px] text-emerald-700 font-bold bg-emerald-100/90 px-1.5 py-0.2 rounded-full"><i class="fa-solid fa-check mr-0.5"></i>已更換完畢</span>' : ''}
                                 </div>
                                 <div class="grid grid-cols-3 gap-1.5">
                                     <div class="bg-white p-1 rounded-lg border border-rose-100 text-center">
-                                        <span class="text-[10px] text-rose-800 block">樓底扇</span>
+                                        <span class="text-[9px] text-rose-800 block">樓底扇</span>
                                         <strong class="text-rose-950 text-xs font-extrabold">${displayVal(item.ceilingFans)}</strong>
                                     </div>
                                     <div class="bg-white p-1 rounded-lg border border-rose-100 text-center">
-                                        <span class="text-[10px] text-rose-800 block">掛牆扇</span>
+                                        <span class="text-[9px] text-rose-800 block">掛牆扇</span>
                                         <strong class="text-rose-950 text-xs font-extrabold">${displayVal(item.wallFans)}</strong>
                                     </div>
                                     <div class="bg-white p-1 rounded-lg border border-rose-100 text-center">
-                                        <span class="text-[10px] text-rose-800 block">牛角扇</span>
+                                        <span class="text-[9px] text-rose-800 block">牛角扇</span>
                                         <strong class="text-rose-950 text-xs font-extrabold">${displayVal(item.hornFans)}</strong>
                                     </div>
                                 </div>
@@ -804,6 +808,7 @@
             });
         }
 
+        // 單選設定（區域、樓層）
         function setSingleFilter(type, value) {
             currentFilters[type] = value;
             const groupMap = { area: 'btnGroupArea', floor: 'btnGroupFloor' };
@@ -821,20 +826,25 @@
             applyFilters();
         }
 
+        // 多選切換設定（風扇類型、更換風扇）
         function toggleMultiFilter(type, value) {
             let currentList = currentFilters[type] || ['ALL'];
 
             if (value === 'ALL') {
                 currentList = ['ALL'];
             } else {
+                // 如果原本包含 ALL，移除 ALL
                 currentList = currentList.filter(item => item !== 'ALL');
                 
                 if (currentList.includes(value)) {
+                    // 如果已勾選，解勾選
                     currentList = currentList.filter(item => item !== value);
                 } else {
+                    // 未勾選則加入
                     currentList.push(value);
                 }
 
+                // 如果解勾選後陣列為空，自動回到 ALL
                 if (currentList.length === 0) {
                     currentList = ['ALL'];
                 }
@@ -842,6 +852,7 @@
 
             currentFilters[type] = currentList;
 
+            // 更新按鈕樣式 UI
             const groupMap = { fanType: 'btnGroupFanType', changeFanType: 'btnGroupChangeFanType' };
             const container = document.getElementById(groupMap[type]);
             if (container) {
@@ -1004,6 +1015,7 @@
                 if (areaVal !== 'ALL' && item.area !== areaVal) return false;
                 if (floorVal !== 'ALL' && item.floor !== floorVal) return false;
 
+                // 多選過濾：「風扇數量」
                 if (!fanTypes.includes('ALL')) {
                     const origC = Number(item.originalCeilingFans) || 0;
                     const origW = Number(item.originalWallFans) || 0;
@@ -1017,6 +1029,7 @@
                     if (!matchFanType) return false;
                 }
 
+                // 多選過濾：「更換風扇」
                 if (!changeFanTypes.includes('ALL')) {
                     const changeC = Number(item.ceilingFans) || 0;
                     const changeW = Number(item.wallFans) || 0;
@@ -1070,16 +1083,22 @@
         }
 
         function deleteCurrentRow() {
-            const id = document.getElementById('editRowId').value;
-            closeEditModal(); 
-            showConfirm("刪除確認", "確定要刪除這筆房間紀錄嗎？", function() {
-                fanList = fanList.filter(f => String(f.id) !== String(id));
-                fanList.forEach((item, index) => { item.id = String(index + 1); });
-                saveToLocalStorage();
-                renderCardsAndStats();
-                showToast("該房間記錄已刪除，請點同步按鈕至雲端！");
-            });
-        }
+    const id = document.getElementById('editRowId').value;
+    closeEditModal(); 
+    showConfirm("刪除確認", "確定要刪除這筆房間紀錄嗎？", function() {
+        // 過濾掉被刪除的項目
+        fanList = fanList.filter(f => String(f.id) !== String(id));
+        
+        // 重新排序 id
+        fanList.forEach((item, index) => {
+            item.id = String(index + 1);
+        });
+
+        saveToLocalStorage();
+        renderCardsAndStats();
+        showToast("該房間記錄已在手機端刪除，請點右上角同步至雲端！");
+    });
+}
 
         function saveEdit(e) {
             e.preventDefault();
@@ -1190,6 +1209,15 @@
             if (typeof str !== 'string') return str;
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
+
+        // 平滑捲動回到頁面最頂部
+        function scrollToTop(e) {
+            window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+            });
+        }
+
     </script>
 </body>
 </html>
