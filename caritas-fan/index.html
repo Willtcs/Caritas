@@ -222,8 +222,8 @@
             </section>
 
             <!-- 雲端下載載入中提示橫幅 -->
-            <div id="cloudLoadingBanner" class="hidden bg-[#C1CEE5]/35 border border-[#B7BFDF] rounded-xl px-3.5 py-2.5 flex items-center justify-center gap-2 text-ink-900">
-                <i class="fa-solid fa-spinner fa-spin text-sm text-ink-700"></i>
+            <div id="cloudLoadingBanner" class="hidden bg-[#C1CEE5]/35 border border-[#B7BFDF] rounded-xl px-3.5 py-6 flex flex-col items-center justify-center gap-2 text-ink-900">
+                <i class="fa-solid fa-spinner fa-spin text-xl text-ink-700"></i>
                 <span class="text-xs font-semibold">正在從雲端載入最新資料...</span>
             </div>
 
@@ -394,6 +394,7 @@
         // Data State
         let fanList = [];
         let isSyncing = false;
+        let isLoadingCloud = false;
         const STORAGE_KEY = 'exhaust_fan_management_system_pastel_v14';
 
         // Google Sheets CSV 網址
@@ -430,13 +431,9 @@
         window.onload = async function() {
             initEventListeners();
 
-            // 1. 先讀取本地快取（做為打底畫面）
-            loadData();
-            calculateStatistics();
+            // 載入雲端前保持空白，僅渲染初始篩選列並從雲端下載最新資料
+            fanList = [];
             renderBrandFilterButtons();
-            renderCardsList();
-
-            // 2. 從雲端抓取最新資料（靜默模式，不彈出 Toast，僅於資料版面顯示載入中圖示）
             await fetchFromCloud(true);
         };
 
@@ -470,8 +467,13 @@
         async function fetchFromCloud(silent = true) {
             const syncIcon = document.getElementById('syncIcon');
             const loadingBanner = document.getElementById('cloudLoadingBanner');
+            const emptyState = document.getElementById('emptyState');
+            const cardsContainer = document.getElementById('cardsListContainer');
             
+            isLoadingCloud = true;
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
+            if (emptyState) emptyState.classList.add('hidden');
+            if (cardsContainer) cardsContainer.innerHTML = '';
             if (loadingBanner) loadingBanner.classList.remove('hidden');
 
             let success = false;
@@ -514,18 +516,18 @@
 
                 if (success) {
                     saveData();
-                    calculateStatistics();
-                    renderBrandFilterButtons();
-                    renderCardsList();
                 } else {
+                    // 僅在雲端讀取失敗時才退回讀取本機備份
+                    loadData();
                     if (!silent) showToast('雲端連線受阻，目前顯示本機備份資料', 'error');
-                    calculateStatistics();
-                    renderBrandFilterButtons();
-                    renderCardsList();
                 }
             } finally {
+                isLoadingCloud = false;
                 if (loadingBanner) loadingBanner.classList.add('hidden');
                 if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+                calculateStatistics();
+                renderBrandFilterButtons();
+                renderCardsList();
             }
         }
 
@@ -657,12 +659,7 @@
                     fanList = [];
                 }
             } else {
-                fanList = [
-                    { floor: 'G/F', roomNo: 'G01', area: '日校', roomName: '地下男洗手間', brand: 'KDK', model: '20ALH', size: '8"', hole: '方', qty: 2, window: '鋁塑板', status: '1' },
-                    { floor: '1/F', roomNo: '102', area: '日校', roomName: '102課室', brand: 'Panasonic', model: 'FV-15WH3', size: '6"', hole: '圓', qty: 1, window: '玻璃窗', status: '-' },
-                    { floor: '1/F', roomNo: 'H105', area: '宿舍', roomName: '宿舍幹事室', brand: 'Cata', model: '15WHC', size: '6"', hole: '圓', qty: 3, window: '鋁塑板', status: '2' }
-                ];
-                saveData();
+                fanList = [];
             }
         }
 
@@ -734,6 +731,12 @@
             const emptyState = document.getElementById('emptyState');
             const searchInput = document.getElementById('searchInput');
             const searchKey = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+            if (isLoadingCloud) {
+                container.innerHTML = '';
+                emptyState.classList.add('hidden');
+                return;
+            }
 
             let filtered = fanList.filter(item => {
                 const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
