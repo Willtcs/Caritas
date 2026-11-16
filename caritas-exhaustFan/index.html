@@ -221,6 +221,12 @@
                 </div>
             </section>
 
+            <!-- 雲端下載載入中狀態顯示 -->
+            <div id="loadingState" class="hidden py-14 text-center text-ink-700 bg-white rounded-xl border border-[#C1CEE5] shadow-xs">
+                <i class="fa-solid fa-spinner fa-spin text-3xl mb-2.5 text-[#B7BFDF]"></i>
+                <p class="text-xs font-semibold text-ink-700 tracking-wide">正在從雲端載入資料...</p>
+            </div>
+
             <!-- 5. 卡片列表區塊 -->
             <section id="cardsListContainer" class="space-y-2 mb-4"></section>
 
@@ -388,6 +394,7 @@
         // Data State
         let fanList = [];
         let isSyncing = false;
+        let isLoadingCloud = false;
         let toastTimeout = null;
         const STORAGE_KEY = 'exhaust_fan_management_system_pastel_v14';
 
@@ -425,15 +432,30 @@
         window.onload = async function() {
             initEventListeners();
 
-            // 1. 先讀取本地快取（做為打底畫面）
+            // 1. 先讀取本地快取（做為備份與統計基礎）
             loadData();
             calculateStatistics();
             renderBrandFilterButtons();
-            renderCardsList();
 
-            // 2. 強制從雲端抓取最新資料並重新渲染
-            await fetchFromCloud(false);
+            // 2. 從雲端抓取最新資料，期間在資料版面顯示載入中圖示（不彈出 Toast）
+            await fetchFromCloud();
         };
+
+        function setLoadingState(loading) {
+            isLoadingCloud = loading;
+            const loadingEl = document.getElementById('loadingState');
+            const cardsEl = document.getElementById('cardsListContainer');
+            const emptyEl = document.getElementById('emptyState');
+
+            if (loading) {
+                if (loadingEl) loadingEl.classList.remove('hidden');
+                if (cardsEl) cardsEl.classList.add('hidden');
+                if (emptyEl) emptyEl.classList.add('hidden');
+            } else {
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (cardsEl) cardsEl.classList.remove('hidden');
+            }
+        }
 
         function renderBrandFilterButtons() {
             const container = document.getElementById('filterBrandContainer');
@@ -462,13 +484,11 @@
             container.innerHTML = html;
         }
 
-        async function fetchFromCloud(silent = false) {
+        async function fetchFromCloud() {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
-            if (!silent) {
-                showToast('正在從雲端下載中...', 'loading', 15000);
-            }
+            setLoadingState(true);
 
             let success = false;
 
@@ -509,16 +529,12 @@
 
             if (success) {
                 saveData();
-                calculateStatistics();
-                renderBrandFilterButtons();
-                renderCardsList();
-                if (!silent) showToast('已成功從雲端更新數據！', 'success');
-            } else {
-                if (!silent) showToast('雲端連線受阻，目前顯示本機備份資料', 'error');
-                calculateStatistics();
-                renderBrandFilterButtons();
-                renderCardsList();
             }
+
+            setLoadingState(false);
+            calculateStatistics();
+            renderBrandFilterButtons();
+            renderCardsList();
 
             if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
         }
@@ -680,7 +696,9 @@
                 listView.classList.remove('hidden');
                 tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-[#B7BFDF] text-ink-900 shadow-xs';
                 tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-ink-500 hover:text-ink-900';
-                renderCardsList();
+                if (!isLoadingCloud) {
+                    renderCardsList();
+                }
             }
         }
 
@@ -724,6 +742,8 @@
         }
 
         function renderCardsList() {
+            if (isLoadingCloud) return;
+
             const container = document.getElementById('cardsListContainer');
             const emptyState = document.getElementById('emptyState');
             const searchInput = document.getElementById('searchInput');
@@ -995,8 +1015,6 @@
                 toastIcon.className = 'fa-solid fa-circle-exclamation text-[#E5BCC9]';
             } else if (type === 'success') {
                 toastIcon.className = 'fa-solid fa-circle-check text-[#E6F0DE]';
-            } else if (type === 'loading') {
-                toastIcon.className = 'fa-solid fa-spinner fa-spin text-[#C1CEE5]';
             } else {
                 toastIcon.className = 'fa-solid fa-circle-info text-[#C1CEE5]';
             }
