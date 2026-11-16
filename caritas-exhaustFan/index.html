@@ -378,16 +378,17 @@
         </div>
     </div>
 
-    <!-- Notification Toast Message -->
-    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-ink-900 text-white px-3.5 py-2.5 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 text-xs max-w-[320px] border border-[#B7BFDF]/30">
+    <!-- Notification Toast Message (頂端標題位置顯示) -->
+    <div id="toast" class="fixed top-3 left-1/2 -translate-x-1/2 bg-ink-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-xl z-50 transform -translate-y-16 opacity-0 transition-all duration-300 flex items-center gap-2 text-xs max-w-[340px] border border-[#B7BFDF]/40 pointer-events-none">
         <i id="toastIcon" class="fa-solid fa-circle-info text-[#C1CEE5]"></i>
-        <span id="toastMsg" class="font-medium">訊息提示</span>
+        <span id="toastMsg" class="font-medium tracking-wide">訊息提示</span>
     </div>
 
     <script>
         // Data State
         let fanList = [];
         let isSyncing = false;
+        let toastTimeout = null;
         const STORAGE_KEY = 'exhaust_fan_management_system_pastel_v14';
 
         // Google Sheets CSV 網址
@@ -464,6 +465,10 @@
         async function fetchFromCloud(silent = false) {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
+
+            if (!silent) {
+                showToast('正在從雲端下載中...', 'loading', 15000);
+            }
 
             let success = false;
 
@@ -975,10 +980,14 @@
                 .replace(/'/g, "&#039;");
         }
 
-        function showToast(msg, type = 'info') {
+        function showToast(msg, type = 'info', duration = 2500) {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
             const toastIcon = document.getElementById('toastIcon');
+
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
 
             toastMsg.innerText = msg;
 
@@ -986,17 +995,19 @@
                 toastIcon.className = 'fa-solid fa-circle-exclamation text-[#E5BCC9]';
             } else if (type === 'success') {
                 toastIcon.className = 'fa-solid fa-circle-check text-[#E6F0DE]';
+            } else if (type === 'loading') {
+                toastIcon.className = 'fa-solid fa-spinner fa-spin text-[#C1CEE5]';
             } else {
                 toastIcon.className = 'fa-solid fa-circle-info text-[#C1CEE5]';
             }
 
-            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.remove('-translate-y-16', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
 
-            setTimeout(() => {
+            toastTimeout = setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 2500);
+                toast.classList.add('-translate-y-16', 'opacity-0');
+            }, duration);
         }
 
         // 將純數字房號補齊為 3 位數（例如 "31" -> "031"，"H105" 保持原樣）
