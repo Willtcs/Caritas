@@ -322,10 +322,10 @@
 
         </main>
 
-        <!-- 底部 Toast 小通知 -->
-        <div id="toastNotification" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform opacity-0 translate-y-4 pointer-events-none">
-            <div class="bg-ink-900/95 backdrop-blur-md text-[#F8E9F7] text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-[#B4B3E6]/50">
-                <i class="fa-solid fa-circle-check text-[#B4B3E6] text-sm"></i>
+        <!-- 頂端標題位置 Toast 小通知 -->
+        <div id="toastNotification" style="top: max(12px, env(safe-area-inset-top));" class="fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform opacity-0 -translate-y-16 pointer-events-none">
+            <div class="bg-ink-900/95 backdrop-blur-md text-[#F8E9F7] text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 border border-[#B4B3E6]/60 whitespace-nowrap">
+                <i id="toastIcon" class="fa-solid fa-circle-check text-[#B4B3E6] text-sm"></i>
                 <span id="toastMessage">已成功由雲端載入最新資料</span>
             </div>
         </div>
@@ -499,6 +499,7 @@
         ];
 
         let fanList = [];
+        let toastTimeout = null;
         let currentFilters = { 
             area: 'ALL', 
             floor: 'ALL', 
@@ -532,15 +533,18 @@
                 return;
             }
 
+            showToast("正在從雲端下載中...", "loading", 15000);
+
             fetch(API_URL, { redirect: 'follow' })
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data) && data.length > 0) {
                         fanList = data;
                         saveToLocalStorage();
-                        showToast("已成功由雲端載入最新資料");
+                        showToast("已成功由雲端載入最新資料", "success");
                     } else {
                         loadFromLocalStorage();
+                        showToast("雲端暫無資料，已載入本機備份", "info");
                     }
                     updateFloorDropdownOptions();
                     renderCardsAndStats();
@@ -549,22 +553,41 @@
                     loadFromLocalStorage();
                     updateFloorDropdownOptions();
                     renderCardsAndStats();
+                    showToast("雲端連線受阻，目前顯示本機資料", "error");
                 });
         }
 
-        function showToast(msg) {
+        function showToast(msg, type = 'success', duration = 3000) {
             const toast = document.getElementById('toastNotification');
             const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
             if (!toast || !toastMsg) return;
 
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
+
             toastMsg.innerText = msg;
-            toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+
+            if (toastIcon) {
+                if (type === 'loading') {
+                    toastIcon.className = 'fa-solid fa-spinner fa-spin text-[#B4B3E6] text-sm';
+                } else if (type === 'error') {
+                    toastIcon.className = 'fa-solid fa-circle-exclamation text-[#F1DAF5] text-sm';
+                } else if (type === 'info') {
+                    toastIcon.className = 'fa-solid fa-circle-info text-[#CDC1E8] text-sm';
+                } else {
+                    toastIcon.className = 'fa-solid fa-circle-check text-[#B4B3E6] text-sm';
+                }
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-16', 'pointer-events-none');
             toast.classList.add('opacity-100', 'translate-y-0');
 
-            setTimeout(() => {
+            toastTimeout = setTimeout(() => {
                 toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-            }, 3000);
+                toast.classList.add('opacity-0', '-translate-y-16', 'pointer-events-none');
+            }, duration);
         }
 
         function uploadToCloudConfirm() {
@@ -591,7 +614,7 @@
             .then(resData => {
                 icon.className = 'fa-solid fa-cloud-arrow-up text-base';
                 if (resData.status === 'success') {
-                    showToast("最新資料已成功上傳更新至雲端！");
+                    showToast("最新資料已成功上傳更新至雲端！", "success");
                     fetchFromCloudSilent();
                 } else {
                     showAlert("同步失敗", resData.message || "未知錯誤", "error");
