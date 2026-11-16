@@ -237,6 +237,7 @@
                     </select>
                 </div>
                 <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="deleteCurrentItem()" class="px-4 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-semibold active:scale-95 transition-transform">刪除</button>
                     <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-ios-bg text-ios-subtext rounded-xl text-xs font-semibold">取消</button>
                     <button type="submit" class="flex-1 py-2.5 bg-ios-morandi text-white rounded-xl text-xs font-semibold">儲存並同步</button>
                 </div>
@@ -369,7 +370,8 @@
                 filtered.forEach(item => {
                     const idx = equipmentList.indexOf(item);
                     const card = document.createElement('div');
-                    card.className = 'bg-ios-card p-3.5 rounded-2xl border border-ios-border/60 shadow-sm flex items-center justify-between';
+                    card.onclick = () => openEditModal(idx);
+                    card.className = 'bg-ios-card p-3.5 rounded-2xl border border-ios-border/60 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform';
                     card.innerHTML = `
                         <div class="space-y-1">
                             <div class="flex items-center space-x-1.5">
@@ -382,10 +384,8 @@
                                 ${item.wallMount ? `<span>• 掛牆: ${escapeHtml(item.wallMount)}</span>` : ''}
                             </div>
                         </div>
-                        <div class="flex items-center space-x-3">
+                        <div class="flex items-center">
                             <span class="text-base font-bold text-ios-morandi bg-ios-bg px-2.5 py-1 rounded-xl">x${item.quantity}</span>
-                            <button onclick="openEditModal(${idx})" class="text-ios-subtext active:text-ios-morandi"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteItem(${idx})" class="text-ios-subtext active:text-red-500"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     `;
                     container.appendChild(card);
@@ -465,10 +465,12 @@
             syncToGoogleSheets();
         }
 
-        function deleteItem(idx) {
-            if (confirm("確定要刪除此筆項目嗎？")) {
+        function deleteCurrentItem() {
+            const idx = parseInt(document.getElementById('editIndex').value);
+            if (idx >= 0 && confirm("確定要刪除此筆項目嗎？")) {
                 equipmentList.splice(idx, 1);
                 renderApp();
+                closeModal();
                 syncToGoogleSheets();
             }
         }
