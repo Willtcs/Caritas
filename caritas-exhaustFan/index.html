@@ -18,34 +18,23 @@
             theme: {
                 extend: {
                     colors: {
-                        morandi: {
-                            50: '#f4f7f9',
-                            100: '#e5ecf1',
-                            200: '#d5e2eb',
-                            300: '#adbfcb',
-                            400: '#839ba8',
-                            500: '#5b7b93',
-                            600: '#4a6984',
-                            700: '#3c5369',
-                            800: '#344557',
-                            900: '#2c3e50',
+                        pastelMint: '#E6F0DE',
+                        pastelBlush: '#F2D9E2',
+                        pastelPeri: '#C1CEE5',
+                        pastelMauve: '#E5BCC9',
+                        pastelSlate: '#B7BFDF',
+                        ink: {
+                            900: '#262b3d',
+                            700: '#424961',
+                            500: '#68718d',
                         },
-                        roseDust: {
-                            50: '#fdf7f7',
-                            100: '#f9ecec',
-                            500: '#c07070',
-                            600: '#aa5c5c',
+                        roseAccent: {
+                            600: '#8a3e56',
+                            500: '#a64d69',
                         },
-                        sage: {
-                            50: '#f2f7f5',
-                            100: '#e1ede7',
-                            500: '#5f8d7b',
-                            600: '#4d7565',
-                        },
-                        lavender: {
-                            50: '#f6f5f9',
-                            100: '#eae7f2',
-                            500: '#7b7393',
+                        sageAccent: {
+                            600: '#3f5932',
+                            500: '#537343',
                         }
                     }
                 }
@@ -58,8 +47,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #eef2f5;
-            color: #2c3e50;
+            background-color: #f4f6fa;
+            color: #262b3d;
         }
         
         ::-webkit-scrollbar {
@@ -67,37 +56,37 @@
             height: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: #e8eef3;
+            background: #E6F0DE;
         }
         ::-webkit-scrollbar-thumb {
-            background: #adbfcb;
+            background: #B7BFDF;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #839ba8;
+            background: #C1CEE5;
         }
     </style>
 </head>
 <body class="min-h-screen pb-20 antialiased flex flex-col items-center justify-start">
 
     <!-- iPhone 外框容器 -->
-    <div class="w-full max-w-[430px] min-h-screen bg-slate-50 shadow-2xl flex flex-col border-x border-morandi-200 relative pb-16">
+    <div class="w-full max-w-[430px] min-h-screen bg-[#fafbfd] shadow-2xl flex flex-col border-x border-pastelPeri/60 relative pb-16">
 
-        <!-- 1. 頂部標題與工具列 -->
-        <header class="bg-morandi-500 text-white shadow-sm border-b border-morandi-600 sticky top-0 z-30 px-4 py-3">
+        <!-- 1. 頂部標題與工具列 (#B7BFDF & #C1CEE5) -->
+        <header class="bg-gradient-to-r from-[#B7BFDF] to-[#C1CEE5] text-ink-900 shadow-sm border-b border-pastelSlate sticky top-0 z-30 px-4 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
-                        <i class="fa-solid fa-fan text-base text-morandi-100"></i>
+                    <div class="w-8 h-8 rounded-xl bg-white/60 flex items-center justify-center backdrop-blur-sm border border-white/80 shadow-xs">
+                        <i class="fa-solid fa-fan text-base text-ink-900"></i>
                     </div>
                     <div>
-                        <h1 class="text-base font-bold tracking-wide text-white leading-tight">抽氣扇管理系統</h1>
-                        <p class="text-[10px] text-morandi-100/80 font-light tracking-tight">Exhaust Fan Management System</p>
+                        <h1 class="text-base font-bold tracking-wide text-ink-900 leading-tight">抽氣扇管理系統</h1>
+                        <p class="text-[10px] text-ink-700 font-medium tracking-tight">Exhaust Fan Management System</p>
                     </div>
                 </div>
 
-                <!-- 頂部右側同步雲端按鈕 -->
-                <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 shadow-sm">
+                <!-- 頂部右側同步雲端按鈕 (#F2D9E2 & #E5BCC9) -->
+                <button id="btnSyncCloud" onclick="syncToCloud()" title="同步至 Google Sheets" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#F2D9E2] hover:bg-[#E5BCC9] active:scale-95 transition-all text-roseAccent-600 border border-[#E5BCC9] shadow-sm">
                     <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm"></i>
                 </button>
             </div>
@@ -109,79 +98,80 @@
             <input type="hidden" name="data" id="hiddenSyncData">
         </form>
 
+        <!-- 頁面 1：統計摘要 (Tab 1) -->
         <main id="tabViewSummary" class="flex-1 px-3.5 pt-3.5 space-y-4 hidden">
 
-            <!-- 1. 全校抽氣扇總數 -->
-            <section class="bg-gradient-to-r from-morandi-700 via-morandi-600 to-morandi-500 text-white rounded-xl shadow-sm px-4 py-3 flex justify-between items-center">
+            <!-- 1. 全校抽氣扇總數 (#B7BFDF & #C1CEE5) -->
+            <section class="bg-gradient-to-r from-[#B7BFDF] via-[#C1CEE5] to-[#E6F0DE] text-ink-900 rounded-xl shadow-sm border border-[#B7BFDF] px-4 py-3.5 flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
-                    <div class="p-2 bg-white/10 rounded-lg border border-white/15 backdrop-blur-sm">
-                        <i class="fa-solid fa-building-columns text-morandi-100 text-base"></i>
+                    <div class="p-2 bg-white/70 rounded-lg border border-white shadow-xs">
+                        <i class="fa-solid fa-building-columns text-ink-900 text-base"></i>
                     </div>
                     <div>
-                        <h2 class="text-base font-bold text-white tracking-wide">全校抽氣扇總數</h2>
+                        <h2 class="text-base font-bold text-ink-900 tracking-wide">全校抽氣扇總數</h2>
                     </div>
                 </div>
-                <div id="schoolTotalQty" class="text-lg font-black tracking-tight text-amber-100 drop-shadow-sm">
-                    0 <span class="text-base font-normal text-morandi-100">部</span>
+                <div id="schoolTotalQty" class="text-xl font-black tracking-tight text-ink-900">
+                    0 <span class="text-sm font-semibold text-ink-700">部</span>
                 </div>
             </section>
 
-            <!-- 2. 抽氣扇數量區塊 -->
+            <!-- 2. 抽氣扇數量區塊 (#E6F0DE & #C1CEE5) -->
             <section class="space-y-1.5">
-                <div class="px-1 text-base font-bold text-morandi-900 flex items-center gap-2">
-                    <i class="fa-solid fa-fan text-morandi-500 text-base"></i>
+                <div class="px-1 text-base font-bold text-ink-900 flex items-center gap-2">
+                    <i class="fa-solid fa-fan text-sageAccent-600 text-base"></i>
                     <span>抽氣扇數量</span>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
-                    <div class="px-4 py-3 flex items-center justify-between">
+                <div class="bg-white rounded-xl shadow-sm border border-[#C1CEE5]/60 divide-y divide-[#C1CEE5]/40 overflow-hidden">
+                    <div class="px-4 py-3 flex items-center justify-between bg-[#E6F0DE]/35">
                         <div class="flex items-center gap-2.5">
-                            <div class="p-1.5 bg-morandi-50 text-morandi-500 rounded-lg">
+                            <div class="p-1.5 bg-[#E6F0DE] text-sageAccent-600 rounded-lg border border-sageAccent-500/20">
                                 <i class="fa-solid fa-sun text-base"></i>
                             </div>
-                            <span class="text-base font-semibold text-morandi-800">日校</span>
+                            <span class="text-base font-semibold text-ink-900">日校</span>
                         </div>
-                        <div id="daySchoolTotal" class="text-base font-bold text-morandi-900 pr-1">0</div>
+                        <div id="daySchoolTotal" class="text-base font-bold text-ink-900 pr-1">0</div>
                     </div>
 
-                    <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="px-4 py-3 flex items-center justify-between bg-[#C1CEE5]/25">
                         <div class="flex items-center gap-2.5">
-                            <div class="p-1.5 bg-lavender-50 text-lavender-500 rounded-lg">
+                            <div class="p-1.5 bg-[#C1CEE5] text-ink-900 rounded-lg border border-[#B7BFDF]">
                                 <i class="fa-solid fa-bed text-base"></i>
                             </div>
-                            <span class="text-base font-semibold text-morandi-800">宿舍</span>
+                            <span class="text-base font-semibold text-ink-900">宿舍</span>
                         </div>
-                        <div id="hostelTotal" class="text-base font-bold text-morandi-900 pr-1">0</div>
+                        <div id="hostelTotal" class="text-base font-bold text-ink-900 pr-1">0</div>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. 需更換數量區塊 -->
+            <!-- 3. 需更換數量區塊 (#F2D9E2 & #E5BCC9) -->
             <section class="space-y-1.5">
-                <div class="px-1 text-base font-bold text-roseDust-600 flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation text-roseDust-500 text-base"></i>
+                <div class="px-1 text-base font-bold text-roseAccent-600 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-roseAccent-600 text-base"></i>
                     <span>需更換數量</span>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-morandi-100 divide-y divide-morandi-100 overflow-hidden">
-                    <div class="px-4 py-3 flex items-center justify-between">
+                <div class="bg-white rounded-xl shadow-sm border border-[#E5BCC9]/80 divide-y divide-[#E5BCC9]/40 overflow-hidden">
+                    <div class="px-4 py-3 flex items-center justify-between bg-[#F2D9E2]/45">
                         <div class="flex items-center gap-2.5">
-                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                            <div class="p-1.5 bg-[#F2D9E2] text-roseAccent-600 rounded-lg border border-[#E5BCC9]">
                                 <i class="fa-solid fa-sun text-base"></i>
                             </div>
-                            <span class="text-base font-semibold text-roseDust-600">日校</span>
+                            <span class="text-base font-semibold text-roseAccent-600">日校</span>
                         </div>
-                        <div id="daySchoolNeed" class="text-base font-bold text-roseDust-600 pr-1">0</div>
+                        <div id="daySchoolNeed" class="text-base font-bold text-roseAccent-600 pr-1">0</div>
                     </div>
 
-                    <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="px-4 py-3 flex items-center justify-between bg-[#E5BCC9]/30">
                         <div class="flex items-center gap-2.5">
-                            <div class="p-1.5 bg-roseDust-50 text-roseDust-500 rounded-lg">
+                            <div class="p-1.5 bg-[#E5BCC9] text-roseAccent-600 rounded-lg border border-roseAccent-500/20">
                                 <i class="fa-solid fa-bed text-base"></i>
                             </div>
-                            <span class="text-base font-semibold text-roseDust-600">宿舍</span>
+                            <span class="text-base font-semibold text-roseAccent-600">宿舍</span>
                         </div>
-                        <div id="hostelNeed" class="text-base font-bold text-roseDust-600 pr-1">0</div>
+                        <div id="hostelNeed" class="text-base font-bold text-roseAccent-600 pr-1">0</div>
                     </div>
                 </div>
             </section>
@@ -192,41 +182,41 @@
         <main id="tabViewList" class="flex-1 px-3.5 pt-3.5 space-y-3">
 
             <!-- 4. 頂部控制列 -->
-            <section class="bg-white rounded-xl shadow-sm border border-morandi-100 p-2.5 space-y-2">
+            <section class="bg-white rounded-xl shadow-sm border border-[#C1CEE5]/80 p-2.5 space-y-2">
                 <div class="flex items-center justify-between gap-2">
                     <div class="relative flex-1">
-                        <input type="text" id="searchInput" placeholder="搜尋房號、房名、型號..." class="w-full bg-morandi-50/50 border border-morandi-200 text-morandi-900 rounded-lg pl-7 pr-2 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none placeholder:text-morandi-300">
-                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-morandi-300 text-xs"></i>
+                        <input type="text" id="searchInput" placeholder="搜尋房號、房名、型號..." class="w-full bg-[#C1CEE5]/20 border border-[#C1CEE5] text-ink-900 rounded-lg pl-7 pr-2 py-1.5 text-xs focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none placeholder:text-ink-500">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-ink-500 text-xs"></i>
                     </div>
 
-                    <button id="toggleFilterBtn" class="p-1.5 bg-morandi-50 hover:bg-morandi-100 text-morandi-600 rounded-lg border border-morandi-200/50 text-xs flex items-center justify-center shrink-0">
+                    <button id="toggleFilterBtn" class="p-1.5 bg-[#E6F0DE] hover:bg-[#d7e8ca] text-sageAccent-600 rounded-lg border border-[#E6F0DE] text-xs flex items-center justify-center shrink-0">
                         <i id="toggleFilterIcon" class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
                     </button>
 
-                    <button id="btnResetFilters" class="text-xs bg-morandi-100 hover:bg-morandi-200 text-morandi-700 font-medium px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
-                        <i class="fa-solid fa-filter-circle-xmark text-morandi-500"></i> 重設
+                    <button id="btnResetFilters" class="text-xs bg-[#F2D9E2] hover:bg-[#E5BCC9] text-roseAccent-600 font-medium px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0 border border-[#E5BCC9]/60">
+                        <i class="fa-solid fa-filter-circle-xmark text-roseAccent-600"></i> 重設
                     </button>
                 </div>
 
                 <!-- 折疊篩選面板 -->
-                <div id="filterCollapseArea" class="hidden border-t border-morandi-100 pt-2.5 space-y-2">
+                <div id="filterCollapseArea" class="hidden border-t border-[#C1CEE5]/50 pt-2.5 space-y-2">
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterFloorContainer">
-                        <button type="button" onclick="setFilterBtn('floor', '')" id="btn-floor-all" class="filter-btn filter-btn-floor active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部樓層</button>
-                        <button type="button" onclick="setFilterBtn('floor', 'G/F')" id="btn-floor-GF" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">G/F</button>
-                        <button type="button" onclick="setFilterBtn('floor', '1/F')" id="btn-floor-1F" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">1/F</button>
+                        <button type="button" onclick="setFilterBtn('floor', '')" id="btn-floor-all" class="filter-btn filter-btn-floor active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部樓層</button>
+                        <button type="button" onclick="setFilterBtn('floor', 'G/F')" id="btn-floor-GF" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">G/F</button>
+                        <button type="button" onclick="setFilterBtn('floor', '1/F')" id="btn-floor-1F" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">1/F</button>
                     </div>
 
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterAreaContainer">
-                        <button type="button" onclick="setFilterBtn('area', '')" id="btn-area-all" class="filter-btn filter-btn-area active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部區域</button>
-                        <button type="button" onclick="setFilterBtn('area', '日校')" id="btn-area-day" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">日校</button>
-                        <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">宿舍</button>
+                        <button type="button" onclick="setFilterBtn('area', '')" id="btn-area-all" class="filter-btn filter-btn-area active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部區域</button>
+                        <button type="button" onclick="setFilterBtn('area', '日校')" id="btn-area-day" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">日校</button>
+                        <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">宿舍</button>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer"></div>
 
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
-                        <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-morandi-500 text-white font-medium shrink-0">全部狀態</button>
-                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-morandi-200 bg-white text-morandi-700 font-medium shrink-0">更換</button>
+                        <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部狀態</button>
+                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-[#E5BCC9] bg-white text-roseAccent-600 font-medium shrink-0">更換</button>
                     </div>
                 </div>
             </section>
@@ -235,18 +225,18 @@
             <section id="cardsListContainer" class="space-y-2 mb-4"></section>
 
             <!-- 無資料狀態顯示 -->
-            <div id="emptyState" class="hidden py-10 text-center text-morandi-400 bg-white rounded-xl border border-morandi-100">
-                <i class="fa-solid fa-box-open text-3xl mb-2 text-morandi-300"></i>
-                <p class="text-xs font-medium text-morandi-600">尚無抽氣扇資料或查無符合條件數據</p>
+            <div id="emptyState" class="hidden py-10 text-center text-ink-500 bg-white rounded-xl border border-[#C1CEE5]">
+                <i class="fa-solid fa-box-open text-3xl mb-2 text-[#B7BFDF]"></i>
+                <p class="text-xs font-medium text-ink-700">尚無抽氣扇資料或查無符合條件數據</p>
             </div>
         </main>
 
-        <!-- 6. iOS 藥丸 Tab Bar -->
-        <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full px-2 py-1.5 border border-morandi-200/80 shadow-lg flex items-center justify-around w-44">
-            <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm">
+        <!-- 6. iOS 藥丸 Tab Bar (#C1CEE5 & #B7BFDF) -->
+        <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md rounded-full px-2 py-1.5 border border-[#B7BFDF] shadow-lg flex items-center justify-around w-44">
+            <button onclick="switchTab('list')" id="tabBtnList" class="flex items-center justify-center w-12 h-9 rounded-full transition-all bg-[#B7BFDF] text-ink-900 shadow-xs">
                 <i class="fa-solid fa-list-check text-base"></i>
             </button>
-            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900">
+            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex items-center justify-center w-12 h-9 rounded-full transition-all text-ink-500 hover:text-ink-900">
                 <i class="fa-solid fa-chart-simple text-base"></i>
             </button>
         </nav>
@@ -254,11 +244,11 @@
     </div>
 
     <!-- 7. 修改記錄彈出視窗 -->
-    <div id="modalForm" class="fixed inset-0 bg-morandi-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all border border-morandi-100">
-            <div class="px-4 py-3 border-b border-morandi-100 flex justify-between items-center bg-morandi-50/80 sticky top-0 bg-white z-10">
-                <h3 id="modalTitle" class="text-sm font-bold text-morandi-900">修改抽氣扇記錄</h3>
-                <button id="btnCloseModal" type="button" class="text-morandi-400 hover:text-morandi-600 p-1 rounded-lg focus:outline-none">
+    <div id="modalForm" class="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all border border-[#C1CEE5]">
+            <div class="px-4 py-3 border-b border-[#C1CEE5]/60 flex justify-between items-center bg-gradient-to-r from-[#C1CEE5]/50 to-[#F2D9E2]/40 sticky top-0 z-10 backdrop-blur-md">
+                <h3 id="modalTitle" class="text-sm font-bold text-ink-900">修改抽氣扇記錄</h3>
+                <button id="btnCloseModal" type="button" class="text-ink-500 hover:text-ink-900 p-1 rounded-lg focus:outline-none">
                     <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
@@ -268,36 +258,36 @@
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">樓層 <span class="text-roseDust-500">*</span></label>
-                        <select id="formFloorSelect" required class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">樓層 <span class="text-roseAccent-600">*</span></label>
+                        <select id="formFloorSelect" required class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="G/F">G/F</option>
                             <option value="1/F">1/F</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">房號</label>
-                        <input type="text" id="formRoomNo" placeholder="例: 101" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">房號</label>
+                        <input type="text" id="formRoomNo" placeholder="例: 101" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">區域 <span class="text-roseDust-500">*</span></label>
-                        <select id="formAreaSelect" required class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">區域 <span class="text-roseAccent-600">*</span></label>
+                        <select id="formAreaSelect" required class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="日校">日校</option>
                             <option value="宿舍">宿舍</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">房名</label>
-                        <input type="text" id="formRoomName" placeholder="例: 洗手間" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">房名</label>
+                        <input type="text" id="formRoomName" placeholder="例: 洗手間" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">牌子</label>
-                        <select id="formBrandSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">牌子</label>
+                        <select id="formBrandSelect" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="AIRMATE">AIRMATE</option>
                             <option value="Cata">Cata</option>
                             <option value="KDK">KDK</option>
@@ -308,15 +298,15 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">型號</label>
-                        <input type="text" id="formModel" placeholder="例: 20ALH" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">型號</label>
+                        <input type="text" id="formModel" placeholder="例: 20ALH" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">尺寸</label>
-                        <select id="formSizeSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">尺寸</label>
+                        <select id="formSizeSelect" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value='5"'>5"</option>
                             <option value='6"'>6"</option>
                             <option value='8"'>8"</option>
@@ -327,8 +317,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">開孔</label>
-                        <select id="formHoleSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">開孔</label>
+                        <select id="formHoleSelect" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="方">方</option>
                             <option value="圓">圓</option>
                             <option value="-">-</option>
@@ -338,8 +328,8 @@
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">數量</label>
-                        <select id="formQtySelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">數量</label>
+                        <select id="formQtySelect" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -354,8 +344,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">窗</label>
-                        <select id="formWindowSelect" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">窗</label>
+                        <select id="formWindowSelect" class="w-full bg-[#E6F0DE]/30 border border-[#C1CEE5] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#B7BFDF] focus:outline-none">
                             <option value="鋁塑板">鋁塑板</option>
                             <option value="玻璃窗">玻璃窗</option>
                         </select>
@@ -364,8 +354,8 @@
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div class="col-span-2">
-                        <label class="block text-[11px] font-semibold text-morandi-700 mb-1">更換</label>
-                        <select id="formStatus" class="w-full bg-morandi-50/40 border border-morandi-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-morandi-400 focus:outline-none">
+                        <label class="block text-[11px] font-semibold text-ink-700 mb-1">更換</label>
+                        <select id="formStatus" class="w-full bg-[#F2D9E2]/35 border border-[#E5BCC9] rounded-lg px-2.5 py-1.5 text-xs text-ink-900 focus:ring-1 focus:ring-[#E5BCC9] focus:outline-none">
                             <option value="-">-</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -375,12 +365,12 @@
                     </div>
                 </div>
 
-                <!-- 底部按鈕 -->
-                <div class="pt-3 flex justify-between items-center gap-3 border-t border-morandi-100 w-full">
-                    <button type="submit" class="flex-1 py-2.5 bg-morandi-500 hover:bg-morandi-600 active:bg-morandi-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm text-center">
+                <!-- 底部按鈕 (#B7BFDF & #E5BCC9) -->
+                <div class="pt-3 flex justify-between items-center gap-3 border-t border-[#C1CEE5]/50 w-full">
+                    <button type="submit" class="flex-1 py-2.5 bg-[#B7BFDF] hover:bg-[#a6b0d6] active:bg-[#95a0cc] text-ink-900 text-xs font-bold rounded-xl transition-all shadow-sm text-center border border-[#9fa9cf]">
                         確定更改
                     </button>
-                    <button type="button" onclick="handleModalDelete()" class="flex-1 py-2.5 bg-roseDust-500 hover:bg-roseDust-600 active:bg-roseDust-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm text-center">
+                    <button type="button" onclick="handleModalDelete()" class="flex-1 py-2.5 bg-[#E5BCC9] hover:bg-[#dca8b8] active:bg-[#d294a7] text-roseAccent-600 text-xs font-bold rounded-xl transition-all shadow-sm text-center border border-[#d6a3b3]">
                         刪除
                     </button>
                 </div>
@@ -389,8 +379,8 @@
     </div>
 
     <!-- Notification Toast Message -->
-    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-morandi-800 text-white px-3.5 py-2.5 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 text-xs max-w-[320px]">
-        <i id="toastIcon" class="fa-solid fa-circle-info text-morandi-300"></i>
+    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-ink-900 text-white px-3.5 py-2.5 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 text-xs max-w-[320px] border border-[#B7BFDF]/30">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-[#C1CEE5]"></i>
         <span id="toastMsg" class="font-medium">訊息提示</span>
     </div>
 
@@ -398,7 +388,7 @@
         // Data State
         let fanList = [];
         let isSyncing = false;
-        const STORAGE_KEY = 'exhaust_fan_management_system_morandi_v14';
+        const STORAGE_KEY = 'exhaust_fan_management_system_pastel_v14';
 
         // Google Sheets CSV 網址
         const GOOGLE_SHEETS_CSV_URL = `https://docs.google.com/spreadsheets/d/1asM_vX_Fyu5j6pKnOTYlAOMBukDSBx59nepZGH0uxzs/gviz/tq?tqx=out:csv`;
@@ -457,30 +447,28 @@
 
             const brands = Array.from(brandsSet).sort();
 
-            let html = `<button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border border-morandi-200 ${activeFilters.brand === '' ? 'bg-morandi-500 text-white' : 'bg-white text-morandi-700'} font-medium shrink-0">全部牌子</button>`;
+            const allActive = activeFilters.brand === '';
+            let html = `<button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border ${allActive ? 'border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold' : 'border-[#C1CEE5] bg-white text-ink-700 font-medium'} shrink-0">全部牌子</button>`;
 
             brands.forEach(brand => {
                 const safeId = `btn-brand-${brand.replace(/[^a-zA-Z0-9]/g, '')}`;
                 const isActive = activeFilters.brand === brand;
-                const activeClass = isActive ? 'bg-morandi-500 text-white' : 'bg-white text-morandi-700';
+                const activeClass = isActive ? 'border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold' : 'border-[#C1CEE5] bg-white text-ink-700 font-medium';
                 
-                html += `<button type="button" onclick="setFilterBtn('brand', '${escapeHtml(brand)}')" id="${safeId}" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border border-morandi-200 ${activeClass} font-medium shrink-0">${escapeHtml(brand)}</button>`;
+                html += `<button type="button" onclick="setFilterBtn('brand', '${escapeHtml(brand)}')" id="${safeId}" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border ${activeClass} shrink-0">${escapeHtml(brand)}</button>`;
             });
 
             container.innerHTML = html;
         }
 
-        // 強效非同步雲端下載函式（針對 iOS Safari 優化：優先使用 JSONP 繞過 CORS 阻擋）
         async function fetchFromCloud(silent = false) {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
             let success = false;
 
-            // 通道 1：優先使用 JSONP 向 Apps Script 讀取（iOS Safari 100% 放行，不受跨網域限制）
             if (APPS_SCRIPT_WEB_APP_URL) {
                 try {
-                    // 加上時間戳記 t=... 強制 iOS Safari 不讀取舊快取
                     const cacheBusterUrl = APPS_SCRIPT_WEB_APP_URL + (APPS_SCRIPT_WEB_APP_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
                     const jsonpData = await fetchJsonp(cacheBusterUrl, 6000);
                     if (Array.isArray(jsonpData) && jsonpData.length > 0) {
@@ -495,7 +483,6 @@
                 }
             }
 
-            // 通道 2：備用通道，從 Google Sheets CSV 讀取
             if (!success) {
                 try {
                     const csvUrl = GOOGLE_SHEETS_CSV_URL + '&t=' + Date.now();
@@ -558,7 +545,6 @@
             });
         }
 
-        // 同步上傳至雲端（改用 fetch text/plain 發送，取代容易被 iOS Safari 阻擋的隱藏 iframe）
         async function syncToCloud() {
             if (isSyncing) return;
             const syncIcon = document.getElementById('syncIcon');
@@ -578,7 +564,6 @@
             isSyncing = true;
 
             try {
-                // 使用 URLSearchParams 搭配 no-cors，iOS Safari 允許此類簡單請求寫入 Apps Script
                 const formData = new URLSearchParams();
                 formData.append('data', JSON.stringify(fanList));
 
@@ -591,7 +576,6 @@
                     body: formData.toString()
                 });
 
-                // 寫入完成後，等待 1.5 秒並重新從雲端拉取一次確認同步狀態
                 setTimeout(async () => {
                     isSyncing = false;
                     if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
@@ -684,13 +668,13 @@
             if (tabName === 'summary') {
                 summaryView.classList.remove('hidden');
                 listView.classList.add('hidden');
-                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
-                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
+                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-[#B7BFDF] text-ink-900 shadow-xs';
+                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-ink-500 hover:text-ink-900';
             } else if (tabName === 'list') {
                 summaryView.classList.add('hidden');
                 listView.classList.remove('hidden');
-                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-morandi-500 text-white shadow-sm';
-                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-morandi-600 hover:text-morandi-900';
+                tabBtnList.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all bg-[#B7BFDF] text-ink-900 shadow-xs';
+                tabBtnSummary.className = 'flex items-center justify-center w-12 h-9 rounded-full transition-all text-ink-500 hover:text-ink-900';
                 renderCardsList();
             }
         }
@@ -699,15 +683,20 @@
             activeFilters[type] = val;
             const buttons = document.querySelectorAll(`.filter-btn-${type}`);
             buttons.forEach(btn => {
-                btn.classList.remove('bg-morandi-500', 'text-white');
-                btn.classList.add('bg-white', 'text-morandi-700');
+                btn.classList.remove('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
+                btn.classList.add('bg-white', 'font-medium');
+                if (btn.id === 'btn-status-need') {
+                    btn.classList.add('text-roseAccent-600', 'border-[#E5BCC9]');
+                } else {
+                    btn.classList.add('text-ink-700', 'border-[#C1CEE5]');
+                }
             });
 
             if (val === '') {
                 const allBtn = document.getElementById(`btn-${type}-all`);
                 if (allBtn) {
-                    allBtn.classList.remove('bg-white', 'text-morandi-700');
-                    allBtn.classList.add('bg-morandi-500', 'text-white');
+                    allBtn.classList.remove('bg-white', 'text-ink-700', 'border-[#C1CEE5]', 'font-medium');
+                    allBtn.classList.add('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
                 }
             } else {
                 let targetId = `btn-${type}-${val.replace('/', '')}`;
@@ -715,8 +704,8 @@
                 if (type === 'status') targetId = 'btn-status-need';
                 const activeBtn = document.getElementById(targetId);
                 if (activeBtn) {
-                    activeBtn.classList.remove('bg-white', 'text-morandi-700');
-                    activeBtn.classList.add('bg-morandi-500', 'text-white');
+                    activeBtn.classList.remove('bg-white', 'text-ink-700', 'text-roseAccent-600', 'border-[#C1CEE5]', 'border-[#E5BCC9]', 'font-medium');
+                    activeBtn.classList.add('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
                 }
             }
             renderCardsList();
@@ -775,14 +764,14 @@
                 const isNeedReplace = ['1', '2', '3', '4'].includes(st);
 
                 const floorVal = (item.floor || '-').trim();
-                let floorClass = "bg-morandi-100 text-morandi-800 border-morandi-200";
+                let floorClass = "bg-[#B7BFDF]/40 text-ink-900 border-[#B7BFDF]";
                 if (floorVal === 'G/F' || floorVal === 'GF' || floorVal === 'G') {
-                    floorClass = "bg-[#FFDBBA]/30 text-amber-900 border-amber-200/80";
+                    floorClass = "bg-[#E6F0DE] text-sageAccent-600 border-sageAccent-500/30";
                 } else if (floorVal === '1/F' || floorVal === '1F') {
-                    floorClass = "bg-[#A1E0DD]/50 text-sage-600 border-sage-200";
+                    floorClass = "bg-[#C1CEE5]/65 text-ink-900 border-[#B7BFDF]";
                 }
 
-                const roomNo = formatRoomNo(item.roomNo); // <--- 在這裡套用格式化
+                const roomNo = formatRoomNo(item.roomNo);
                 const roomName = (item.roomName || '').trim();
                 
                 let displayName = '';
@@ -801,29 +790,32 @@
                     }
                 }
 
+                const rawSize = String(item.size || '-').trim();
+                const displaySize = (rawSize === '-' || rawSize.endsWith('"')) ? rawSize : `${rawSize}"`;
+
                 return `
-                    <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-morandi-100 p-3 hover:border-morandi-300 transition-all cursor-pointer active:scale-[0.99]">
+                    <div onclick="openModal(${index})" class="bg-white rounded-xl shadow-sm border border-[#C1CEE5]/70 p-3 hover:border-[#B7BFDF] hover:bg-[#C1CEE5]/10 transition-all cursor-pointer active:scale-[0.99]">
                         <div class="flex justify-between items-center gap-2">
                             <div class="space-y-1.5 flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-base font-semibold text-morandi-900 truncate">
+                                    <span class="text-base font-semibold text-ink-900 truncate">
                                         ${escapeHtml(displayName)}
                                     </span>
                                     <span class="text-xs px-1.5 py-0.5 rounded border font-semibold shrink-0 ${floorClass}">
                                         ${escapeHtml(floorVal)}
                                     </span>
-                                    <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${isHostel ? 'bg-[#F7DFF6]/50 text-lavender-500 border border-lavender-100' : 'bg-[#A4E9FF]/50 text-morandi-600 border border-morandi-100'}">
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 border ${isHostel ? 'bg-[#F2D9E2] text-roseAccent-600 border-[#E5BCC9]' : 'bg-[#B7BFDF]/45 text-ink-900 border-[#B7BFDF]'}">
                                         ${escapeHtml(item.area || '-')}
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-3 text-[12px] text-morandi-600">
-                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.brand || '-')}</span>
-                                    <span class="text-morandi-800 font-medium">${escapeHtml(item.size || '-')}"</span>
-                                    ${isNeedReplace ? `<span class="text-[12px] bg-roseDust-50 text-roseDust-600 px-1.5 py-0.2 rounded font-medium">更換：${escapeHtml(st)}</span>` : ''}
+                                <div class="flex items-center gap-3 text-[12px] text-ink-700">
+                                    <span class="text-ink-900 font-medium">${escapeHtml(item.brand || '-')}</span>
+                                    <span class="text-ink-700 font-medium">${escapeHtml(displaySize)}</span>
+                                    ${isNeedReplace ? `<span class="text-[12px] bg-[#E5BCC9]/65 text-roseAccent-600 border border-[#E5BCC9] px-1.5 py-0.2 rounded font-semibold">更換：${escapeHtml(st)}</span>` : ''}
                                 </div>
                             </div>
                             <div class="shrink-0 text-right pl-2 pr-1">
-                                <span class="text-base font-bold text-morandi-800">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
+                                <span class="text-base font-bold text-ink-900 bg-[#E6F0DE]/60 px-2 py-0.5 rounded-lg border border-[#E6F0DE]">${escapeHtml(String(item.qty !== undefined && item.qty !== '' ? item.qty : '0'))}</span>
                             </div>
                         </div>
                     </div>
@@ -861,7 +853,7 @@
                 }
             });
 
-            document.getElementById('schoolTotalQty').innerHTML = `${schoolTotalQtySum} <span class="text-base font-normal text-morandi-100">部</span>`;
+            document.getElementById('schoolTotalQty').innerHTML = `${schoolTotalQtySum} <span class="text-sm font-semibold text-ink-700">部</span>`;
             document.getElementById('daySchoolTotal').innerText = daySchoolTotal;
             document.getElementById('daySchoolNeed').innerText = daySchoolNeed;
             document.getElementById('hostelTotal').innerText = hostelTotal;
@@ -991,11 +983,11 @@
             toastMsg.innerText = msg;
 
             if (type === 'error') {
-                toastIcon.className = 'fa-solid fa-circle-exclamation text-roseDust-500';
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-[#E5BCC9]';
             } else if (type === 'success') {
-                toastIcon.className = 'fa-solid fa-circle-check text-sage-500';
+                toastIcon.className = 'fa-solid fa-circle-check text-[#E6F0DE]';
             } else {
-                toastIcon.className = 'fa-solid fa-circle-info text-morandi-300';
+                toastIcon.className = 'fa-solid fa-circle-info text-[#C1CEE5]';
             }
 
             toast.classList.remove('translate-y-20', 'opacity-0');
@@ -1011,7 +1003,6 @@
         function formatRoomNo(roomNo) {
             if (!roomNo) return ''; 
             const str = String(roomNo).trim();
-            // 如果是純數字，使用 padStart 補足 3 位數
             if (/^\d+$/.test(str)) {
                 return str.padStart(3, '0');
             }
