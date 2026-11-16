@@ -14,7 +14,7 @@
     <!-- 適用於 iOS 主畫面 -->
     <link rel="apple-touch-icon" sizes="180x180" href="fire_icon.png">
 
-    <!-- 適用於 一般瀏覽器 Favicon (可一併設定) -->
+    <!-- 適用於 一般瀏覽器 Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="fire_icon.png">
     
     <script>
@@ -43,28 +43,33 @@
             background-color: #F2F2F7; 
             -webkit-tap-highlight-color: transparent;
         }
-        .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+        .pb-safe { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
         .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
-        .tab-pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+        .pill-bottom-safe { bottom: max(1.25rem, env(safe-area-inset-bottom)); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-ios-bg text-ios-text antialiased min-h-screen">
 
-    <!-- 頂部 Navigation Bar -->
-    <header class="bg-ios-card/80 backdrop-blur-md sticky top-0 z-30 border-b border-ios-border pt-safe px-4 pb-3">
-        <div class="flex items-center justify-between">
+    <!-- 頂部 Toast Notification -->
+    <div id="toastNotification" class="fixed top-4 inset-x-4 z-50 flex justify-center pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+        <div id="toastBox" class="bg-ios-text/90 backdrop-blur-md text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-xs font-medium max-w-sm">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toastMessage">已成功由雲端載入最新資料</span>
+        </div>
+    </div>
+
+    <!-- 頂部 Navigation Bar (中文在上、英文在下) -->
+    <header class="bg-ios-card/85 backdrop-blur-md sticky top-0 z-30 border-b border-ios-border pt-safe px-4 pb-3">
+        <div class="flex items-center justify-between max-w-md mx-auto">
             <div>
-                <span class="text-xs font-semibold text-ios-subtext uppercase">Fire Safety Management</span>
-                <h1 class="text-xl font-bold text-ios-text flex items-center gap-2">
-                    消防設備管理
-                    <span id="syncStatus" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">連線中...</span>
-                </h1>
+                <h1 class="text-xl font-bold text-ios-text leading-tight">消防設備管理</h1>
+                <span class="text-[11px] font-semibold text-ios-subtext uppercase tracking-wider block mt-0.5">Fire Safety Management</span>
             </div>
             <div class="flex items-center space-x-2">
                 <!-- 手動同步按鈕 -->
                 <button onclick="fetchFromGoogleSheets()" class="w-9 h-9 rounded-full bg-ios-bg flex items-center justify-center text-ios-morandi active:scale-95 transition-transform" title="從 Google Sheets 重新讀取">
-                    <i class="fa-solid fa-arrows-rotate text-base"></i>
+                    <i id="syncIcon" class="fa-solid fa-arrows-rotate text-base"></i>
                 </button>
                 <label class="hidden w-9 h-9 rounded-full bg-ios-bg flex items-center justify-center text-ios-morandi cursor-pointer active:scale-95 transition-transform" title="匯入 Excel">
                     <i class="fa-solid fa-file-excel text-base"></i>
@@ -72,35 +77,48 @@
                 </label>
             </div>
         </div>
-
-        <!-- 搜尋列 (僅在第一頁顯示) -->
-        <div id="searchBarContainer" class="mt-3 relative">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-ios-subtext text-xs"></i>
-            <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-1.5 text-xs rounded-xl focus:outline-none border border-ios-border/60">
-        </div>
     </header>
 
     <!-- 主內容區 -->
     <main class="px-3 py-4 pb-safe max-w-md mx-auto">
 
-        <!-- ==================== 第一頁：設備篩選與清單 ==================== -->
-        <div id="page-list" class="space-y-4">
-            <!-- 樓層 & 種類 快速篩選 -->
-            <section class="space-y-2">
-                <!-- 樓層篩選 -->
-                <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1">
-                    <button onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
-                    <button onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
-                </div>
+        <!-- ==================== 第一頁：搜尋篩選卡片與設備清單 ==================== -->
+        <div id="page-list" class="space-y-3">
+            
+            <!-- 可展開／收疊的「搜尋與篩選」卡片 -->
+            <section class="bg-ios-card rounded-2xl border border-ios-border/60 shadow-sm overflow-hidden">
+                <button type="button" onclick="toggleFilterCard()" class="w-full px-4 py-3 flex items-center justify-between text-left active:bg-ios-bg/50 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-ios-morandi text-xs"></i>
+                        <span class="text-xs font-bold text-ios-text">搜尋與篩選</span>
+                        <span id="activeFilterBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-ios-morandi/10 text-ios-morandi font-semibold">篩選中</span>
+                    </div>
+                    <i id="filterChevron" class="fa-solid fa-chevron-down text-xs text-ios-subtext transition-transform duration-200"></i>
+                </button>
 
-                <!-- 設備種類標籤 -->
-                <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryFilterContainer">
-                    <button onclick="toggleCategoryFilter('乾粉滅火器')" data-category="乾粉滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">乾粉</button>
-                    <button onclick="toggleCategoryFilter('二氧化碳滅火器')" data-category="二氧化碳滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">CO₂</button>
-                    <button onclick="toggleCategoryFilter('泡沫滅火器')" data-category="泡沫滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">泡沫</button>
-                    <button onclick="toggleCategoryFilter('防火沙')" data-category="防火沙" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火沙</button>
-                    <button onclick="toggleCategoryFilter('防火毯')" data-category="防火毯" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火毯</button>
-                    <button onclick="resetFilters()" class="px-2.5 py-1 text-xs text-ios-morandi font-semibold whitespace-nowrap">重設</button>
+                <!-- 展開內容：搜尋列 + 層樓 + 種類 -->
+                <div id="filterCardBody" class="hidden px-3.5 pb-3.5 pt-1 space-y-2.5 border-t border-ios-border/50">
+                    <!-- 搜尋列 -->
+                    <div class="relative pt-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-ios-subtext text-xs"></i>
+                        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-2 text-xs rounded-xl focus:outline-none border border-ios-border/60">
+                    </div>
+
+                    <!-- 樓層篩選 -->
+                    <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1">
+                        <button onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
+                        <button onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
+                    </div>
+
+                    <!-- 設備種類標籤 -->
+                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryFilterContainer">
+                        <button onclick="toggleCategoryFilter('乾粉滅火器')" data-category="乾粉滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">乾粉</button>
+                        <button onclick="toggleCategoryFilter('二氧化碳滅火器')" data-category="二氧化碳滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">CO₂</button>
+                        <button onclick="toggleCategoryFilter('泡沫滅火器')" data-category="泡沫滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">泡沫</button>
+                        <button onclick="toggleCategoryFilter('防火沙')" data-category="防火沙" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火沙</button>
+                        <button onclick="toggleCategoryFilter('防火毯')" data-category="防火毯" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火毯</button>
+                        <button onclick="resetFilters()" class="px-2.5 py-1 text-xs text-ios-morandi font-semibold whitespace-nowrap">重設</button>
+                    </div>
                 </div>
             </section>
 
@@ -116,7 +134,6 @@
             <section class="bg-ios-card px-4 py-3.5 rounded-2xl border border-ios-border/60 shadow-sm">
                 <div class="flex items-center justify-between pb-2.5 border-b border-ios-border/80">
                     <h2 class="text-xs font-bold text-ios-text tracking-wider">設備總數量統計</h2>
-                    <span class="text-[10px] text-ios-subtext">即時統計</span>
                 </div>
                 
                 <!-- 獨立單行顯示，間線分隔 (divide-y) -->
@@ -181,21 +198,21 @@
 
     </main>
 
-    <!-- 底部 Tab Bar (純圖示，無文字) -->
-    <nav class="fixed bottom-0 inset-x-0 z-40 bg-ios-card/90 backdrop-blur-md border-t border-ios-border tab-pb-safe pt-3">
-        <div class="max-w-md mx-auto grid grid-cols-2">
-            <button onclick="switchTab('list')" id="tab-btn-list" aria-label="設備清單" class="flex items-center justify-center py-1 text-ios-morandi transition-colors active:scale-95">
-                <i class="fa-solid fa-list-check text-xl"></i>
+    <!-- 藥丸式 Tab Bar (純圖示，懸浮膠囊造型) -->
+    <nav class="fixed inset-x-0 pill-bottom-safe z-40 flex justify-center pointer-events-none px-4">
+        <div class="pointer-events-auto bg-ios-card/90 backdrop-blur-xl border border-ios-border/80 shadow-lg rounded-full p-1.5 flex items-center gap-1.5">
+            <button onclick="switchTab('list')" id="tab-btn-list" aria-label="設備清單" class="w-16 h-10 rounded-full flex items-center justify-center bg-ios-morandi text-white shadow-sm transition-all active:scale-95">
+                <i class="fa-solid fa-list-check text-base"></i>
             </button>
-            <button onclick="switchTab('stats')" id="tab-btn-stats" aria-label="數量統計" class="flex items-center justify-center py-1 text-ios-subtext transition-colors active:scale-95">
-                <i class="fa-solid fa-chart-pie text-xl"></i>
+            <button onclick="switchTab('stats')" id="tab-btn-stats" aria-label="數量統計" class="w-16 h-10 rounded-full flex items-center justify-center text-ios-subtext hover:text-ios-text transition-all active:scale-95">
+                <i class="fa-solid fa-chart-pie text-base"></i>
             </button>
         </div>
     </nav>
 
-    <!-- 修改資料 Modal -->
-    <div id="equipmentModal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
-        <div class="bg-ios-card rounded-t-3xl sm:rounded-2xl w-full max-w-md p-5 space-y-4">
+    <!-- 修改資料 Modal (置中顯示於螢幕中間) -->
+    <div id="equipmentModal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-ios-card rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl">
             <div class="flex justify-between items-center border-b border-ios-border pb-3">
                 <h3 class="text-base font-bold text-ios-text">修改設備資料</h3>
                 <button onclick="closeModal()" class="text-ios-subtext text-xl"><i class="fa-solid fa-circle-xmark"></i></button>
@@ -204,7 +221,10 @@
                 <input type="hidden" id="editIndex" value="-1">
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">層樓</label>
-                    <input type="text" id="formFloor" required class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                    <select id="formFloor" required class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                        <option value="G/F">G/F</option>
+                        <option value="1/F">1/F</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">位置</label>
@@ -253,58 +273,112 @@
         let activeCategories = [];
         let activeFloors = [];
         let searchQuery = '';
+        let toastTimer = null;
+        let isFilterExpanded = false;
 
         window.addEventListener('DOMContentLoaded', () => {
             fetchFromGoogleSheets();
         });
 
-        // 切換底部 Tab Bar 分頁
+        // Toast Notification 顯示函式
+        function showToast(message, type = 'success', duration = 2600) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else if (type === 'loading') {
+                toastIcon.className = 'fa-solid fa-spinner fa-spin text-amber-300';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimer) clearTimeout(toastTimer);
+            if (duration > 0) {
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', '-translate-y-4');
+                }, duration);
+            }
+        }
+
+        // 展開／收疊「搜尋與篩選」卡片
+        function toggleFilterCard() {
+            const body = document.getElementById('filterCardBody');
+            const chevron = document.getElementById('filterChevron');
+            isFilterExpanded = !isFilterExpanded;
+
+            if (isFilterExpanded) {
+                body.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                body.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        // 切換底部藥丸式 Tab Bar 分頁
         function switchTab(tabName) {
             const pageList = document.getElementById('page-list');
             const pageStats = document.getElementById('page-stats');
             const btnList = document.getElementById('tab-btn-list');
             const btnStats = document.getElementById('tab-btn-stats');
-            const searchBar = document.getElementById('searchBarContainer');
+
+            const activeClasses = ['bg-ios-morandi', 'text-white', 'shadow-sm'];
+            const inactiveClasses = ['text-ios-subtext', 'hover:text-ios-text'];
 
             if (tabName === 'list') {
                 pageList.classList.remove('hidden');
                 pageStats.classList.add('hidden');
-                searchBar.classList.remove('hidden');
                 
-                btnList.classList.replace('text-ios-subtext', 'text-ios-morandi');
-                btnStats.classList.replace('text-ios-morandi', 'text-ios-subtext');
+                btnList.classList.add(...activeClasses);
+                btnList.classList.remove(...inactiveClasses);
+                btnStats.classList.remove(...activeClasses);
+                btnStats.classList.add(...inactiveClasses);
             } else if (tabName === 'stats') {
                 pageList.classList.add('hidden');
                 pageStats.classList.remove('hidden');
-                searchBar.classList.add('hidden');
                 
-                btnStats.classList.replace('text-ios-subtext', 'text-ios-morandi');
-                btnList.classList.replace('text-ios-morandi', 'text-ios-subtext');
+                btnStats.classList.add(...activeClasses);
+                btnStats.classList.remove(...inactiveClasses);
+                btnList.classList.remove(...activeClasses);
+                btnList.classList.add(...inactiveClasses);
             }
         }
 
         // 1. 從 Google Sheets 讀取資料
         async function fetchFromGoogleSheets() {
-            updateSyncStatus("同步中...", "bg-amber-100 text-amber-700");
+            const syncIcon = document.getElementById('syncIcon');
+            syncIcon.classList.add('fa-spin');
+            showToast("正在從雲端讀取資料...", "loading", 0);
+
             try {
                 const res = await fetch(GOOGLE_SHEET_API_URL);
                 const result = await res.json();
                 if (result.status === "success") {
                     equipmentList = result.data;
                     renderApp();
-                    updateSyncStatus("已同步 Sheets", "bg-emerald-100 text-emerald-700");
+                    showToast("已成功由雲端載入最新資料", "success", 2600);
                 } else {
                     throw new Error(result.message);
                 }
             } catch (err) {
                 console.error(err);
-                updateSyncStatus("同步失敗", "bg-red-100 text-red-700");
+                showToast("雲端資料載入失敗，請稍後再試", "error", 3000);
+            } finally {
+                syncIcon.classList.remove('fa-spin');
             }
         }
 
         // 2. 將本地資料同步回 Google Sheets
         async function syncToGoogleSheets() {
-            updateSyncStatus("儲存中...", "bg-amber-100 text-amber-700");
+            showToast("正在同步至雲端...", "loading", 0);
             try {
                 const res = await fetch(GOOGLE_SHEET_API_URL, {
                     method: 'POST',
@@ -313,20 +387,14 @@
                 });
                 const result = await res.json();
                 if (result.status === "success") {
-                    updateSyncStatus("已同步 Sheets", "bg-emerald-100 text-emerald-700");
+                    showToast("已成功同步至雲端", "success", 2400);
                 } else {
                     throw new Error(result.message);
                 }
             } catch (err) {
                 console.error(err);
-                updateSyncStatus("同步失敗", "bg-red-100 text-red-700");
+                showToast("同步失敗，請檢查網路連線", "error", 3000);
             }
-        }
-
-        function updateSyncStatus(text, bgClass) {
-            const statusEl = document.getElementById('syncStatus');
-            statusEl.innerText = text;
-            statusEl.className = `text-[10px] px-2 py-0.5 rounded-full font-medium ${bgClass}`;
         }
 
         function renderApp() {
@@ -385,7 +453,7 @@
                             </div>
                         </div>
                         <div class="flex items-center">
-                            <span class="text-base font-bold text-ios-morandi bg-ios-bg px-2.5 py-1 rounded-xl">x${item.quantity}</span>
+                            <span class="text-base font-bold text-ios-morandi bg-ios-bg min-w-[2.25rem] text-center px-2.5 py-1 rounded-xl">${item.quantity}</span>
                         </div>
                     `;
                     container.appendChild(card);
@@ -420,6 +488,15 @@
                     'filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-morandi text-white whitespace-nowrap' : 
                     'filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap';
             });
+
+            // 若有啟用搜尋或篩選條件，於折疊標題旁顯示「篩選中」提示標籤
+            const badge = document.getElementById('activeFilterBadge');
+            const hasFilter = activeFloors.length > 0 || activeCategories.length > 0 || searchQuery.trim() !== '';
+            if (hasFilter) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
         }
 
         function resetFilters() {
@@ -429,18 +506,32 @@
         }
 
         function handleSearchInput() {
-            searchQuery = document.getElementById('searchInput').value; renderList();
+            searchQuery = document.getElementById('searchInput').value;
+            updateStyles();
+            renderList();
         }
 
         function openEditModal(idx) {
             const item = equipmentList[idx];
             document.getElementById('editIndex').value = idx;
-            document.getElementById('formFloor').value = item.floor || '';
+            
+            // 設定層樓下拉選單（若資料為自訂樓層亦自動支援）
+            const floorSelect = document.getElementById('formFloor');
+            const floorVal = (item.floor || 'G/F').trim();
+            const exists = Array.from(floorSelect.options).some(opt => opt.value === floorVal);
+            if (!exists && floorVal) {
+                const opt = document.createElement('option');
+                opt.value = floorVal;
+                opt.text = floorVal;
+                floorSelect.add(opt);
+            }
+            floorSelect.value = floorVal;
+
             document.getElementById('formLocation').value = item.location || '';
             document.getElementById('formType').value = item.type || '乾粉滅火器';
             document.getElementById('formCapacity').value = item.capacity || '';
             document.getElementById('formWallMount').value = item.wallMount || '';
-            document.getElementById('formQuantity').value = item.quantity || 1;
+            document.getElementById('formQuantity').value = item.quantity ?? 1;
             document.getElementById('equipmentModal').classList.remove('hidden');
         }
 
