@@ -85,27 +85,23 @@
         <!-- ==================== 第一頁：搜尋篩選卡片與設備清單 ==================== -->
         <div id="page-list" class="space-y-3">
             
-            <!-- 可展開／收疊的「搜尋與篩選」卡片 -->
+            <!-- 搜尋與篩選卡片（頂部直接為搜尋列，可展開／收疊層樓與種類） -->
             <section class="bg-ios-card rounded-2xl border border-ios-border/60 shadow-sm overflow-hidden">
-                <button type="button" onclick="toggleFilterCard()" class="w-full px-4 py-3 flex items-center justify-between text-left active:bg-ios-bg/50 transition-colors">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-ios-morandi text-xs"></i>
-                        <span class="text-xs font-bold text-ios-text">搜尋與篩選</span>
-                        <span id="activeFilterBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-ios-morandi/10 text-ios-morandi font-semibold">篩選中</span>
+                <div class="p-2.5 flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-ios-subtext text-xs"></i>
+                        <input type="text" id="searchInput" onfocus="expandFilterCard()" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-2 text-xs rounded-xl focus:outline-none border border-ios-border/60">
                     </div>
-                    <i id="filterChevron" class="fa-solid fa-chevron-down text-xs text-ios-subtext transition-transform duration-200"></i>
-                </button>
+                    <button type="button" onclick="toggleFilterCard()" aria-label="展開或收疊篩選" class="w-9 h-9 rounded-xl bg-ios-bg flex items-center justify-center text-ios-subtext relative shrink-0 active:scale-95 transition-transform">
+                        <span id="activeFilterDot" class="hidden absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-ios-morandi"></span>
+                        <i id="filterChevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                </div>
 
-                <!-- 展開內容：搜尋列 + 層樓 + 種類 -->
-                <div id="filterCardBody" class="hidden px-3.5 pb-3.5 pt-1 space-y-2.5 border-t border-ios-border/50">
-                    <!-- 搜尋列 -->
-                    <div class="relative pt-1">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-ios-subtext text-xs"></i>
-                        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-2 text-xs rounded-xl focus:outline-none border border-ios-border/60">
-                    </div>
-
+                <!-- 展開內容：層樓 + 種類 -->
+                <div id="filterCardBody" class="hidden px-3 pb-3 pt-1 space-y-2.5 border-t border-ios-border/50">
                     <!-- 樓層篩選 -->
-                    <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1">
+                    <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1 mt-1">
                         <button onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
                         <button onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
                     </div>
@@ -210,7 +206,7 @@
         </div>
     </nav>
 
-    <!-- 修改資料 Modal (置中顯示於螢幕中間) -->
+    <!-- 修改資料 Modal (置中顯示於螢幕中間，底部僅保留「確定」與「刪除」2個按鈕) -->
     <div id="equipmentModal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-ios-card rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl">
             <div class="flex justify-between items-center border-b border-ios-border pb-3">
@@ -257,9 +253,8 @@
                     </select>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="deleteCurrentItem()" class="px-4 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-semibold active:scale-95 transition-transform">刪除</button>
-                    <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-ios-bg text-ios-subtext rounded-xl text-xs font-semibold">取消</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-ios-morandi text-white rounded-xl text-xs font-semibold">儲存並同步</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-ios-morandi text-white rounded-xl text-xs font-semibold active:scale-95 transition-transform">確定</button>
+                    <button type="button" onclick="deleteCurrentItem()" class="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-semibold active:scale-95 transition-transform">刪除</button>
                 </div>
             </form>
         </div>
@@ -308,7 +303,7 @@
             }
         }
 
-        // 展開／收疊「搜尋與篩選」卡片
+        // 展開／收疊篩選區塊
         function toggleFilterCard() {
             const body = document.getElementById('filterCardBody');
             const chevron = document.getElementById('filterChevron');
@@ -320,6 +315,12 @@
             } else {
                 body.classList.add('hidden');
                 chevron.classList.remove('rotate-180');
+            }
+        }
+
+        function expandFilterCard() {
+            if (!isFilterExpanded) {
+                toggleFilterCard();
             }
         }
 
@@ -489,13 +490,13 @@
                     'filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap';
             });
 
-            // 若有啟用搜尋或篩選條件，於折疊標題旁顯示「篩選中」提示標籤
-            const badge = document.getElementById('activeFilterBadge');
-            const hasFilter = activeFloors.length > 0 || activeCategories.length > 0 || searchQuery.trim() !== '';
+            // 若有啟用篩選條件，顯示小圓點提示
+            const dot = document.getElementById('activeFilterDot');
+            const hasFilter = activeFloors.length > 0 || activeCategories.length > 0;
             if (hasFilter) {
-                badge.classList.remove('hidden');
+                dot.classList.remove('hidden');
             } else {
-                badge.classList.add('hidden');
+                dot.classList.add('hidden');
             }
         }
 
@@ -539,6 +540,7 @@
             document.getElementById('equipmentModal').classList.add('hidden');
         }
 
+        // 按下「確定」後儲存並返回清單（不自動同步至雲端）
         function handleFormSubmit(e) {
             e.preventDefault();
             const idx = parseInt(document.getElementById('editIndex').value);
@@ -553,16 +555,15 @@
             if (idx >= 0) equipmentList[idx] = newItem;
             renderApp(); 
             closeModal();
-            syncToGoogleSheets();
         }
 
+        // 按下「刪除」後刪除該筆資料並返回清單
         function deleteCurrentItem() {
             const idx = parseInt(document.getElementById('editIndex').value);
             if (idx >= 0 && confirm("確定要刪除此筆項目嗎？")) {
                 equipmentList.splice(idx, 1);
                 renderApp();
                 closeModal();
-                syncToGoogleSheets();
             }
         }
 
@@ -570,7 +571,6 @@
             if (confirm("確定要重設並清除全部資料嗎？")) {
                 equipmentList = [];
                 renderApp();
-                syncToGoogleSheets();
             }
         }
 
@@ -592,7 +592,6 @@
                         quantity: Math.min(Math.max(0, parseInt(row['數量']) || 1), 10)
                     }));
                     renderApp();
-                    syncToGoogleSheets();
                 } catch (err) { alert("匯入失敗，請確認檔案格式。"); }
             };
             reader.readAsArrayBuffer(file);
