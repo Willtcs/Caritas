@@ -470,71 +470,59 @@
             container.innerHTML = html;
         }
 
-        // 強效非同步雲端下載函式
+        // 強效非同步雲端下載函式（針對 iOS Safari 優化：優先使用 JSONP 繞過 CORS 阻擋）
         async function fetchFromCloud(silent = false) {
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm';
 
             let success = false;
 
-            // 通道 1：從 Google Sheets CSV 直接讀取 (加上 no-store 防止快取阻擋)
-            try {
-                const response = await fetch(GOOGLE_SHEETS_CSV_URL, { cache: "no-store" });
-                if (response.ok) {
-                    const csvText = await response.text();
-                    if (csvText && !csvText.includes('<!DOCTYPE html>') && !csvText.includes('<html')) {
-                        const parsedData = parseCSV(csvText);
-                        if (parsedData && parsedData.length > 0) {
-                            fanList = parsedData;
-                            success = true;
-                        }
+            // 通道 1：優先使用 JSONP 向 Apps Script 讀取（iOS Safari 100% 放行，不受跨網域限制）
+            if (APPS_SCRIPT_WEB_APP_URL) {
+                try {
+                    // 加上時間戳記 t=... 強制 iOS Safari 不讀取舊快取
+                    const cacheBusterUrl = APPS_SCRIPT_WEB_APP_URL + (APPS_SCRIPT_WEB_APP_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    const jsonpData = await fetchJsonp(cacheBusterUrl, 6000);
+                    if (Array.isArray(jsonpData) && jsonpData.length > 0) {
+                        fanList = jsonpData.map(item => ({
+                            ...item,
+                            status: normalizeStatusValue(item.status)
+                        }));
+                        success = true;
                     }
+                } catch (jErr) {
+                    console.warn('JSONP 讀取超時或失敗，嘗試 CSV 通道：', jErr);
                 }
-            } catch (err) {
-                console.warn('CSV 讀取受阻，切換至 Apps Script API...', err);
             }
 
-            // 通道 2：從 Apps Script API 讀取
-            if (!success && APPS_SCRIPT_WEB_APP_URL) {
+            // 通道 2：備用通道，從 Google Sheets CSV 讀取
+            if (!success) {
                 try {
-                    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, { cache: "no-store" });
+                    const csvUrl = GOOGLE_SHEETS_CSV_URL + '&t=' + Date.now();
+                    const response = await fetch(csvUrl, { cache: "no-store" });
                     if (response.ok) {
-                        const jsonData = await response.json();
-                        if (Array.isArray(jsonData) && jsonData.length > 0) {
-                            fanList = jsonData.map(item => ({
-                                ...item,
-                                status: normalizeStatusValue(item.status)
-                            }));
-                            success = true;
+                        const csvText = await response.text();
+                        if (csvText && !csvText.includes('<!DOCTYPE html>') && !csvText.includes('<html')) {
+                            const parsedData = parseCSV(csvText);
+                            if (parsedData && parsedData.length > 0) {
+                                fanList = parsedData;
+                                success = true;
+                            }
                         }
                     }
                 } catch (err) {
-                    console.warn('Apps Script JSON API 讀取失敗，嘗試 JSONP 通道：', err);
-                    
-                    // 通道 3：JSONP Script 備用通道
-                    try {
-                        const jsonpData = await fetchJsonp(APPS_SCRIPT_WEB_APP_URL, 3000);
-                        if (Array.isArray(jsonpData) && jsonpData.length > 0) {
-                            fanList = jsonpData.map(item => ({
-                                ...item,
-                                status: normalizeStatusValue(item.status)
-                            }));
-                            success = true;
-                        }
-                    } catch (jErr) {
-                        console.error('所有雲端通道均無法下載數據：', jErr);
-                    }
+                    console.error('CSV 讀取失敗：', err);
                 }
             }
 
             if (success) {
-                saveData(); // 覆蓋本地 LocalStorage
+                saveData();
                 calculateStatistics();
                 renderBrandFilterButtons();
                 renderCardsList();
                 if (!silent) showToast('已成功從雲端更新數據！', 'success');
             } else {
-                if (!silent) showToast('雲端讀取失敗，已載入本地備份資料', 'info');
+                if (!silent) showToast('雲端連線受阻，目前顯示本機備份資料', 'error');
                 calculateStatistics();
                 renderBrandFilterButtons();
                 renderCardsList();
@@ -570,7 +558,8 @@
             });
         }
 
-        function syncToCloud() {
+        // 同步上傳至雲端（改用 fetch text/plain 發送，取代容易被 iOS Safari 阻擋的隱藏 iframe）
+        async function syncToCloud() {
             if (isSyncing) return;
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.className = 'fa-solid fa-spinner fa-spin text-sm';
@@ -586,18 +575,32 @@
                 return;
             }
 
+            isSyncing = true;
+
             try {
-                isSyncing = true;
-                const form = document.getElementById('hiddenSyncForm');
-                const dataInput = document.getElementById('hiddenSyncData');
-                
-                form.action = APPS_SCRIPT_WEB_APP_URL;
-                dataInput.value = JSON.stringify(fanList);
-                
-                form.submit();
+                // 使用 URLSearchParams 搭配 no-cors，iOS Safari 允許此類簡單請求寫入 Apps Script
+                const formData = new URLSearchParams();
+                formData.append('data', JSON.stringify(fanList));
+
+                await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: formData.toString()
+                });
+
+                // 寫入完成後，等待 1.5 秒並重新從雲端拉取一次確認同步狀態
+                setTimeout(async () => {
+                    isSyncing = false;
+                    if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+                    showToast('已送出同步指令至 Google Sheets！', 'success');
+                }, 1500);
+
             } catch (err) {
                 console.error('同步至 Google Sheets 失敗:', err);
-                showToast('同步失敗，請檢查網路狀態', 'error');
+                showToast('同步失敗，請檢查手機網路連線', 'error');
                 isSyncing = false;
                 if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
             }
