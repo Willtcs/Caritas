@@ -43,8 +43,9 @@
             background-color: #F2F2F7; 
             -webkit-tap-highlight-color: transparent;
         }
-        .pb-safe { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+        .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
         .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
+        .tab-pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -72,92 +73,125 @@
             </div>
         </div>
 
-        <!-- 搜尋列 -->
-        <div class="mt-3 relative">
+        <!-- 搜尋列 (僅在第一頁顯示) -->
+        <div id="searchBarContainer" class="mt-3 relative">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-ios-subtext text-xs"></i>
             <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-1.5 text-xs rounded-xl focus:outline-none border border-ios-border/60">
         </div>
     </header>
 
     <!-- 主內容區 -->
-    <main class="px-3 py-4 space-y-4 pb-safe max-w-md mx-auto">
+    <main class="px-3 py-4 pb-safe max-w-md mx-auto">
 
-        <!-- 區塊 1: 數量統計（微調為 5 欄網格適應 iPhone 6.1" 螢幕） -->
-        <section>
-            <div class="flex items-center justify-between mb-2 px-1">
-                <h2 class="text-xs font-bold text-ios-subtext uppercase tracking-wider">設備總數量統計</h2>
-            </div>
-            <!-- 5 欄單行佈局 -->
-            <div class="grid grid-cols-5 gap-1.5">
-                <!-- 乾粉滅火器 -->
-                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
-                        <i class="fa-solid fa-bottle-droplet"></i>
-                    </div>
-                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">乾粉</p>
-                    <p id="count-dry-powder" class="text-base font-bold text-ios-morandi">0</p>
+        <!-- ==================== 第一頁：設備篩選與清單 ==================== -->
+        <div id="page-list" class="space-y-4">
+            <!-- 樓層 & 種類 快速篩選 -->
+            <section class="space-y-2">
+                <!-- 樓層篩選 -->
+                <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1">
+                    <button onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
+                    <button onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
                 </div>
-                <!-- CO2 滅火器 -->
-                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
-                        <i class="fa-solid fa-cloud"></i>
-                    </div>
-                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">二氧化碳</p>
-                    <p id="count-co2" class="text-base font-bold text-ios-morandi">0</p>
-                </div>
-                <!-- 泡沫滅火器 -->
-                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
-                        <i class="fa-solid fa-soap"></i>
-                    </div>
-                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">泡沫</p>
-                    <p id="count-foam" class="text-base font-bold text-ios-morandi">0</p>
-                </div>
-                <!-- 防火沙 -->
-                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
-                        <i class="fa-solid fa-mound"></i>
-                    </div>
-                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">防火沙</p>
-                    <p id="count-sand" class="text-base font-bold text-ios-morandi">0</p>
-                </div>
-                <!-- 防火毯 -->
-                <div class="bg-ios-card px-1 py-2 rounded-xl border border-ios-border/60 shadow-sm flex flex-col items-center text-center">
-                    <div class="w-6 h-6 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center mb-1 text-xs">
-                        <i class="fa-solid fa-rug"></i>
-                    </div>
-                    <p class="text-[10px] text-ios-subtext font-medium truncate w-full">防火毯</p>
-                    <p id="count-blanket" class="text-base font-bold text-ios-morandi">0</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- 區塊 2: 樓層 & 種類 快速篩選 -->
-        <section class="space-y-2">
-            <!-- 樓層篩選 -->
-            <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1">
-                <button onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
-                <button onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
-            </div>
+                <!-- 設備種類標籤 -->
+                <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryFilterContainer">
+                    <button onclick="toggleCategoryFilter('乾粉滅火器')" data-category="乾粉滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">乾粉</button>
+                    <button onclick="toggleCategoryFilter('二氧化碳滅火器')" data-category="二氧化碳滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">CO₂</button>
+                    <button onclick="toggleCategoryFilter('泡沫滅火器')" data-category="泡沫滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">泡沫</button>
+                    <button onclick="toggleCategoryFilter('防火沙')" data-category="防火沙" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火沙</button>
+                    <button onclick="toggleCategoryFilter('防火毯')" data-category="防火毯" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火毯</button>
+                    <button onclick="resetFilters()" class="px-2.5 py-1 text-xs text-ios-morandi font-semibold whitespace-nowrap">重設</button>
+                </div>
+            </section>
 
-            <!-- 設備種類標籤 -->
-            <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryFilterContainer">
-                <button onclick="toggleCategoryFilter('乾粉滅火器')" data-category="乾粉滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">乾粉</button>
-                <button onclick="toggleCategoryFilter('二氧化碳滅火器')" data-category="二氧化碳滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">CO₂</button>
-                <button onclick="toggleCategoryFilter('泡沫滅火器')" data-category="泡沫滅火器" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">泡沫</button>
-                <button onclick="toggleCategoryFilter('防火沙')" data-category="防火沙" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火沙</button>
-                <button onclick="toggleCategoryFilter('防火毯')" data-category="防火毯" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-ios-card border border-ios-border text-ios-subtext whitespace-nowrap">防火毯</button>
-                <button onclick="resetFilters()" class="px-2.5 py-1 text-xs text-ios-morandi font-semibold whitespace-nowrap">重設</button>
-            </div>
-        </section>
+            <!-- 設備清單 -->
+            <section class="space-y-2">
+                <div id="equipmentListContainer" class="space-y-2"></div>
+                <div id="emptyState" class="hidden py-10 text-center"><p class="text-xs text-ios-subtext">無符合條件的設備資料</p></div>
+            </section>
+        </div>
 
-        <!-- 區塊 3: 設備清單 -->
-        <section class="space-y-2">
-            <div id="equipmentListContainer" class="space-y-2"></div>
-            <div id="emptyState" class="hidden py-10 text-center"><p class="text-xs text-ios-subtext">無符合條件的設備資料</p></div>
-        </section>
+        <!-- ==================== 第二頁：設備總數量統計 ==================== -->
+        <div id="page-stats" class="hidden space-y-4">
+            <section class="bg-ios-card px-4 py-3.5 rounded-2xl border border-ios-border/60 shadow-sm">
+                <div class="flex items-center justify-between pb-2.5 border-b border-ios-border/80">
+                    <h2 class="text-xs font-bold text-ios-text tracking-wider">設備總數量統計</h2>
+                    <span class="text-[10px] text-ios-subtext">即時統計</span>
+                </div>
+                
+                <!-- 獨立單行顯示，間線分隔 (divide-y) -->
+                <div class="divide-y divide-ios-border">
+                    <!-- 乾粉滅火器 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-bottle-droplet"></i>
+                            </div>
+                            <span class="text-sm font-medium text-ios-text">乾粉</span>
+                        </div>
+                        <span id="count-dry-powder" class="text-lg font-bold text-ios-morandi">0</span>
+                    </div>
+
+                    <!-- CO2 滅火器 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-cloud"></i>
+                            </div>
+                            <span class="text-sm font-medium text-ios-text">二氧化碳</span>
+                        </div>
+                        <span id="count-co2" class="text-lg font-bold text-ios-morandi">0</span>
+                    </div>
+
+                    <!-- 泡沫滅火器 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-soap"></i>
+                            </div>
+                            <span class="text-sm font-medium text-ios-text">泡沫</span>
+                        </div>
+                        <span id="count-foam" class="text-lg font-bold text-ios-morandi">0</span>
+                    </div>
+
+                    <!-- 防火沙 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-mound"></i>
+                            </div>
+                            <span class="text-sm font-medium text-ios-text">防火沙</span>
+                        </div>
+                        <span id="count-sand" class="text-lg font-bold text-ios-morandi">0</span>
+                    </div>
+
+                    <!-- 防火毯 -->
+                    <div class="pt-3 pb-1 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-rug"></i>
+                            </div>
+                            <span class="text-sm font-medium text-ios-text">防火毯</span>
+                        </div>
+                        <span id="count-blanket" class="text-lg font-bold text-ios-morandi">0</span>
+                    </div>
+                </div>
+            </section>
+        </div>
 
     </main>
+
+    <!-- 底部 Tab Bar (純圖示，無文字) -->
+    <nav class="fixed bottom-0 inset-x-0 z-40 bg-ios-card/90 backdrop-blur-md border-t border-ios-border tab-pb-safe pt-3">
+        <div class="max-w-md mx-auto grid grid-cols-2">
+            <button onclick="switchTab('list')" id="tab-btn-list" aria-label="設備清單" class="flex items-center justify-center py-1 text-ios-morandi transition-colors active:scale-95">
+                <i class="fa-solid fa-list-check text-xl"></i>
+            </button>
+            <button onclick="switchTab('stats')" id="tab-btn-stats" aria-label="數量統計" class="flex items-center justify-center py-1 text-ios-subtext transition-colors active:scale-95">
+                <i class="fa-solid fa-chart-pie text-xl"></i>
+            </button>
+        </div>
+    </nav>
 
     <!-- 修改資料 Modal -->
     <div id="equipmentModal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
@@ -222,6 +256,31 @@
         window.addEventListener('DOMContentLoaded', () => {
             fetchFromGoogleSheets();
         });
+
+        // 切換底部 Tab Bar 分頁
+        function switchTab(tabName) {
+            const pageList = document.getElementById('page-list');
+            const pageStats = document.getElementById('page-stats');
+            const btnList = document.getElementById('tab-btn-list');
+            const btnStats = document.getElementById('tab-btn-stats');
+            const searchBar = document.getElementById('searchBarContainer');
+
+            if (tabName === 'list') {
+                pageList.classList.remove('hidden');
+                pageStats.classList.add('hidden');
+                searchBar.classList.remove('hidden');
+                
+                btnList.classList.replace('text-ios-subtext', 'text-ios-morandi');
+                btnStats.classList.replace('text-ios-morandi', 'text-ios-subtext');
+            } else if (tabName === 'stats') {
+                pageList.classList.add('hidden');
+                pageStats.classList.remove('hidden');
+                searchBar.classList.add('hidden');
+                
+                btnStats.classList.replace('text-ios-subtext', 'text-ios-morandi');
+                btnList.classList.replace('text-ios-morandi', 'text-ios-subtext');
+            }
+        }
 
         // 1. 從 Google Sheets 讀取資料
         async function fetchFromGoogleSheets() {
