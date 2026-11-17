@@ -90,6 +90,14 @@
 </head>
 <body class="min-h-screen text-morandi-dark antialiased">
 
+    <!-- 頂部 Toast Notification（僅用於手動同步提示） -->
+    <div id="toastNotification" class="fixed top-4 inset-x-4 z-50 flex justify-center pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+        <div class="bg-morandi-dark/95 backdrop-blur-md text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-xs font-medium max-w-sm">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toastMessage">通知訊息</span>
+        </div>
+    </div>
+
     <!-- App Container -->
     <div class="max-w-md mx-auto min-h-screen flex flex-col bg-morandi-bg relative shadow-2xl border-x border-morandi-light/30">
 
@@ -102,27 +110,24 @@
                     </div>
                     <div>
                         <h1 class="text-base font-bold tracking-tight text-morandi-dark leading-tight">廁所馬桶管理系統</h1>
-                        <p id="syncStatus" class="text-[10px] text-morandi-slate flex items-center gap-1 font-medium mt-0.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-morandi-sage inline-block"></span>
-                            <span id="syncText">本地已同步</span>
-                        </p>
+                        <p class="text-[11px] text-morandi-slate font-semibold tracking-wider mt-0.5">Toilet Management System</p>
                     </div>
                 </div>
 
                 <div class="flex items-center space-x-2">
-                    <!-- 手動點擊同步 (將本地修改同步上傳至雲端) -->
-                    <button onclick="smartSync(false)" title="手動同步更新至雲端" class="w-8 h-8 rounded-full bg-morandi-card border border-morandi-light text-morandi-slate hover:text-morandi-dark active:scale-95 transition-transform flex items-center justify-center shadow-sm">
-                        <i class="fa-solid fa-rotate text-xs" id="headerSyncSpinner"></i>
+                    <!-- 雲加向上箭頭圖示：手動同步上傳至雲端 -->
+                    <button onclick="smartSync(false)" title="手動同步更新至雲端" class="w-9 h-9 rounded-full bg-morandi-card border border-morandi-light text-morandi-dark hover:opacity-80 active:scale-95 transition-transform flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-up text-sm" id="headerSyncIcon"></i>
                     </button>
                 </div>
             </div>
         </header>
 
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 pt-1.5 pb-28 space-y-1.5">
+        <main class="flex-1 p-4 pt-2 pb-28 space-y-2">
 
-            <!-- 總覽區域視圖容器 (Tab 1: 總覽) -->
-            <div id="tabOverviewSection" class="space-y-4 transition-all duration-200">
+            <!-- 總覽區域視圖容器 (Tab 2: 總覽) -->
+            <div id="tabOverviewSection" class="space-y-4 transition-all duration-200 hidden">
                 
                 <!-- 區域獨立單行區塊 (總數量) -->
                 <div class="space-y-1.5 no-print">
@@ -221,86 +226,76 @@
 
             </div>
 
-            <!-- 馬桶資料清單區域 (僅在 Tab 2: 資料 顯示) -->
-            <div id="tabDataSection" class="space-y-2 hidden -mt-2.5">
+            <!-- 馬桶資料清單區域 (Tab 1: 資料) -->
+            <div id="tabDataSection" class="space-y-2.5">
                 
-                <!-- 展開/收疊式篩選區塊 -->
-                <section class="bg-morandi-card border border-morandi-light/80 rounded-2xl shadow-ios no-print !mt-0 overflow-hidden transition-all duration-200">
+                <!-- 展開/收疊式篩選區塊（左邊搜尋輸入，右側向下箭頭展開，最右側為圓圈箭頭重設按鈕） -->
+                <section class="bg-morandi-card border border-morandi-light/80 rounded-2xl shadow-ios no-print overflow-hidden transition-all duration-200">
                     
-                    <!-- 篩選卡片頂部標題與常駐搜尋列 -->
-                    <div class="p-3 space-y-2.5">
-                        <div class="flex items-center justify-between">
-                            <button onclick="toggleFilterAccordion()" class="flex items-center space-x-2 text-morandi-dark hover:opacity-80 transition-opacity">
-                                <i class="fa-solid fa-sliders text-morandi-sky text-xs"></i>
-                                <span class="text-xs font-bold">進階篩選</span>
-                                <span id="activeFilterBadge" class="hidden bg-morandi-sky text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">已套用</span>
-                                <i id="filterAccordionArrow" class="fa-solid fa-chevron-down text-[10px] text-morandi-slate/60 transition-transform duration-200 ml-1"></i>
-                            </button>
-
-                            <button onclick="resetAllFilters()" title="重置篩選" class="text-[11px] text-morandi-rose hover:underline font-medium flex items-center gap-1">
-                                <i class="fa-solid fa-rotate-left text-[10px]"></i>
-                                <span>重置</span>
-                            </button>
-                        </div>
-
-                        <!-- 搜尋關鍵字欄位 -->
-                        <div class="relative flex items-center">
+                    <div class="p-2.5 flex items-center gap-1.5">
+                        <!-- 左邊搜尋輸入框 -->
+                        <div class="relative flex-1 flex items-center">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 text-morandi-slate/60 text-xs"></i>
-                            <input type="text" id="searchInput" oninput="applyFilters()" placeholder="搜尋關鍵字..." class="w-full bg-morandi-bg border border-morandi-light/70 text-morandi-dark text-base rounded-xl pl-8 pr-8 py-1.5 focus:outline-none focus:border-morandi-sky transition-colors">
-                            <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 text-morandi-slate/50 hover:text-morandi-dark p-1">
+                            <input type="text" id="searchInput" onfocus="expandFilterAccordion()" oninput="applyFilters()" placeholder="搜尋關鍵字..." class="w-full bg-morandi-bg border border-morandi-light/70 text-morandi-dark text-xs rounded-xl pl-8 pr-7 py-2 focus:outline-none focus:border-morandi-sky transition-colors">
+                            <button type="button" id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2 text-morandi-slate/50 hover:text-morandi-dark p-0.5">
                                 <i class="fa-solid fa-circle-xmark text-xs"></i>
                             </button>
                         </div>
+
+                        <!-- 右側向下箭頭展開按鈕（含右上角啟用提示圓點） -->
+                        <button type="button" onclick="toggleFilterAccordion()" aria-label="展開或收疊篩選" class="w-9 h-9 rounded-xl bg-morandi-bg border border-morandi-light/70 text-morandi-slate hover:text-morandi-dark active:scale-95 transition-transform flex items-center justify-center relative shrink-0">
+                            <span id="activeFilterDot" class="hidden absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-morandi-dark"></span>
+                            <i id="filterAccordionArrow" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                        </button>
+
+                        <!-- 最右側重設按鈕（純圖示：圓圈箭頭） -->
+                        <button type="button" onclick="resetAllFilters()" aria-label="重設篩選" class="w-9 h-9 rounded-xl bg-morandi-bg border border-morandi-light/70 text-morandi-dark hover:opacity-80 active:scale-95 transition-transform flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-rotate-left text-xs"></i>
+                        </button>
                     </div>
 
-                    <!-- 可收疊的按鈕篩選內容區域 (預設隱藏 hidden) -->
-                    <div id="filterAccordionContent" class="hidden border-t border-morandi-light/50 p-3 pt-2.5 space-y-2.5 bg-morandi-bg/30">
-                        <!-- 1. 區域切換按鈕 -->
-                        <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                                <button id="btnAreaAll" onclick="setFilterBtn('Area', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                                <button id="btnAreaDay" onclick="setFilterBtn('Area', '日校')" class="flex-1 py-1 rounded-lg transition-all text-center">日校</button>
-                                <button id="btnAreaDorm" onclick="setFilterBtn('Area', '宿舍')" class="flex-1 py-1 rounded-lg transition-all text-center">宿舍</button>
-                            </div>
+                    <!-- 可收疊的膠囊複選篩選內容區域（無「全部」選項，均分伸展至整個區塊寬度） -->
+                    <div id="filterAccordionContent" class="hidden border-t border-morandi-light/50 p-2.5 space-y-2 bg-morandi-bg/30">
+                        <!-- 1. 區域膠囊容器 -->
+                        <div class="bg-morandi-light/60 p-1 rounded-xl flex gap-1 text-xs font-medium text-morandi-slate">
+                            <button type="button" id="btnAreaDay" data-val="日校" onclick="toggleFilterOption('Area', '日校')" class="filter-btn-Area flex-1 py-1.5 rounded-lg transition-all text-center">日校</button>
+                            <button type="button" id="btnAreaDorm" data-val="宿舍" onclick="toggleFilterOption('Area', '宿舍')" class="filter-btn-Area flex-1 py-1.5 rounded-lg transition-all text-center">宿舍</button>
                         </div>
 
-                        <!-- 2. 樓層切換按鈕 -->
-                        <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                                <button id="btnFloorAll" onclick="setFilterBtn('Floor', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                                <button id="btnFloorGF" onclick="setFilterBtn('Floor', 'G/F')" class="flex-1 py-1 rounded-lg transition-all text-center">G/F</button>
-                                <button id="btnFloor1F" onclick="setFilterBtn('Floor', '1/F')" class="flex-1 py-1 rounded-lg transition-all text-center">1/F</button>
-                            </div>
+                        <!-- 2. 樓層膠囊容器 -->
+                        <div class="bg-morandi-light/60 p-1 rounded-xl flex gap-1 text-xs font-medium text-morandi-slate">
+                            <button type="button" id="btnFloorGF" data-val="G/F" onclick="toggleFilterOption('Floor', 'G/F')" class="filter-btn-Floor flex-1 py-1.5 rounded-lg transition-all text-center">G/F</button>
+                            <button type="button" id="btnFloor1F" data-val="1/F" onclick="toggleFilterOption('Floor', '1/F')" class="filter-btn-Floor flex-1 py-1.5 rounded-lg transition-all text-center">1/F</button>
                         </div>
 
-                        <!-- 3. 扲掣位置切換按鈕 -->
-                        <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                                <button id="btnFlushAll" onclick="setFilterBtn('Flush', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                                <button id="btnFlushFR" onclick="setFilterBtn('Flush', '前右側')" class="flex-1 py-1 rounded-lg transition-all text-center">前右側</button>
-                                <button id="btnFlushLeft" onclick="setFilterBtn('Flush', '左側')" class="flex-1 py-1 rounded-lg transition-all text-center">左側</button>
-                                <button id="btnFlushTop" onclick="setFilterBtn('Flush', '頂按壓')" class="flex-1 py-1 rounded-lg transition-all text-center">頂按壓</button>
-                            </div>
+                        <!-- 3. 扲掣位置膠囊容器 -->
+                        <div class="bg-morandi-light/60 p-1 rounded-xl flex gap-1 text-xs font-medium text-morandi-slate">
+                            <button type="button" id="btnFlushFR" data-val="前右側" onclick="toggleFilterOption('Flush', '前右側')" class="filter-btn-Flush flex-1 py-1.5 rounded-lg transition-all text-center">前右側</button>
+                            <button type="button" id="btnFlushLeft" data-val="左側" onclick="toggleFilterOption('Flush', '左側')" class="filter-btn-Flush flex-1 py-1.5 rounded-lg transition-all text-center">左側</button>
+                            <button type="button" id="btnFlushTop" data-val="頂按壓" onclick="toggleFilterOption('Flush', '頂按壓')" class="filter-btn-Flush flex-1 py-1.5 rounded-lg transition-all text-center">頂按壓</button>
                         </div>
 
-                        <!-- 4. 水源切換按鈕 -->
-                        <div class="space-y-1">
-                            <div class="bg-morandi-light/50 p-0.5 rounded-xl flex text-xs font-medium text-morandi-slate">
-                                <button id="btnWaterAll" onclick="setFilterBtn('Water', '')" class="flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold">全部</button>
-                                <button id="btnWaterFresh" onclick="setFilterBtn('Water', '淡水')" class="flex-1 py-1 rounded-lg transition-all text-center">淡水</button>
-                                <button id="btnWaterSalt" onclick="setFilterBtn('Water', '鹹水')" class="flex-1 py-1 rounded-lg transition-all text-center">鹹水</button>
-                            </div>
+                        <!-- 4. 水源膠囊容器 -->
+                        <div class="bg-morandi-light/60 p-1 rounded-xl flex gap-1 text-xs font-medium text-morandi-slate">
+                            <button type="button" id="btnWaterFresh" data-val="淡水" onclick="toggleFilterOption('Water', '淡水')" class="filter-btn-Water flex-1 py-1.5 rounded-lg transition-all text-center">淡水</button>
+                            <button type="button" id="btnWaterSalt" data-val="鹹水" onclick="toggleFilterOption('Water', '鹹水')" class="filter-btn-Water flex-1 py-1.5 rounded-lg transition-all text-center">鹹水</button>
                         </div>
                     </div>
                 </section>
 
                 <!-- 資料列表區塊 -->
-                <section class="space-y-2 pt-1">
+                <section class="space-y-2 pt-0.5">
                     <div class="flex items-center justify-between px-1">
                         <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-bold text-morandi-dark">馬桶資料清單</span>
                             <span id="recordBadge" class="bg-morandi-light/80 text-morandi-dark text-xs font-semibold px-2 py-0.5 rounded-full">0 筆</span>
                         </div>
+                    </div>
+
+                    <!-- 雲端下載載入中圖示（載入時版面空白並顯示此載入圖示） -->
+                    <div id="loadingState" class="hidden py-14 text-center bg-morandi-card rounded-2xl border border-morandi-light/80 shadow-ios">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl text-morandi-dark mb-2"></i>
+                        <p class="text-xs font-medium text-morandi-slate">資料載入中...</p>
                     </div>
 
                     <div id="dataList" class="space-y-2.5"></div>
@@ -316,7 +311,7 @@
             </div>
         </main>
 
-        <!-- 底部浮動藥丸式 Tab Bar  (預設高亮左側資料 TAB)  -->
+        <!-- 底部浮動藥丸式 Tab Bar (預設高亮左側資料 TAB) -->
         <nav class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 no-print">
             <div class="bg-morandi-dark/90 tab-blur border border-white/20 rounded-full p-1.5 shadow-pill flex items-center space-x-1">
                 <!-- Tab 1: 資料 (左側 Icon) -->
@@ -385,29 +380,74 @@
             return "https://script.google.com/macros/s/AKfycbykaagxVH6IBJR8pzlmJ4WifHHgElX4imHDQVDnmT71sVN-fjFMU6AEvF4ZJKmKQMvv/exec";
         }
 
+        // 預設為空白，無預載資料
         let rawData = [];
-        let headers = [];
-        let currentTab = 'data'; // 預設顯示資料清單 Tab
+        let headers = ["區域", "樓層", "扲掣位置1", "扲掣位置2", "水源1", "水源2"];
+        let currentTab = 'data';
         let lastUpdated = 0;
         let hasUnsavedLocalChanges = false;
+        let isLoadingCloud = false;
+        let isFilterExpanded = false;
+        let toastTimer = null;
 
-        // 當前按鈕式篩選狀態
-        let selectedArea = '';
-        let selectedFloor = '';
-        let selectedFlush = '';
-        let selectedWater = '';
+        // 當前膠囊複選狀態（陣列為空代表顯示全部）
+        let selectedAreas = [];
+        let selectedFloors = [];
+        let selectedFlushes = [];
+        let selectedWaters = [];
 
-        const sampleData = [
-            { "區域": "日校", "樓層": "1/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "淡水", "水源2": "" },
-            { "區域": "日校", "樓層": "1/F", "扲掣位置1": "頂按壓", "扲掣位置2": "左側", "水源1": "鹹水", "水源2": "淡水" },
-            { "區域": "宿舍", "樓層": "G/F", "扲掣位置1": "左側", "扲掣位置2": "", "水源1": "鹹水", "水源2": "" }
-        ];
+        // Toast Notification 顯示函式
+        function showToast(message, type = 'success', duration = 2600) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else if (type === 'loading') {
+                toastIcon.className = 'fa-solid fa-spinner fa-spin text-amber-300';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimer) clearTimeout(toastTimer);
+            if (duration > 0) {
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', '-translate-y-4');
+                }, duration);
+            }
+        }
+
+        // 控制資料版面載入中狀態
+        function setLoadingState(loading) {
+            isLoadingCloud = loading;
+            const loadingState = document.getElementById('loadingState');
+            const dataList = document.getElementById('dataList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (loading) {
+                loadingState.classList.remove('hidden');
+                dataList.classList.add('hidden');
+                emptyState.classList.add('hidden');
+            } else {
+                loadingState.classList.add('hidden');
+                dataList.classList.remove('hidden');
+            }
+        }
 
         // 切換篩選展開/收疊
         function toggleFilterAccordion() {
             const content = document.getElementById('filterAccordionContent');
             const arrow = document.getElementById('filterAccordionArrow');
-            if (content.classList.contains('hidden')) {
+            isFilterExpanded = !isFilterExpanded;
+
+            if (isFilterExpanded) {
                 content.classList.remove('hidden');
                 arrow.style.transform = 'rotate(180deg)';
             } else {
@@ -416,13 +456,20 @@
             }
         }
 
-        // 更新篩選徽章狀態
-        function checkActiveFilterBadge() {
-            const badge = document.getElementById('activeFilterBadge');
-            if (selectedArea || selectedFloor || selectedFlush || selectedWater) {
-                badge.classList.remove('hidden');
+        function expandFilterAccordion() {
+            if (!isFilterExpanded) {
+                toggleFilterAccordion();
+            }
+        }
+
+        // 更新篩選按鈕右上角提示圓點狀態
+        function checkActiveFilterDot() {
+            const dot = document.getElementById('activeFilterDot');
+            const hasFilter = selectedAreas.length > 0 || selectedFloors.length > 0 || selectedFlushes.length > 0 || selectedWaters.length > 0;
+            if (hasFilter) {
+                dot.classList.remove('hidden');
             } else {
-                badge.classList.add('hidden');
+                dot.classList.add('hidden');
             }
         }
 
@@ -435,61 +482,28 @@
             const navData = document.getElementById('navTabData');
 
             if (tab === 'data') {
-                // 顯示資料，隱藏總覽
                 overviewSec.classList.add('hidden'); 
                 dataSec.classList.remove('hidden');
-                // 設定左側「資料」按鈕為高亮
                 navData.className = "w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90";
                 navOverview.className = "w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90";
             } else {
-                // 顯示總覽，隱藏資料
                 overviewSec.classList.remove('hidden');
                 dataSec.classList.add('hidden');
-                // 設定右側「總覽」按鈕為高亮
                 navOverview.className = "w-12 h-12 rounded-full flex items-center justify-center text-white bg-white/20 transition-all duration-200 active:scale-90";
                 navData.className = "w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-90";
             }
         }
 
-        // 開啟 App 時：載入快取，並自動向雲端下載最新資料
+        // 開啟 App 時：不載入預載資料（版面保持空白並顯示載入中圖示），直接向雲端下載最新資料，且不彈出 Toast
         window.onload = function() {
-            const savedData = localStorage.getItem('toilet_system_data');
-            const savedHeaders = localStorage.getItem('toilet_system_headers');
-            const savedTime = localStorage.getItem('toilet_system_last_updated');
-            const savedChanges = localStorage.getItem('toilet_system_has_changes');
-
-            if (savedData && savedHeaders) {
-                try {
-                    rawData = JSON.parse(savedData);
-                    headers = JSON.parse(savedHeaders);
-                    lastUpdated = parseInt(savedTime || "0");
-                    hasUnsavedLocalChanges = (savedChanges === "true");
-                } catch(e) {
-                    loadDefaultSample();
-                }
-            } else {
-                loadDefaultSample();
-            }
-
-            filterOutExcludedHeaders();
-            renderList();
+            rawData = [];
             updateCounts();
-
-            // 強制進入「資料」頁籤
             switchMainTab('data');
-
-            // 強制下載雲端資料 (isAuto = true)
             smartSync(true);
         };
 
         function filterOutExcludedHeaders() {
             headers = headers.filter(h => h !== "馬桶類型" && h !== "狀態" && h !== "扲掣位置" && h !== "水源");
-        }
-
-        function loadDefaultSample() {
-            rawData = JSON.parse(JSON.stringify(sampleData));
-            headers = ["區域", "樓層", "扲掣位置1", "扲掣位置2", "水源1", "水源2"];
-            markDataModified();
         }
 
         // 標記本地資料被修改
@@ -501,8 +515,6 @@
             localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
             localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
             localStorage.setItem('toilet_system_has_changes', "true");
-            
-            document.getElementById('syncText').innerText = "本地已修改 (未同步)";
         }
 
         function updateCounts() {
@@ -548,7 +560,6 @@
                 });
             });
             
-            // 更新 DOM 顯示
             document.getElementById('daySchoolCount').innerText = dayCount;
             document.getElementById('dormCount').innerText = dormCount;
 
@@ -559,45 +570,54 @@
             document.getElementById('countWaterFresh').innerText = freshCount;
         }
 
-        // 按鈕式篩選切換邏輯
-        function setFilterBtn(type, val) {
-            const inactiveClass = "flex-1 py-1 rounded-lg transition-all text-center";
-            const activeClass = "flex-1 py-1 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold";
+        // 膠囊複選切換邏輯（無「全部」選項；陣列為空時代表顯示全部）
+        function toggleFilterOption(type, val) {
+            let targetArr;
+            if (type === 'Area') targetArr = selectedAreas;
+            else if (type === 'Floor') targetArr = selectedFloors;
+            else if (type === 'Flush') targetArr = selectedFlushes;
+            else if (type === 'Water') targetArr = selectedWaters;
 
-            if (type === 'Area') {
-                selectedArea = val;
-                document.getElementById('btnAreaAll').className = val === '' ? activeClass : inactiveClass;
-                document.getElementById('btnAreaDay').className = val === '日校' ? activeClass : inactiveClass;
-                document.getElementById('btnAreaDorm').className = val === '宿舍' ? activeClass : inactiveClass;
-            } else if (type === 'Floor') {
-                selectedFloor = val;
-                document.getElementById('btnFloorAll').className = val === '' ? activeClass : inactiveClass;
-                document.getElementById('btnFloorGF').className = val === 'G/F' ? activeClass : inactiveClass;
-                document.getElementById('btnFloor1F').className = val === '1/F' ? activeClass : inactiveClass;
-            } else if (type === 'Flush') {
-                selectedFlush = val;
-                document.getElementById('btnFlushAll').className = val === '' ? activeClass : inactiveClass;
-                document.getElementById('btnFlushFR').className = val === '前右側' ? activeClass : inactiveClass;
-                document.getElementById('btnFlushLeft').className = val === '左側' ? activeClass : inactiveClass;
-                document.getElementById('btnFlushTop').className = val === '頂按壓' ? activeClass : inactiveClass;
-            } else if (type === 'Water') {
-                selectedWater = val;
-                document.getElementById('btnWaterAll').className = val === '' ? activeClass : inactiveClass;
-                document.getElementById('btnWaterFresh').className = val === '淡水' ? activeClass : inactiveClass;
-                document.getElementById('btnWaterSalt').className = val === '鹹水' ? activeClass : inactiveClass;
-            }
+            const idx = targetArr.indexOf(val);
+            if (idx > -1) targetArr.splice(idx, 1);
+            else targetArr.push(val);
 
-            checkActiveFilterBadge();
+            updateFilterStyles();
             renderList();
         }
 
+        function updateFilterStyles() {
+            const activeClassSuffix = "flex-1 py-1.5 rounded-lg transition-all text-center bg-morandi-card text-morandi-dark shadow-sm font-bold";
+            const inactiveClassSuffix = "flex-1 py-1.5 rounded-lg transition-all text-center text-morandi-slate font-medium";
+
+            document.querySelectorAll('.filter-btn-Area').forEach(btn => {
+                const v = btn.getAttribute('data-val');
+                btn.className = `filter-btn-Area ${selectedAreas.includes(v) ? activeClassSuffix : inactiveClassSuffix}`;
+            });
+            document.querySelectorAll('.filter-btn-Floor').forEach(btn => {
+                const v = btn.getAttribute('data-val');
+                btn.className = `filter-btn-Floor ${selectedFloors.includes(v) ? activeClassSuffix : inactiveClassSuffix}`;
+            });
+            document.querySelectorAll('.filter-btn-Flush').forEach(btn => {
+                const v = btn.getAttribute('data-val');
+                btn.className = `filter-btn-Flush ${selectedFlushes.includes(v) ? activeClassSuffix : inactiveClassSuffix}`;
+            });
+            document.querySelectorAll('.filter-btn-Water').forEach(btn => {
+                const v = btn.getAttribute('data-val');
+                btn.className = `filter-btn-Water ${selectedWaters.includes(v) ? activeClassSuffix : inactiveClassSuffix}`;
+            });
+
+            checkActiveFilterDot();
+        }
+
         function resetAllFilters() {
-            setFilterBtn('Area', '');
-            setFilterBtn('Floor', '');
-            setFilterBtn('Flush', '');
-            setFilterBtn('Water', '');
+            selectedAreas = [];
+            selectedFloors = [];
+            selectedFlushes = [];
+            selectedWaters = [];
             document.getElementById('searchInput').value = "";
             document.getElementById('clearSearchBtn').classList.add('hidden');
+            updateFilterStyles();
             renderList();
         }
 
@@ -614,6 +634,8 @@
         }
 
         function renderList() {
+            if (isLoadingCloud) return;
+
             const container = document.getElementById('dataList');
             const emptyState = document.getElementById('emptyState');
             container.innerHTML = '';
@@ -637,21 +659,23 @@
             let filtered = rawData.filter((row, originalIndex) => {
                 row._origIndex = originalIndex;
 
-                if (selectedArea && String(row[keyArea] || '').trim() !== selectedArea) return false;
-                if (selectedFloor && String(row[keyFloor] || '').trim() !== selectedFloor) return false;
+                if (selectedAreas.length > 0 && !selectedAreas.includes(String(row[keyArea] || '').trim())) return false;
+                if (selectedFloors.length > 0 && !selectedFloors.includes(String(row[keyFloor] || '').trim())) return false;
 
-                if (selectedFlush) {
-                    const f1 = row["扲掣位置1"] || row["扲掣位置 1"] || "";
-                    const f2 = row["扲掣位置2"] || row["扲掣位置 2"] || "";
-                    const f3 = row["扲掣位置3"] || row["扲掣位置 3"] || "";
-                    if (f1.trim() !== selectedFlush && f2.trim() !== selectedFlush && f3.trim() !== selectedFlush) return false;
+                if (selectedFlushes.length > 0) {
+                    const f1 = String(row["扲掣位置1"] || row["扲掣位置 1"] || "").trim();
+                    const f2 = String(row["扲掣位置2"] || row["扲掣位置 2"] || "").trim();
+                    const f3 = String(row["扲掣位置3"] || row["扲掣位置 3"] || "").trim();
+                    const rowFlushes = [f1, f2, f3].filter(Boolean);
+                    if (!selectedFlushes.some(sel => rowFlushes.includes(sel))) return false;
                 }
 
-                if (selectedWater) {
-                    const w1 = row["水源1"] || row["水源 1"] || "";
-                    const w2 = row["水源2"] || row["水源 2"] || "";
-                    const w3 = row["水源3"] || row["水源 3"] || "";
-                    if (w1.trim() !== selectedWater && w2.trim() !== selectedWater && w3.trim() !== selectedWater) return false;
+                if (selectedWaters.length > 0) {
+                    const w1 = String(row["水源1"] || row["水源 1"] || "").trim();
+                    const w2 = String(row["水源2"] || row["水源 2"] || "").trim();
+                    const w3 = String(row["水源3"] || row["水源 3"] || "").trim();
+                    const rowWaters = [w1, w2, w3].filter(Boolean);
+                    if (!selectedWaters.some(sel => rowWaters.includes(sel))) return false;
                 }
 
                 if (searchVal) {
@@ -676,8 +700,6 @@
                 card.onclick = () => openEditModal(row._origIndex);
                 card.className = "bg-morandi-card border border-morandi-light/80 rounded-2xl p-3.5 shadow-ios flex items-center justify-between cursor-pointer hover:border-morandi-sky/50 active:scale-[0.99] transition-all print-card";
 
-                const keyArea = headers.find(h => h.includes("區域")) || "區域";
-                const keyFloor = headers.find(h => h.includes("樓層") || h.includes("層樓")) || "層樓";
                 const keyRoomNo = headers.find(h => h.includes("房號")) || "房號";
                 const keyRoomName = headers.find(h => h.includes("房名")) || "房名";
                 const keyQty = headers.find(h => h.includes("數量") || h.includes("數")) || "數量";
@@ -823,16 +845,20 @@
             const url = getGoogleSheetUrl();
 
             if (!url || url.includes("PLACEHOLDER")) {
-                if (!isAuto) showAlert("提示", "請先確認程式碼中的 Web App 網址設定正確！");
+                if (!isAuto) showToast("請先確認程式碼中的 Web App 網址設定正確！", "error");
                 return;
             }
 
-            const headerSpinner = document.getElementById('headerSyncSpinner');
-            if (headerSpinner) headerSpinner.classList.add('fa-spin');
+            const headerIcon = document.getElementById('headerSyncIcon');
 
             if (!isAuto) {
-                pushToGoogleSheets(url, isAuto, headerSpinner);
+                // 手動按同步至雲端
+                if (headerIcon) headerIcon.className = 'fa-solid fa-spinner fa-spin text-sm';
+                showToast("正在同步至雲端...", "loading", 0);
+                pushToGoogleSheets(url, headerIcon);
             } else {
+                // 開啟 App 從雲端下載：顯示版面載入圖示、無預載資料、不彈出 Toast
+                setLoadingState(true);
                 fetch(url + "?t=" + new Date().getTime())
                     .then(res => res.json())
                     .then(cloudRes => {
@@ -848,22 +874,23 @@
                             localStorage.setItem('toilet_system_headers', JSON.stringify(headers));
                             localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
                             localStorage.setItem('toilet_system_has_changes', "false");
-
-                            renderList();
-                            updateCounts();
+                        } else {
+                            rawData = [];
                         }
-
-                        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-                        document.getElementById('syncText').innerText = "已從雲端下載最新數據 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
                     })
                     .catch(err => {
-                        if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-                        document.getElementById('syncText').innerText = "離線狀態 (使用本地資料)";
+                        console.error(err);
+                        rawData = [];
+                    })
+                    .finally(() => {
+                        setLoadingState(false);
+                        renderList();
+                        updateCounts();
                     });
             }
         }
 
-        function pushToGoogleSheets(url, isAuto, headerSpinner) {
+        function pushToGoogleSheets(url, headerIcon) {
             const payload = JSON.stringify({
                 headers: headers,
                 data: rawData,
@@ -879,7 +906,7 @@
             })
             .then(res => res.json())
             .then(res => {
-                if (headerSpinner) headerSpinner.classList.remove('fa-spin');
+                if (headerIcon) headerIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
 
                 if (res.status === "success") {
                     lastUpdated = res.lastUpdated || lastUpdated;
@@ -888,15 +915,14 @@
                     localStorage.setItem('toilet_system_last_updated', lastUpdated.toString());
                     localStorage.setItem('toilet_system_has_changes', "false");
                     
-                    document.getElementById('syncText').innerText = "已成功上傳更新至雲端 (" + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ")";
-                    if (!isAuto) showAlert("同步成功", "已將本地最新修改成功上傳至 Google Sheets！", "fa-circle-check", "text-morandi-sage");
+                    showToast("已成功同步至雲端", "success", 2500);
                 } else {
-                    if (!isAuto) showAlert("同步提示", "雲端已有更新的資料，請重新整理。");
+                    showToast("雲端已有更新的資料，請重新整理", "error", 3000);
                 }
             })
             .catch(err => {
-                if (headerSpinner) headerSpinner.classList.remove('fa-spin');
-                if (!isAuto) showAlert("同步失敗", "推送資料至雲端時發生錯誤，請檢查網路狀態。");
+                if (headerIcon) headerIcon.className = 'fa-solid fa-cloud-arrow-up text-sm';
+                showToast("同步失敗，請檢查網路連線", "error", 3000);
             });
         }
 
