@@ -22,14 +22,21 @@
             theme: {
                 extend: {
                     colors: {
+                        pastel: {
+                            cream: '#FFF1E6',
+                            pink: '#FDE2E4',
+                            mint: '#E2ECE9',
+                            blue: '#CDDAFD',
+                            sage: '#DBE7E4',
+                        },
                         ios: { 
-                            bg: '#F2F2F7', 
-                            card: '#FFFFFF', 
-                            text: '#1C1C1E', 
-                            subtext: '#8E8E93', 
-                            morandi: '#5E4B56', 
-                            accent: '#D1B3C4', 
-                            border: '#E5E5EA' 
+                            bg: '#FFF1E6',       // 主背景色 (#FFF1E6)
+                            card: '#FFFFFF',     // 卡片保持純白以突顯柔和粉彩色塊
+                            text: '#2B303A',     // 深灰藍文字確保高對比清晰度
+                            subtext: '#6C757D',  // 次要文字
+                            morandi: '#4A5D7E',  // 搭配 #CDDAFD 的沉穩莫蘭迪藍主色
+                            accent: '#CDDAFD',   // 點綴色 (#CDDAFD)
+                            border: '#DBE7E4'    // 邊框與分隔線 (#DBE7E4)
                         }
                     }
                 }
@@ -40,7 +47,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif; 
-            background-color: #F2F2F7; 
+            background-color: #FFF1E6; 
             -webkit-tap-highlight-color: transparent;
         }
         .pb-safe { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
@@ -49,7 +56,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-ios-bg text-ios-text antialiased min-h-screen">
+<body class="bg-pastel-cream text-ios-text antialiased min-h-screen">
 
     <!-- 頂部 Toast Notification（僅用於手動上傳同步提示，雲端載入不會觸發） -->
     <div id="toastNotification" class="fixed top-4 inset-x-4 z-50 flex justify-center pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
@@ -60,7 +67,7 @@
     </div>
 
     <!-- 頂部 Navigation Bar (中文在上、英文在下) -->
-    <header class="bg-ios-card/85 backdrop-blur-md sticky top-0 z-30 border-b border-ios-border pt-safe px-4 pb-3">
+    <header class="bg-pastel-cream/85 backdrop-blur-md sticky top-0 z-30 border-b border-pastel-sage pt-safe px-4 pb-3">
         <div class="flex items-center justify-between max-w-md mx-auto">
             <div>
                 <h1 class="text-xl font-bold text-ios-text leading-tight">消防設備管理</h1>
@@ -68,10 +75,10 @@
             </div>
             <div class="flex items-center space-x-2">
                 <!-- 雲加向上箭頭圖示：同步至雲端 -->
-                <button onclick="syncToGoogleSheets()" class="w-9 h-9 rounded-full bg-ios-bg flex items-center justify-center text-ios-morandi active:scale-95 transition-transform" title="同步資料至雲端">
+                <button onclick="syncToGoogleSheets()" class="w-9 h-9 rounded-full bg-pastel-blue/70 flex items-center justify-center text-ios-morandi active:scale-95 transition-transform shadow-sm" title="同步資料至雲端">
                     <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-base"></i>
                 </button>
-                <label class="hidden w-9 h-9 rounded-full bg-ios-bg flex items-center justify-center text-ios-morandi cursor-pointer active:scale-95 transition-transform" title="匯入 Excel">
+                <label class="hidden w-9 h-9 rounded-full bg-pastel-mint flex items-center justify-center text-ios-morandi cursor-pointer active:scale-95 transition-transform" title="匯入 Excel">
                     <i class="fa-solid fa-file-excel text-base"></i>
                     <input type="file" id="excelFileInput" accept=".xls,.xlsx" class="hidden" onchange="handleExcelImport(event)">
                 </label>
@@ -86,35 +93,35 @@
         <div id="page-list" class="space-y-3">
             
             <!-- 搜尋與篩選卡片（頂部直接為搜尋列，可展開／收疊層樓與種類） -->
-            <section class="bg-ios-card rounded-2xl border border-ios-border/60 shadow-sm overflow-hidden">
+            <section class="bg-ios-card rounded-2xl border border-pastel-sage shadow-sm overflow-hidden">
                 <div class="p-2.5 flex items-center gap-1.5">
                     <div class="relative flex-1">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-ios-subtext text-xs"></i>
-                        <input type="text" id="searchInput" onfocus="expandFilterCard()" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-ios-bg pl-8 pr-4 py-2 text-xs rounded-xl focus:outline-none border border-ios-border/60">
+                        <input type="text" id="searchInput" onfocus="expandFilterCard()" oninput="handleSearchInput()" placeholder="搜尋層樓、位置或設備..." class="w-full bg-pastel-mint/60 pl-8 pr-4 py-2 text-xs rounded-xl focus:outline-none border border-pastel-sage">
                     </div>
 
                     <!-- 展開／收疊篩選按鈕 -->
-                    <button type="button" onclick="toggleFilterCard()" aria-label="展開或收疊篩選" class="w-9 h-9 rounded-xl bg-ios-bg flex items-center justify-center text-ios-subtext relative shrink-0 active:scale-95 transition-transform">
+                    <button type="button" onclick="toggleFilterCard()" aria-label="展開或收疊篩選" class="w-9 h-9 rounded-xl bg-pastel-sage/70 flex items-center justify-center text-ios-text relative shrink-0 active:scale-95 transition-transform">
                         <span id="activeFilterDot" class="hidden absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-ios-morandi"></span>
                         <i id="filterChevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
                     </button>
 
                     <!-- 重設按鈕：放於最右側（無文字、圓圈箭頭圖示） -->
-                    <button type="button" onclick="resetFilters()" aria-label="重設篩選" class="w-9 h-9 rounded-xl bg-ios-bg flex items-center justify-center text-ios-morandi shrink-0 active:scale-95 transition-transform">
+                    <button type="button" onclick="resetFilters()" aria-label="重設篩選" class="w-9 h-9 rounded-xl bg-pastel-pink/80 flex items-center justify-center text-rose-700 shrink-0 active:scale-95 transition-transform">
                         <i class="fa-solid fa-rotate-left text-xs"></i>
                     </button>
                 </div>
 
                 <!-- 展開內容：層樓 + 種類 -->
-                <div id="filterCardBody" class="hidden px-3 pb-3 pt-1 space-y-2 border-t border-ios-border/50">
+                <div id="filterCardBody" class="hidden px-3 pb-3 pt-1 space-y-2 border-t border-pastel-sage/60">
                     <!-- 樓層複選篩選 -->
-                    <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1 mt-1">
+                    <div class="bg-pastel-mint/70 p-1 rounded-xl flex gap-1 mt-1">
                         <button type="button" onclick="toggleFloorFilter('G/F')" data-floor="G/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">G/F 位置</button>
                         <button type="button" onclick="toggleFloorFilter('1/F')" data-floor="1/F" class="floor-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all">1/F 位置</button>
                     </div>
 
                     <!-- 設備種類複選篩選（伸展至整個區塊寬度，採用與層樓相同的複選樣式） -->
-                    <div class="bg-ios-border/50 p-1 rounded-xl flex gap-1" id="categoryFilterContainer">
+                    <div class="bg-pastel-sage/70 p-1 rounded-xl flex gap-1" id="categoryFilterContainer">
                         <button type="button" onclick="toggleCategoryFilter('乾粉滅火器')" data-category="乾粉滅火器" class="filter-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all truncate">乾粉</button>
                         <button type="button" onclick="toggleCategoryFilter('二氧化碳滅火器')" data-category="二氧化碳滅火器" class="filter-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all truncate">CO₂</button>
                         <button type="button" onclick="toggleCategoryFilter('泡沫滅火器')" data-category="泡沫滅火器" class="filter-btn flex-1 py-1.5 text-xs font-semibold rounded-lg text-ios-subtext transition-all truncate">泡沫</button>
@@ -129,11 +136,11 @@
                 <!-- 資料清單小標題與右側筆數 -->
                 <div class="flex items-center justify-between px-1">
                     <h2 class="text-xs font-bold text-ios-text tracking-wide">位置資料</h2>
-                    <span id="recordCountBadge" class="text-xs font-semibold text-ios-morandi bg-ios-card px-2 py-0.5 rounded-full border border-ios-border/80">0 筆</span>
+                    <span id="recordCountBadge" class="text-xs font-semibold text-ios-morandi bg-pastel-blue/60 px-2.5 py-0.5 rounded-full border border-pastel-blue">0 筆</span>
                 </div>
 
                 <!-- 雲端載入中圖示（載入時版面空白並顯示此載入圖示） -->
-                <div id="loadingState" class="hidden py-14 text-center bg-ios-card rounded-2xl border border-ios-border/60 shadow-sm">
+                <div id="loadingState" class="hidden py-14 text-center bg-ios-card rounded-2xl border border-pastel-sage shadow-sm">
                     <i class="fa-solid fa-spinner fa-spin text-2xl text-ios-morandi mb-2"></i>
                     <p class="text-xs text-ios-subtext">資料載入中...</p>
                 </div>
@@ -145,17 +152,17 @@
 
         <!-- ==================== 第二頁：設備總數量統計 ==================== -->
         <div id="page-stats" class="hidden space-y-4">
-            <section class="bg-ios-card px-4 py-3.5 rounded-2xl border border-ios-border/60 shadow-sm">
-                <div class="flex items-center justify-between pb-2.5 border-b border-ios-border/80">
+            <section class="bg-ios-card px-4 py-3.5 rounded-2xl border border-pastel-sage shadow-sm">
+                <div class="flex items-center justify-between pb-2.5 border-b border-pastel-sage">
                     <h2 class="text-xs font-bold text-ios-text tracking-wider">設備總數量統計</h2>
                 </div>
                 
-                <!-- 獨立單行顯示，間線分隔 (divide-y) -->
-                <div class="divide-y divide-ios-border">
-                    <!-- 乾粉滅火器 -->
+                <!-- 獨立單行顯示，間線分隔 (divide-y)，分別套用五種粉彩圓形底色 -->
+                <div class="divide-y divide-pastel-sage/70">
+                    <!-- 乾粉滅火器 (#FDE2E4) -->
                     <div class="py-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                            <div class="w-8 h-8 rounded-full bg-pastel-pink text-rose-700 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-bottle-droplet"></i>
                             </div>
                             <span class="text-sm font-medium text-ios-text">乾粉</span>
@@ -163,10 +170,10 @@
                         <span id="count-dry-powder" class="text-lg font-bold text-ios-morandi">0</span>
                     </div>
 
-                    <!-- CO2 滅火器 -->
+                    <!-- CO2 滅火器 (#CDDAFD) -->
                     <div class="py-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                            <div class="w-8 h-8 rounded-full bg-pastel-blue text-indigo-700 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-cloud"></i>
                             </div>
                             <span class="text-sm font-medium text-ios-text">二氧化碳</span>
@@ -174,10 +181,10 @@
                         <span id="count-co2" class="text-lg font-bold text-ios-morandi">0</span>
                     </div>
 
-                    <!-- 泡沫滅火器 -->
+                    <!-- 泡沫滅火器 (#E2ECE9) -->
                     <div class="py-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                            <div class="w-8 h-8 rounded-full bg-pastel-mint text-teal-700 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-soap"></i>
                             </div>
                             <span class="text-sm font-medium text-ios-text">泡沫</span>
@@ -185,10 +192,10 @@
                         <span id="count-foam" class="text-lg font-bold text-ios-morandi">0</span>
                     </div>
 
-                    <!-- 防火沙 -->
+                    <!-- 防火沙 (#FFF1E6) -->
                     <div class="py-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                            <div class="w-8 h-8 rounded-full bg-pastel-cream border border-amber-200/60 text-amber-700 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-mound"></i>
                             </div>
                             <span class="text-sm font-medium text-ios-text">防火沙</span>
@@ -196,10 +203,10 @@
                         <span id="count-sand" class="text-lg font-bold text-ios-morandi">0</span>
                     </div>
 
-                    <!-- 防火毯 -->
+                    <!-- 防火毯 (#DBE7E4) -->
                     <div class="pt-3 pb-1 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-ios-accent/30 text-ios-morandi flex items-center justify-center text-sm">
+                            <div class="w-8 h-8 rounded-full bg-pastel-sage text-emerald-800 flex items-center justify-center text-sm">
                                 <i class="fa-solid fa-rug"></i>
                             </div>
                             <span class="text-sm font-medium text-ios-text">防火毯</span>
@@ -214,8 +221,8 @@
 
     <!-- 藥丸式 Tab Bar (純圖示，懸浮膠囊造型) -->
     <nav class="fixed inset-x-0 pill-bottom-safe z-40 flex justify-center pointer-events-none px-4">
-        <div class="pointer-events-auto bg-ios-card/90 backdrop-blur-xl border border-ios-border/80 shadow-lg rounded-full p-1.5 flex items-center gap-1.5">
-            <button onclick="switchTab('list')" id="tab-btn-list" aria-label="設備清單" class="w-16 h-10 rounded-full flex items-center justify-center bg-ios-morandi text-white shadow-sm transition-all active:scale-95">
+        <div class="pointer-events-auto bg-ios-card/90 backdrop-blur-xl border border-pastel-sage shadow-lg rounded-full p-1.5 flex items-center gap-1.5">
+            <button onclick="switchTab('list')" id="tab-btn-list" aria-label="設備清單" class="w-16 h-10 rounded-full flex items-center justify-center bg-pastel-blue text-ios-morandi shadow-sm transition-all active:scale-95">
                 <i class="fa-solid fa-list-check text-base"></i>
             </button>
             <button onclick="switchTab('stats')" id="tab-btn-stats" aria-label="數量統計" class="w-16 h-10 rounded-full flex items-center justify-center text-ios-subtext hover:text-ios-text transition-all active:scale-95">
@@ -226,8 +233,8 @@
 
     <!-- 修改資料 Modal (置中顯示於螢幕中間，底部僅保留「確定」與「刪除」2個按鈕) -->
     <div id="equipmentModal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-ios-card rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl">
-            <div class="flex justify-between items-center border-b border-ios-border pb-3">
+        <div class="bg-ios-card rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl border border-pastel-sage">
+            <div class="flex justify-between items-center border-b border-pastel-sage pb-3">
                 <h3 class="text-base font-bold text-ios-text">修改設備資料</h3>
                 <button onclick="closeModal()" class="text-ios-subtext text-xl"><i class="fa-solid fa-circle-xmark"></i></button>
             </div>
@@ -235,18 +242,18 @@
                 <input type="hidden" id="editIndex" value="-1">
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">層樓</label>
-                    <select id="formFloor" required class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                    <select id="formFloor" required class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                         <option value="G/F">G/F</option>
                         <option value="1/F">1/F</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">位置</label>
-                    <input type="text" id="formLocation" required class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                    <input type="text" id="formLocation" required class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">種類</label>
-                    <select id="formType" class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                    <select id="formType" class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                         <option value="乾粉滅火器">乾粉滅火器</option>
                         <option value="二氧化碳滅火器">二氧化碳滅火器</option>
                         <option value="泡沫滅火器">泡沫滅火器</option>
@@ -257,22 +264,22 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs text-ios-subtext mb-1">容量</label>
-                        <input type="text" id="formCapacity" class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                        <input type="text" id="formCapacity" class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs text-ios-subtext mb-1">掛牆</label>
-                        <input type="text" id="formWallMount" class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                        <input type="text" id="formWallMount" class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs text-ios-subtext mb-1">數量 (0-10)</label>
-                    <select id="formQuantity" class="w-full bg-ios-bg px-3 py-2 rounded-xl text-xs focus:outline-none">
+                    <select id="formQuantity" class="w-full bg-pastel-mint/50 border border-pastel-sage px-3 py-2 rounded-xl text-xs focus:outline-none">
                         <script>for(let i=0; i<=10; i++) document.write(`<option value="${i}">${i}</option>`);</script>
                     </select>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="submit" class="flex-1 py-2.5 bg-ios-morandi text-white rounded-xl text-xs font-semibold active:scale-95 transition-transform">確定</button>
-                    <button type="button" onclick="deleteCurrentItem()" class="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-semibold active:scale-95 transition-transform">刪除</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-pastel-blue text-ios-morandi rounded-xl text-xs font-bold active:scale-95 transition-transform">確定</button>
+                    <button type="button" onclick="deleteCurrentItem()" class="flex-1 py-2.5 bg-pastel-pink text-rose-700 rounded-xl text-xs font-bold active:scale-95 transition-transform">刪除</button>
                 </div>
             </form>
         </div>
@@ -368,7 +375,7 @@
             const btnList = document.getElementById('tab-btn-list');
             const btnStats = document.getElementById('tab-btn-stats');
 
-            const activeClasses = ['bg-ios-morandi', 'text-white', 'shadow-sm'];
+            const activeClasses = ['bg-pastel-blue', 'text-ios-morandi', 'shadow-sm'];
             const inactiveClasses = ['text-ios-subtext', 'hover:text-ios-text'];
 
             if (tabName === 'list') {
@@ -489,11 +496,17 @@
                     const idx = equipmentList.indexOf(item);
                     const card = document.createElement('div');
                     card.onclick = () => openEditModal(idx);
-                    card.className = 'bg-ios-card p-3.5 rounded-2xl border border-ios-border/60 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform';
+                    card.className = 'bg-ios-card p-3.5 rounded-2xl border border-pastel-sage shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform';
+                    
+                    // 依樓層給予不同粉彩標籤色 (#FDE2E4 或 #CDDAFD)
+                    const floorBadgeClass = item.floor === 'G/F' 
+                        ? 'bg-pastel-pink text-rose-800' 
+                        : 'bg-pastel-blue text-indigo-800';
+
                     card.innerHTML = `
                         <div class="space-y-1">
                             <div class="flex items-center space-x-1.5">
-                                <span class="text-xs font-bold bg-ios-morandi text-white px-2 py-0.5 rounded-md">${escapeHtml(item.floor)}</span>
+                                <span class="text-xs font-bold ${floorBadgeClass} px-2 py-0.5 rounded-md">${escapeHtml(item.floor)}</span>
                                 <span class="text-xs font-semibold text-ios-text">${escapeHtml(item.location)}</span>
                             </div>
                             <div class="text-[11px] text-ios-subtext flex items-center gap-2">
@@ -503,7 +516,7 @@
                             </div>
                         </div>
                         <div class="flex items-center">
-                            <span class="text-base font-bold text-ios-morandi bg-ios-bg min-w-[2.25rem] text-center px-2.5 py-1 rounded-xl">${item.quantity}</span>
+                            <span class="text-base font-bold text-ios-morandi bg-pastel-mint min-w-[2.25rem] text-center px-2.5 py-1 rounded-xl">${item.quantity}</span>
                         </div>
                     `;
                     container.appendChild(card);
