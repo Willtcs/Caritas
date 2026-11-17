@@ -70,7 +70,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold leading-tight text-ink-900">風扇管理系統</h1>
-                    <p class="text-[11px] text-ink-700 font-medium">Fan Management App</p>
+                    <p class="text-[11px] text-ink-700 font-medium">Fan Management System</p>
                 </div>
             </div>
             
@@ -99,58 +99,43 @@
                         </div>
 
                         <!-- 篩選切換（下箭頭） -->
-                        <button onclick="toggleFilterDrawer()" id="btnFilterToggle" class="w-9 h-9 bg-[#DFCBEA] hover:bg-[#CDC1E8] active:scale-95 text-ink-900 rounded-xl flex items-center justify-center transition border border-[#CDC1E8] cursor-pointer">
+                        <button onclick="toggleFilterDrawer()" id="btnFilterToggle" class="w-9 h-9 bg-[#DFCBEA] hover:bg-[#CDC1E8] active:scale-95 text-ink-900 rounded-xl flex items-center justify-center transition border border-[#CDC1E8] relative shrink-0 cursor-pointer">
+                            <span id="activeFilterDot" class="hidden absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-ink-900"></span>
                             <i id="iconFilterArrow" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
                         </button>
 
                         <!-- 右側重置按鈕 -->
-                        <button onclick="resetAllFilters()" title="重置篩選" class="w-9 h-9 bg-[#F1DAF5] hover:bg-[#DFCBEA] active:scale-95 text-ink-800 rounded-xl flex items-center justify-center transition border border-[#DFCBEA] cursor-pointer">
+                        <button onclick="resetAllFilters()" aria-label="重置篩選" class="w-9 h-9 bg-[#F1DAF5] hover:bg-[#DFCBEA] active:scale-95 text-ink-800 rounded-xl flex items-center justify-center transition border border-[#DFCBEA] shrink-0 cursor-pointer">
                             <i class="fa-solid fa-rotate-left text-xs"></i>
                         </button>
                     </div>
 
-                    <!-- 按鈕式篩選抽屜 -->
+                    <!-- 膠囊底框全寬伸展篩選抽屜（無左側文字標題、無「全部」選項） -->
                     <div id="filterDrawer" class="hidden space-y-2 pt-2 border-t border-[#F1DAF5]">
-                        <!-- 區域單選 -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-ink-800 w-16 shrink-0">區域</span>
-                            <div class="flex gap-1.5 flex-1" id="btnGroupArea">
-                                <button onclick="setSingleFilter('area', 'ALL')" data-val="ALL" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] cursor-pointer">全部</button>
-                                <button onclick="setSingleFilter('area', '日校')" data-val="日校" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">日校</button>
-                                <button onclick="setSingleFilter('area', '宿舍')" data-val="宿舍" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">宿舍</button>
-                            </div>
+                        <!-- 區域膠囊複選容器 -->
+                        <div class="bg-[#F1DAF5]/80 p-1 rounded-xl flex gap-1 border border-[#DFCBEA]" id="btnGroupArea">
+                            <button type="button" onclick="toggleFilterOption('area', '日校')" data-val="日校" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer">日校</button>
+                            <button type="button" onclick="toggleFilterOption('area', '宿舍')" data-val="宿舍" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer">宿舍</button>
                         </div>
 
-                        <!-- 樓層單選 -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-ink-800 w-16 shrink-0">樓層</span>
-                            <div class="flex gap-1.5 flex-1 overflow-x-auto no-scrollbar" id="btnGroupFloor">
-                                <button onclick="setSingleFilter('floor', 'ALL')" data-val="ALL" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] cursor-pointer">全部</button>
-                                <button onclick="setSingleFilter('floor', 'G/F')" data-val="G/F" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">G/F</button>
-                                <button onclick="setSingleFilter('floor', '1/F')" data-val="1/F" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">1/F</button>
-                            </div>
+                        <!-- 樓層膠囊複選容器 -->
+                        <div class="bg-[#F1DAF5]/80 p-1 rounded-xl flex gap-1 border border-[#DFCBEA] overflow-x-auto no-scrollbar" id="btnGroupFloor">
+                            <button type="button" onclick="toggleFilterOption('floor', 'G/F')" data-val="G/F" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer">G/F</button>
+                            <button type="button" onclick="toggleFilterOption('floor', '1/F')" data-val="1/F" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer">1/F</button>
                         </div>
 
-                        <!-- 風扇類型（多選） -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-ink-800 w-16 shrink-0">風扇類型</span>
-                            <div class="flex gap-1.5 flex-1" id="btnGroupFanType">
-                                <button onclick="toggleMultiFilter('fanType', 'ALL')" data-val="ALL" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] cursor-pointer">全部</button>
-                                <button onclick="toggleMultiFilter('fanType', '樓底扇')" data-val="樓底扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">樓底扇</button>
-                                <button onclick="toggleMultiFilter('fanType', '掛牆扇')" data-val="掛牆扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">掛牆扇</button>
-                                <button onclick="toggleMultiFilter('fanType', '牛角扇')" data-val="牛角扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">牛角扇</button>
-                            </div>
+                        <!-- 風扇類型膠囊複選容器 -->
+                        <div class="bg-[#F1DAF5]/80 p-1 rounded-xl flex gap-1 border border-[#DFCBEA]" id="btnGroupFanType">
+                            <button type="button" onclick="toggleFilterOption('fanType', '樓底扇')" data-val="樓底扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">樓底扇</button>
+                            <button type="button" onclick="toggleFilterOption('fanType', '掛牆扇')" data-val="掛牆扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">掛牆扇</button>
+                            <button type="button" onclick="toggleFilterOption('fanType', '牛角扇')" data-val="牛角扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">牛角扇</button>
                         </div>
 
-                        <!-- 更換風扇（多選） -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-ink-900 w-16 shrink-0">更換風扇</span>
-                            <div class="flex gap-1.5 flex-1" id="btnGroupChangeFanType">
-                                <button onclick="toggleMultiFilter('changeFanType', 'ALL')" data-val="ALL" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] cursor-pointer">全部</button>
-                                <button onclick="toggleMultiFilter('changeFanType', '樓底扇')" data-val="樓底扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">樓底扇</button>
-                                <button onclick="toggleMultiFilter('changeFanType', '掛牆扇')" data-val="掛牆扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">掛牆扇</button>
-                                <button onclick="toggleMultiFilter('changeFanType', '牛角扇')" data-val="牛角扇" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">牛角扇</button>
-                            </div>
+                        <!-- 更換風扇膠囊複選容器 -->
+                        <div class="bg-[#F1DAF5]/80 p-1 rounded-xl flex gap-1 border border-[#DFCBEA]" id="btnGroupChangeFanType">
+                            <button type="button" onclick="toggleFilterOption('changeFanType', '樓底扇')" data-val="樓底扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">樓底扇</button>
+                            <button type="button" onclick="toggleFilterOption('changeFanType', '掛牆扇')" data-val="掛牆扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">掛牆扇</button>
+                            <button type="button" onclick="toggleFilterOption('changeFanType', '牛角扇')" data-val="牛角扇" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">牛角扇</button>
                         </div>
                     </div>
                 </section>
@@ -501,10 +486,10 @@
         let fanList = [];
         let isLoadingCloud = false;
         let currentFilters = { 
-            area: 'ALL', 
-            floor: 'ALL', 
-            fanType: ['ALL'], 
-            changeFanType: ['ALL'] 
+            area: [], 
+            floor: [], 
+            fanType: [], 
+            changeFanType: [] 
         };
 
         window.onload = function() {
@@ -827,68 +812,61 @@
             });
         }
 
-        function setSingleFilter(type, value) {
-            currentFilters[type] = value;
-            const groupMap = { area: 'btnGroupArea', floor: 'btnGroupFloor' };
-            const container = document.getElementById(groupMap[type]);
-            if (container) {
-                const btns = container.querySelectorAll('.btn-filter');
-                btns.forEach(btn => {
-                    if (btn.getAttribute('data-val') === value) {
-                        btn.className = "btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] shadow-xs cursor-pointer";
-                    } else {
-                        btn.className = "btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer";
-                    }
-                });
-            }
-            applyFilters();
-        }
+        // 統一的膠囊複選切換邏輯（無「全部」選項；陣列為空時即代表顯示全部）
+        function toggleFilterOption(type, value) {
+            let currentList = currentFilters[type] || [];
 
-        function toggleMultiFilter(type, value) {
-            let currentList = currentFilters[type] || ['ALL'];
-
-            if (value === 'ALL') {
-                currentList = ['ALL'];
+            if (currentList.includes(value)) {
+                currentList = currentList.filter(item => item !== value);
             } else {
-                currentList = currentList.filter(item => item !== 'ALL');
-                
-                if (currentList.includes(value)) {
-                    currentList = currentList.filter(item => item !== value);
-                } else {
-                    currentList.push(value);
-                }
-
-                if (currentList.length === 0) {
-                    currentList = ['ALL'];
-                }
+                currentList.push(value);
             }
 
             currentFilters[type] = currentList;
-
-            const groupMap = { fanType: 'btnGroupFanType', changeFanType: 'btnGroupChangeFanType' };
-            const container = document.getElementById(groupMap[type]);
-            if (container) {
-                const btns = container.querySelectorAll('.btn-filter');
-                btns.forEach(btn => {
-                    const val = btn.getAttribute('data-val');
-                    if (currentList.includes(val)) {
-                        btn.className = "btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] shadow-xs cursor-pointer";
-                    } else {
-                        btn.className = "btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer";
-                    }
-                });
-            }
-
+            updateFilterStyles();
             applyFilters();
         }
 
+        function updateFilterStyles() {
+            const groupMap = {
+                area: 'btnGroupArea',
+                floor: 'btnGroupFloor',
+                fanType: 'btnGroupFanType',
+                changeFanType: 'btnGroupChangeFanType'
+            };
+
+            Object.keys(groupMap).forEach(type => {
+                const container = document.getElementById(groupMap[type]);
+                const selectedList = currentFilters[type] || [];
+                if (container) {
+                    const btns = container.querySelectorAll('.btn-filter');
+                    btns.forEach(btn => {
+                        const val = btn.getAttribute('data-val');
+                        if (selectedList.includes(val)) {
+                            btn.className = "btn-filter flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-ink-900 shadow-xs transition-all cursor-pointer truncate";
+                        } else {
+                            btn.className = "btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate";
+                        }
+                    });
+                }
+            });
+
+            // 若有任何篩選條件啟用，在篩選切換按鈕右上角顯示提示圓點
+            const dot = document.getElementById('activeFilterDot');
+            if (dot) {
+                const hasFilter = Object.values(currentFilters).some(arr => arr.length > 0);
+                if (hasFilter) dot.classList.remove('hidden');
+                else dot.classList.add('hidden');
+            }
+        }
+
         function resetAllFilters() {
-            currentFilters = { area: 'ALL', floor: 'ALL', fanType: ['ALL'], changeFanType: ['ALL'] };
-            clearSearchInput();
-            setSingleFilter('area', 'ALL');
-            setSingleFilter('floor', 'ALL');
-            toggleMultiFilter('fanType', 'ALL');
-            toggleMultiFilter('changeFanType', 'ALL');
+            currentFilters = { area: [], floor: [], fanType: [], changeFanType: [] };
+            const input = document.getElementById('filterSearch');
+            if (input) input.value = '';
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.classList.add('hidden');
+            updateFilterStyles();
             applyFilters();
         }
 
@@ -1017,17 +995,17 @@
         }
 
         function filterData() {
-            const areaVal = currentFilters.area;
-            const floorVal = currentFilters.floor;
-            const fanTypes = currentFilters.fanType || ['ALL'];
-            const changeFanTypes = currentFilters.changeFanType || ['ALL'];
+            const areas = currentFilters.area || [];
+            const floors = currentFilters.floor || [];
+            const fanTypes = currentFilters.fanType || [];
+            const changeFanTypes = currentFilters.changeFanType || [];
             const searchVal = document.getElementById('filterSearch').value.trim().toLowerCase();
 
             return fanList.filter(item => {
-                if (areaVal !== 'ALL' && item.area !== areaVal) return false;
-                if (floorVal !== 'ALL' && item.floor !== floorVal) return false;
+                if (areas.length > 0 && !areas.includes(item.area)) return false;
+                if (floors.length > 0 && !floors.includes(item.floor)) return false;
 
-                if (!fanTypes.includes('ALL')) {
+                if (fanTypes.length > 0) {
                     const origC = Number(item.originalCeilingFans) || 0;
                     const origW = Number(item.originalWallFans) || 0;
                     const origH = Number(item.originalHornFans) || 0;
@@ -1040,7 +1018,7 @@
                     if (!matchFanType) return false;
                 }
 
-                if (!changeFanTypes.includes('ALL')) {
+                if (changeFanTypes.length > 0) {
                     const changeC = Number(item.ceilingFans) || 0;
                     const changeW = Number(item.wallFans) || 0;
                     const changeH = Number(item.hornFans) || 0;
@@ -1074,11 +1052,12 @@
             fanList.forEach(item => { if (item.floor) floors.add(item.floor.trim()); });
 
             if (btnGroup) {
-                let html = `<button onclick="setSingleFilter('floor', 'ALL')" data-val="ALL" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#B4B3E6] text-ink-900 font-bold border-[#B4B3E6] cursor-pointer">全部</button>`;
+                let html = '';
                 Array.from(floors).sort().forEach(fl => {
-                    html += `<button onclick="setSingleFilter('floor', '${fl}')" data-val="${fl}" class="btn-filter flex-1 py-1 px-1.5 text-[11px] rounded-lg border bg-[#F8E9F7] text-ink-700 border-[#DFCBEA] font-medium cursor-pointer">${fl}</button>`;
+                    html += `<button type="button" onclick="toggleFilterOption('floor', '${fl}')" data-val="${fl}" class="btn-filter flex-1 py-1.5 text-xs font-semibold rounded-lg text-ink-700 transition-all cursor-pointer truncate">${fl}</button>`;
                 });
                 btnGroup.innerHTML = html;
+                updateFilterStyles();
             }
 
             if (selectFloor) {
