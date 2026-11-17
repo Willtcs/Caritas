@@ -50,6 +50,8 @@
             background-color: #f4f6fa;
             color: #262b3d;
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         ::-webkit-scrollbar {
             width: 5px;
@@ -189,34 +191,36 @@
                         <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-ink-500 text-xs"></i>
                     </div>
 
-                    <button id="toggleFilterBtn" class="p-1.5 bg-[#E6F0DE] hover:bg-[#d7e8ca] text-sageAccent-600 rounded-lg border border-[#E6F0DE] text-xs flex items-center justify-center shrink-0">
+                    <button id="toggleFilterBtn" class="p-1.5 w-8 h-8 bg-[#E6F0DE] hover:bg-[#d7e8ca] text-sageAccent-600 rounded-lg border border-[#E6F0DE] text-xs flex items-center justify-center relative shrink-0">
+                        <span id="activeFilterDot" class="hidden absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sageAccent-600"></span>
                         <i id="toggleFilterIcon" class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
                     </button>
 
-                    <button id="btnResetFilters" title="重設篩選" class="p-1.5 bg-[#F2D9E2] hover:bg-[#E5BCC9] active:scale-95 text-roseAccent-600 rounded-lg transition-all flex items-center justify-center shrink-0 border border-[#E5BCC9]/60">
+                    <button id="btnResetFilters" aria-label="重設篩選" class="p-1.5 w-8 h-8 bg-[#F2D9E2] hover:bg-[#E5BCC9] active:scale-95 text-roseAccent-600 rounded-lg transition-all flex items-center justify-center shrink-0 border border-[#E5BCC9]/60">
                         <i class="fa-solid fa-rotate-left text-xs"></i>
                     </button>
                 </div>
 
-                <!-- 折疊篩選面板 -->
+                <!-- 膠囊底框全寬伸展篩選面板（無「全部區域、全部樓層、全部牌子、全部狀態」） -->
                 <div id="filterCollapseArea" class="hidden border-t border-[#C1CEE5]/50 pt-2.5 space-y-2">
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterFloorContainer">
-                        <button type="button" onclick="setFilterBtn('floor', '')" id="btn-floor-all" class="filter-btn filter-btn-floor active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部樓層</button>
-                        <button type="button" onclick="setFilterBtn('floor', 'G/F')" id="btn-floor-GF" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">G/F</button>
-                        <button type="button" onclick="setFilterBtn('floor', '1/F')" id="btn-floor-1F" class="filter-btn filter-btn-floor text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">1/F</button>
+                    <!-- 樓層膠囊容器 -->
+                    <div class="bg-[#C1CEE5]/35 p-1 rounded-xl flex gap-1 border border-[#C1CEE5]/70" id="filterFloorContainer">
+                        <button type="button" onclick="toggleFilterOption('floor', 'G/F')" data-val="G/F" class="filter-btn filter-btn-floor flex-1 py-1.5 text-xs rounded-lg text-ink-700 font-semibold transition-all">G/F</button>
+                        <button type="button" onclick="toggleFilterOption('floor', '1/F')" data-val="1/F" class="filter-btn filter-btn-floor flex-1 py-1.5 text-xs rounded-lg text-ink-700 font-semibold transition-all">1/F</button>
                     </div>
 
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterAreaContainer">
-                        <button type="button" onclick="setFilterBtn('area', '')" id="btn-area-all" class="filter-btn filter-btn-area active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部區域</button>
-                        <button type="button" onclick="setFilterBtn('area', '日校')" id="btn-area-day" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">日校</button>
-                        <button type="button" onclick="setFilterBtn('area', '宿舍')" id="btn-area-hostel" class="filter-btn filter-btn-area text-xs px-2.5 py-1 rounded-full border border-[#C1CEE5] bg-white text-ink-700 font-medium shrink-0">宿舍</button>
+                    <!-- 區域膠囊容器 -->
+                    <div class="bg-[#C1CEE5]/35 p-1 rounded-xl flex gap-1 border border-[#C1CEE5]/70" id="filterAreaContainer">
+                        <button type="button" onclick="toggleFilterOption('area', '日校')" data-val="日校" class="filter-btn filter-btn-area flex-1 py-1.5 text-xs rounded-lg text-ink-700 font-semibold transition-all">日校</button>
+                        <button type="button" onclick="toggleFilterOption('area', '宿舍')" data-val="宿舍" class="filter-btn filter-btn-area flex-1 py-1.5 text-xs rounded-lg text-ink-700 font-semibold transition-all">宿舍</button>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-1.5 pb-1" id="filterBrandContainer"></div>
+                    <!-- 牌子膠囊容器 -->
+                    <div class="bg-[#C1CEE5]/35 p-1 rounded-xl flex flex-wrap gap-1 border border-[#C1CEE5]/70" id="filterBrandContainer"></div>
 
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filterStatusContainer">
-                        <button type="button" onclick="setFilterBtn('status', '')" id="btn-status-all" class="filter-btn filter-btn-status active text-xs px-2.5 py-1 rounded-full border border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold shrink-0">全部狀態</button>
-                        <button type="button" onclick="setFilterBtn('status', '更換')" id="btn-status-need" class="filter-btn filter-btn-status text-xs px-2.5 py-1 rounded-full border border-[#E5BCC9] bg-white text-roseAccent-600 font-medium shrink-0">更換</button>
+                    <!-- 狀態膠囊容器 -->
+                    <div class="bg-[#C1CEE5]/35 p-1 rounded-xl flex gap-1 border border-[#C1CEE5]/70" id="filterStatusContainer">
+                        <button type="button" onclick="toggleFilterOption('status', '更換')" data-val="更換" class="filter-btn filter-btn-status flex-1 py-1.5 text-xs rounded-lg text-roseAccent-600 font-semibold transition-all">更換</button>
                     </div>
                 </div>
             </section>
@@ -404,11 +408,12 @@
         // Apps Script Web App URL
         const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl2zRsC0IUrYCiRhAe2sR3KA06WS8A0ruIYJ8M_92T_dGqEEtuUActCCPgf_AJKejl/exec';
 
+        // 篩選條件（陣列為空代表未限縮、顯示全部）
         let activeFilters = {
-            floor: '',
-            area: '',
-            brand: '',
-            status: ''
+            floor: [],
+            area: [],
+            brand: [],
+            status: []
         };
 
         function normalizeStatusValue(rawStatus) {
@@ -470,15 +475,22 @@
 
             const brands = Array.from(brandsSet).sort();
 
-            const allActive = activeFilters.brand === '';
-            let html = `<button type="button" onclick="setFilterBtn('brand', '')" id="btn-brand-all" class="filter-btn filter-btn-brand active text-xs px-2.5 py-1 rounded-full border ${allActive ? 'border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold' : 'border-[#C1CEE5] bg-white text-ink-700 font-medium'} shrink-0">全部牌子</button>`;
+            if (brands.length === 0) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('hidden');
+            let html = '';
 
             brands.forEach(brand => {
-                const safeId = `btn-brand-${brand.replace(/[^a-zA-Z0-9]/g, '')}`;
-                const isActive = activeFilters.brand === brand;
-                const activeClass = isActive ? 'border-[#B7BFDF] bg-[#B7BFDF] text-ink-900 font-semibold' : 'border-[#C1CEE5] bg-white text-ink-700 font-medium';
+                const isActive = activeFilters.brand.includes(brand);
+                const activeClass = isActive
+                    ? 'bg-white text-ink-900 font-bold shadow-xs'
+                    : 'text-ink-700 font-semibold';
                 
-                html += `<button type="button" onclick="setFilterBtn('brand', '${escapeHtml(brand)}')" id="${safeId}" class="filter-btn filter-btn-brand text-xs px-2.5 py-1 rounded-full border ${activeClass} shrink-0">${escapeHtml(brand)}</button>`;
+                html += `<button type="button" onclick="toggleFilterOption('brand', '${escapeHtml(brand)}')" data-val="${escapeHtml(brand)}" class="filter-btn filter-btn-brand flex-1 min-w-[4.25rem] py-1.5 px-2 text-xs rounded-lg ${activeClass} transition-all truncate">${escapeHtml(brand)}</button>`;
             });
 
             container.innerHTML = html;
@@ -702,42 +714,59 @@
             }
         }
 
-        function setFilterBtn(type, val) {
-            activeFilters[type] = val;
-            const buttons = document.querySelectorAll(`.filter-btn-${type}`);
-            buttons.forEach(btn => {
-                btn.classList.remove('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
-                btn.classList.add('bg-white', 'font-medium');
-                if (btn.id === 'btn-status-need') {
-                    btn.classList.add('text-roseAccent-600', 'border-[#E5BCC9]');
-                } else {
-                    btn.classList.add('text-ink-700', 'border-[#C1CEE5]');
-                }
-            });
+        // 統一膠囊複選切換邏輯（無「全部」按鈕；陣列為空時代表顯示全部）
+        function toggleFilterOption(type, val) {
+            let currentList = activeFilters[type] || [];
 
-            if (val === '') {
-                const allBtn = document.getElementById(`btn-${type}-all`);
-                if (allBtn) {
-                    allBtn.classList.remove('bg-white', 'text-ink-700', 'border-[#C1CEE5]', 'font-medium');
-                    allBtn.classList.add('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
-                }
+            if (currentList.includes(val)) {
+                currentList = currentList.filter(item => item !== val);
             } else {
-                let targetId = `btn-${type}-${val.replace('/', '')}`;
-                if (type === 'area') targetId = val === '日校' ? 'btn-area-day' : 'btn-area-hostel';
-                if (type === 'status') targetId = 'btn-status-need';
-                const activeBtn = document.getElementById(targetId);
-                if (activeBtn) {
-                    activeBtn.classList.remove('bg-white', 'text-ink-700', 'text-roseAccent-600', 'border-[#C1CEE5]', 'border-[#E5BCC9]', 'font-medium');
-                    activeBtn.classList.add('bg-[#B7BFDF]', 'border-[#B7BFDF]', 'text-ink-900', 'font-semibold');
-                }
+                currentList.push(val);
             }
+
+            activeFilters[type] = currentList;
+            updateFilterStyles();
             renderCardsList();
         }
 
+        function updateFilterStyles() {
+            ['floor', 'area', 'brand', 'status'].forEach(type => {
+                const buttons = document.querySelectorAll(`.filter-btn-${type}`);
+                const selectedList = activeFilters[type] || [];
+
+                buttons.forEach(btn => {
+                    const val = btn.getAttribute('data-val');
+                    if (selectedList.includes(val)) {
+                        btn.classList.remove('text-ink-700', 'text-roseAccent-600', 'font-semibold');
+                        if (type === 'status') {
+                            btn.classList.add('bg-white', 'text-roseAccent-600', 'font-bold', 'shadow-xs');
+                        } else {
+                            btn.classList.add('bg-white', 'text-ink-900', 'font-bold', 'shadow-xs');
+                        }
+                    } else {
+                        btn.classList.remove('bg-white', 'text-ink-900', 'font-bold', 'shadow-xs');
+                        if (type === 'status') {
+                            btn.classList.add('text-roseAccent-600', 'font-semibold');
+                        } else {
+                            btn.classList.add('text-ink-700', 'font-semibold');
+                        }
+                    }
+                });
+            });
+
+            // 若有任何篩選條件啟用，顯示提示圓點
+            const dot = document.getElementById('activeFilterDot');
+            if (dot) {
+                const hasFilter = Object.values(activeFilters).some(arr => arr.length > 0);
+                if (hasFilter) dot.classList.remove('hidden');
+                else dot.classList.add('hidden');
+            }
+        }
+
         function resetFilters() {
-            activeFilters = { floor: '', area: '', brand: '', status: '' };
+            activeFilters = { floor: [], area: [], brand: [], status: [] };
             document.getElementById('searchInput').value = '';
-            ['floor', 'area', 'brand', 'status'].forEach(type => setFilterBtn(type, ''));
+            updateFilterStyles();
             renderCardsList();
         }
 
@@ -750,12 +779,12 @@
             const searchKey = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
             let filtered = fanList.filter(item => {
-                const matchFloor = !activeFilters.floor || item.floor === activeFilters.floor;
-                const matchArea = !activeFilters.area || item.area === activeFilters.area;
-                const matchBrand = !activeFilters.brand || (item.brand && item.brand.trim() === activeFilters.brand.trim());
+                const matchFloor = activeFilters.floor.length === 0 || activeFilters.floor.includes(item.floor);
+                const matchArea = activeFilters.area.length === 0 || activeFilters.area.includes(item.area);
+                const matchBrand = activeFilters.brand.length === 0 || (item.brand && activeFilters.brand.includes(item.brand.trim()));
                 
                 const isNeed = item.status && ['1', '2', '3', '4'].includes(String(item.status).trim());
-                const matchStatus = !activeFilters.status || isNeed;
+                const matchStatus = activeFilters.status.length === 0 || isNeed;
                 
                 const matchSearch = !searchKey || 
                     (item.roomNo && String(item.roomNo).toLowerCase().includes(searchKey)) ||
