@@ -282,7 +282,6 @@
     }
 
     function updateFilterButtonsUI() {
-      // 選中使用 #5B81B2 鋼青藍底 + 白字；未選中使用 #415E91 深海藍字
       const activeClass = "px-2.5 py-1 rounded-lg text-xs font-bold transition active-scale bg-[#5B81B2] text-white shadow-xs";
       const inactiveClass = "px-2.5 py-1 rounded-lg text-xs font-semibold text-[#415E91] hover:bg-[#9BD2E4]/40 transition active-scale";
 
@@ -335,18 +334,31 @@
 
     function renderList(list) {
       const container = document.getElementById("listContainer");
+      const activeFilters = [currentStatusFilter, currentAreaFilter].filter(Boolean);
+      const filterTagHtml = activeFilters.length > 0 
+        ? `<span class="text-[11px] font-medium text-[#5B81B2]">篩選：${activeFilters.join(" · ")}</span>` 
+        : "";
+
+      const countHeaderHtml = `
+        <div class="flex items-center justify-between px-1">
+          <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full bg-[#BDF2F6]/80 text-[#415E91] border border-[#9BD2E4] shadow-2xs">
+            <i class="fa-solid fa-layer-group text-[#5B81B2] text-[10px]"></i>
+            共 <span class="font-bold text-[#415E91]">${list.length}</span> 筆紀錄
+          </span>
+          ${filterTagHtml}
+        </div>
+      `;
+
       if (list.length === 0) {
-        const activeFilters = [currentStatusFilter, currentAreaFilter].filter(Boolean).join("、");
-        const filterLabel = activeFilters ? `「${activeFilters}」` : "";
-        container.innerHTML = `<p class="text-center text-xs text-[#5B81B2] py-8">無符合${filterLabel}條件的維修項目</p>`;
+        const filterLabel = activeFilters.length > 0 ? `「${activeFilters.join("、")}」` : "";
+        container.innerHTML = countHeaderHtml + `<p class="text-center text-xs text-[#5B81B2] py-8">無符合${filterLabel}條件的維修項目</p>`;
         return;
       }
 
-      container.innerHTML = list.map((item) => {
+      const cardsHtml = list.map((item) => {
         const rowIndex = item.rowIndex;
         const status = checkStatusFromCompletionDate(item.completionDate);
         const isCompleted = (status === "已完成");
-        // 已完成使用 #779EC8/#BDF2F6 藍調，待處理使用柔和琥珀色以保持狀態辨識度
         const statusClass = isCompleted 
           ? "bg-[#BDF2F6] text-[#415E91] border-[#779EC8]" 
           : "bg-amber-100 text-amber-800 border-amber-300";
@@ -378,6 +390,8 @@
           </div>
         `;
       }).join('');
+
+      container.innerHTML = countHeaderHtml + cardsHtml;
     }
 
     function formatDateToYYYYMMDD(dateStr) {
