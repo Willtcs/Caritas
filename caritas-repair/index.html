@@ -78,8 +78,13 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- 同步按鈕 (#5B81B2 鋼青藍 / hover #779EC8 霧霾藍) -->
-        <button id="btnSync" onclick="syncData()" class="active-scale flex items-center justify-center w-9 h-8 rounded-lg bg-[#5B81B2] hover:bg-[#779EC8] text-white border border-[#9BD2E4]/30 shadow-xs transition" title="同步資料">
+        <!-- 手動更新資料按鈕 -->
+        <button id="btnRefresh" onclick="syncData(true)" class="active-scale flex items-center justify-center w-9 h-8 rounded-lg bg-[#5B81B2] hover:bg-[#779EC8] text-white border border-[#9BD2E4]/30 shadow-xs transition" title="手動更新資料">
+          <i id="refreshIcon" class="fa-solid fa-rotate text-sm text-[#BDF2F6]"></i>
+        </button>
+
+        <!-- 同步雲端按鈕 (#5B81B2 鋼青藍 / hover #779EC8 霧霾藍) -->
+        <button id="btnSync" onclick="syncData(false)" class="active-scale flex items-center justify-center w-9 h-8 rounded-lg bg-[#5B81B2] hover:bg-[#779EC8] text-white border border-[#9BD2E4]/30 shadow-xs transition" title="同步雲端資料">
           <i id="syncIcon" class="fa-solid fa-cloud-arrow-up text-sm text-[#BDF2F6]"></i>
         </button>
       </div>
@@ -234,19 +239,31 @@
     let selectedPhotoType = "";
 
     document.addEventListener("DOMContentLoaded", () => {
-      syncData();
+      syncData(false);
     });
 
-    function syncData() {
+    function syncData(isManualRefresh = false) {
       const btnSync = document.getElementById("btnSync");
+      const btnRefresh = document.getElementById("btnRefresh");
+      const refreshIcon = document.getElementById("refreshIcon");
+
       btnSync.disabled = true;
+      btnRefresh.disabled = true;
       btnSync.classList.add("opacity-70");
+      btnRefresh.classList.add("opacity-70");
+      if (isManualRefresh && refreshIcon) {
+        refreshIcon.classList.add("fa-spin");
+      }
 
       fetch(GAS_URL + "?t=" + Date.now())
         .then(res => res.json())
         .then(payload => {
           btnSync.disabled = false;
+          btnRefresh.disabled = false;
           btnSync.classList.remove("opacity-70");
+          btnRefresh.classList.remove("opacity-70");
+          if (refreshIcon) refreshIcon.classList.remove("fa-spin");
+
           // 相容新版 GAS 回傳的 { records: [...], locations: [...] } 或舊版直接回傳陣列
           const rawList = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.records) ? payload.records : []);
           currentData = rawList.map((item, idx) => ({
@@ -254,11 +271,14 @@
             _uid: idx
           }));
           applyFilterAndRender();
-          showToast("成功讀取最新資料！", "success");
+          showToast(isManualRefresh ? "已手動更新最新資料！" : "成功讀取最新資料！", "success");
         })
         .catch(err => {
           btnSync.disabled = false;
+          btnRefresh.disabled = false;
           btnSync.classList.remove("opacity-70");
+          btnRefresh.classList.remove("opacity-70");
+          if (refreshIcon) refreshIcon.classList.remove("fa-spin");
           showToast("資料讀取失敗：" + err.message, "error");
         });
     }
@@ -573,7 +593,7 @@
           if (data.isNoCorsFallback) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          syncData();
+          syncData(false);
         } else {
           showToast("儲存失敗: " + ((data && data.message) || "無法更新資料"), "error");
         }
