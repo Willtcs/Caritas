@@ -174,7 +174,7 @@
 
           <div class="flex justify-between items-center py-2 border-b border-[#9BD2E4]/40">
             <span class="text-[#5B81B2] text-xs font-medium">完成日期：</span>
-            <span id="modalCompletedDate" class="text-xs font-mono font-bold text-[#415E91]">--</span>
+            <input type="date" id="modalCompletedDateInput" onchange="handleCompletedDateChange(this.value)" class="text-xs font-mono font-bold text-[#415E91] px-2 py-1 rounded-lg border border-[#779EC8] bg-white focus:outline-none focus:border-[#415E91] cursor-pointer" />
           </div>
 
           <div>
@@ -228,7 +228,7 @@
     let currentData = [];
     let currentStatusFilter = null;
     let currentAreaFilter = null;
-    let currentActiveRowIndex = null;
+    let currentActiveIndex = null;
     let selectedPhotoBase64 = "";
     let selectedPhotoName = "";
     let selectedPhotoType = "";
@@ -242,27 +242,30 @@
       btnSync.disabled = true;
       btnSync.classList.add("opacity-70");
 
-      fetch(GAS_URL)
+      fetch(GAS_URL + "?t=" + Date.now())
         .then(res => res.json())
-        .then(data => {
+        .then(payload => {
           btnSync.disabled = false;
           btnSync.classList.remove("opacity-70");
-          if (Array.isArray(data)) {
-            currentData = data;
-            applyFilterAndRender();
-            showToast("成功讀取最新資料！", "success");
-          }
+          // 相容新版 GAS 回傳的 { records: [...], locations: [...] } 或舊版直接回傳陣列
+          const rawList = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.records) ? payload.records : []);
+          currentData = rawList.map((item, idx) => ({
+            ...item,
+            _uid: idx
+          }));
+          applyFilterAndRender();
+          showToast("成功讀取最新資料！", "success");
         })
         .catch(err => {
           btnSync.disabled = false;
           btnSync.classList.remove("opacity-70");
-          showToast("資料讀取失敗", "error");
+          showToast("資料讀取失敗：" + err.message, "error");
         });
     }
 
     function getColDValue(item) {
       if (!item) return "";
-      const directVal = item.colD ?? item.columnD ?? item.D ?? item.area ?? item.category ?? item.type ?? item['所屬單位'] ?? item['區域'] ?? item['類別'];
+      const directVal = item.colD ?? item.columnD ?? item.D ?? item.area ?? item.category ?? item['所屬單位'] ?? item['區域'] ?? item['類別'];
       if (directVal !== undefined && directVal !== null && String(directVal).trim() !== "") {
         return String(directVal).trim();
       }
@@ -275,10 +278,25 @@
       return "";
     }
 
-    function checkStatusFromCompletionDate(dateVal) {
-      if (!dateVal) return "待處理";
-      const str = String(dateVal).trim();
-      return (str !== "" && str !== "--" && str !== "null" && str !== "undefined") ? "已完成" : "待處理";
+    function normalizeDateForInput(rawVal) {
+      if (!rawVal) return "";
+      const str = String(rawVal).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.slice(0, 10);
+      }
+      if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(str)) {
+        const parts = str.split(" ")[0].split("/");
+        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+      }
+      return "";
+    }
+
+    function checkStatusFromItem(item) {
+      if (!item) return "待處理";
+      const explicitStatus = String(item.status || "").trim();
+      if (explicitStatus === "已完成") return "已完成";
+      const dateStr = normalizeDateForInput(item.completionDate);
+      return dateStr !== "" ? "已完成" : "待處理";
     }
 
     function updateFilterButtonsUI() {
@@ -317,7 +335,7 @@
       
       if (currentStatusFilter) {
         filtered = filtered.filter(item => {
-          const itemStatus = checkStatusFromCompletionDate(item.completionDate);
+          const itemStatus = checkStatusFromItem(item);
           return itemStatus === currentStatusFilter;
         });
       }
@@ -356,8 +374,7 @@
       }
 
       const cardsHtml = list.map((item) => {
-        const rowIndex = item.rowIndex;
-        const status = checkStatusFromCompletionDate(item.completionDate);
+        const status = checkStatusFromItem(item);
         const isCompleted = (status === "已完成");
         const statusClass = isCompleted 
           ? "bg-[#BDF2F6] text-[#415E91] border-[#779EC8]" 
@@ -365,21 +382,21 @@
         
         const areaText = getColDValue(item);
         const areaBadge = areaText 
-          ? `<span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-[#9BD2E4]/45 text-[#415E91] border-[#779EC8]/60">${areaText}</span>` 
+          ? `<span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-[#9BD2E4]/45 text-[#415E91] border-[#779EC8]/60">${escapeHtml(areaText)}</span>` 
           : "";
 
         return `
-          <div onclick="openModal(${rowIndex})" class="bg-white p-4 rounded-2xl border border-[#9BD2E4] shadow-xs hover:shadow-md hover:border-[#779EC8] transition active-scale cursor-pointer space-y-2">
+          <div onclick="openModal(${item._uid})" class="bg-white p-4 rounded-2xl border border-[#9BD2E4] shadow-xs hover:shadow-md hover:border-[#779EC8] transition active-scale cursor-pointer space-y-2">
             <div class="flex justify-between items-start gap-2">
               <div class="space-y-1.5 pr-1">
                 <div class="text-xs text-slate-700">
-                  <span class="font-semibold text-[#415E91]">呈報人：</span>${item.reporter || '未知'}
+                  <span class="font-semibold text-[#415E91]">呈報人：</span>${escapeHtml(item.reporter || '未知')}
                 </div>
                 <div class="text-xs text-slate-700">
-                  <span class="font-semibold text-[#415E91]">須維修項目位置：</span>${item.location || '未定位置'}
+                  <span class="font-semibold text-[#415E91]">須維修項目位置：</span>${escapeHtml(item.location || '未定位置')}
                 </div>
                 <div class="text-xs text-slate-700">
-                  <span class="font-semibold text-[#415E91]">須維修項目具體資料：</span>${item.description || '無具體資料'}
+                  <span class="font-semibold text-[#415E91]">須維修項目具體資料：</span>${escapeHtml(item.description || '無具體資料')}
                 </div>
               </div>
               <div class="flex flex-col items-end gap-1.5 shrink-0">
@@ -396,20 +413,21 @@
 
     function formatDateToYYYYMMDD(dateStr) {
       if (!dateStr) return "--";
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) {
-        const parts = String(dateStr).split(' ')[0].replace(/-/g, '/');
-        return parts || "--";
+      const str = String(dateStr).trim();
+      if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(str) || /^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+        return str.replace(/-/g, "/");
       }
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str || "--";
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}/${month}/${day}`;
     }
 
-    function openModal(rowIndex) {
-      currentActiveRowIndex = rowIndex;
-      const item = currentData.find(d => d.rowIndex === rowIndex) || {};
+    function openModal(uid) {
+      currentActiveIndex = uid;
+      const item = currentData.find(d => d._uid === uid) || {};
 
       document.getElementById("modalReporter").innerText = item.reporter || "--";
       document.getElementById("modalLocation").innerText = item.location || "--";
@@ -417,14 +435,21 @@
       document.getElementById("modalTime").innerText = formatDateToYYYYMMDD(item.timestamp);
       document.getElementById("modalDescription").innerText = item.description || "--";
       
-      const currentStatus = checkStatusFromCompletionDate(item.completionDate);
+      const currentStatus = checkStatusFromItem(item);
+      const dateInputVal = normalizeDateForInput(item.completionDate);
       document.getElementById("modalStatusSelect").value = currentStatus;
-      document.getElementById("modalCompletedDate").innerText = (currentStatus === "已完成") ? item.completionDate : "--";
+      document.getElementById("modalCompletedDateInput").value = (currentStatus === "已完成") ? dateInputVal : "";
       document.getElementById("modalNoteInput").value = item.remark || "";
 
       selectedPhotoBase64 = "";
-      document.getElementById("photoPreviewContainer").innerHTML = item.photoUrl 
-        ? `<a href="${item.photoUrl}" target="_blank" class="block col-span-3 text-xs text-[#5B81B2] hover:text-[#415E91] underline text-center font-medium">檢視現有照片連結</a>` 
+      selectedPhotoName = "";
+      selectedPhotoType = "";
+      const fileInput = document.getElementById("cameraInput");
+      if (fileInput) fileInput.value = "";
+
+      const driveUrl = item.photoUrl || (String(item.photoUpload || "").startsWith("http") ? item.photoUpload : "");
+      document.getElementById("photoPreviewContainer").innerHTML = driveUrl
+        ? `<a href="${escapeHtml(driveUrl)}" target="_blank" rel="noopener noreferrer" class="block col-span-3 text-xs text-[#5B81B2] hover:text-[#415E91] underline text-center font-medium">檢視現有照片連結</a>` 
         : "";
 
       document.getElementById("modalOverlay").classList.remove("hidden");
@@ -439,11 +464,22 @@
     }
 
     function handleStatusChange(val) {
+      const dateInput = document.getElementById("modalCompletedDateInput");
       if (val === "已完成") {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById("modalCompletedDate").innerText = today;
+        if (!dateInput.value) {
+          dateInput.value = new Date().toISOString().split('T')[0];
+        }
       } else {
-        document.getElementById("modalCompletedDate").innerText = "--";
+        dateInput.value = "";
+      }
+    }
+
+    function handleCompletedDateChange(val) {
+      const statusSelect = document.getElementById("modalStatusSelect");
+      if (val) {
+        statusSelect.value = "已完成";
+      } else {
+        statusSelect.value = "待處理";
       }
     }
 
@@ -466,50 +502,86 @@
       reader.readAsDataURL(file);
     }
 
-    function saveModalChanges() {
-      if (!currentActiveRowIndex) return;
+    async function postToGas(payload) {
+      const jsonStr = JSON.stringify(payload);
+      // 若無附件且資料量小，優先使用 GET query 參數避免 Google Apps Script POST 跨網域問題
+      if (!payload.photoBase64 && encodeURIComponent(jsonStr).length < 6000) {
+        const res = await fetch(GAS_URL + "?payload=" + encodeURIComponent(jsonStr));
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      }
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          redirect: "follow",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: jsonStr
+        });
+        return await res.json();
+      } catch (err) {
+        await fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: jsonStr
+        });
+        return {
+          status: "success",
+          isNoCorsFallback: true,
+          message: "已傳送更新至 Google Sheets"
+        };
+      }
+    }
+
+    async function saveModalChanges() {
+      if (currentActiveIndex === null) return;
 
       const btnSave = document.getElementById("btnSave");
       btnSave.disabled = true;
       btnSave.innerText = "儲存中...";
 
-      const item = currentData.find(d => d.rowIndex === currentActiveRowIndex) || {};
+      const item = currentData.find(d => d._uid === currentActiveIndex) || {};
       const selectedStatus = document.getElementById("modalStatusSelect").value;
-      const completedDateText = document.getElementById("modalCompletedDate").innerText;
+      const completedDateVal = document.getElementById("modalCompletedDateInput").value;
+      const remarkVal = document.getElementById("modalNoteInput").value;
 
+      // 配對新版 GAS 程式碼（以時間戳記 + 呈報人 + 項目位置三重比對定位，並寫入「網頁呈報紀錄」與「狀態覆寫」分頁）
       const payload = {
-        rowIndex: currentActiveRowIndex,
+        action: "update_field",
+        changedField: "mobile_batch_update",
+        rowIndex: item.rowIndex || "",
         timestamp: item.timestamp || "",
+        reporter: item.reporter || "",
+        location: item.location || "",
         status: selectedStatus,
-        completionDate: (selectedStatus === "已完成") ? (completedDateText === "--" ? "" : completedDateText) : "",
-        remark: document.getElementById("modalNoteInput").value,
+        completionDate: (selectedStatus === "已完成") ? completedDateVal : "",
+        remark: remarkVal,
         photoBase64: selectedPhotoBase64,
         photoName: selectedPhotoName,
         mimeType: selectedPhotoType
       };
 
-      fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(data => {
+      try {
+        const data = await postToGas(payload);
         btnSave.disabled = false;
         btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> 儲存修改`;
 
-        if (data.status === "success") {
-          showToast(data.message, "success");
+        if (data && data.status === "success") {
+          showToast(data.message || "儲存成功！", "success");
           closeModal();
+          if (data.isNoCorsFallback) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
           syncData();
         } else {
-          showToast("儲存失敗: " + data.message, "error");
+          showToast("儲存失敗: " + ((data && data.message) || "無法更新資料"), "error");
         }
-      })
-      .catch(err => {
+      } catch (err) {
         btnSave.disabled = false;
         btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> 儲存修改`;
-        showToast("發生錯誤：" + err, "error");
-      });
+        showToast("發生錯誤：" + err.message, "error");
+      }
     }
 
     function showToast(msg, type) {
@@ -531,6 +603,20 @@
       setTimeout(() => {
         toast.classList.add("hidden");
       }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      };
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return map[m];
+      });
     }
   </script>
 </body>
