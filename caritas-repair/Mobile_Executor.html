@@ -782,43 +782,61 @@
       return '';
     }
 
-    function openMediaPreview(id) {
-      const rec = records.find(r => r.id === id);
-      if (!rec) return;
+    async function openMediaPreview(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
 
-      document.getElementById('modalMediaTitle').textContent = rec.location + ' — 現場附件';
-      document.getElementById('modalMediaMeta').textContent = '呈報人：' + rec.reporter + ' ・ ' + rec.colD + ' ・ ' + rec.timestamp;
+  document.getElementById('modalMediaTitle').textContent = rec.location + ' — 現場附件';
+  document.getElementById('modalMediaMeta').textContent = '呈報人：' + rec.reporter + ' ・ ' + rec.colD + ' ・ ' + rec.timestamp;
 
-      const content = document.getElementById('modalMediaContent');
-      const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http'))
-        ? rec.photoUrl
-        : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
-      const driveId = extractGoogleDriveFileId(rawUrl);
+  const content = document.getElementById('modalMediaContent');
+  const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http'))
+    ? rec.photoUrl
+    : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
+  const driveId = extractGoogleDriveFileId(rawUrl);
 
-      if (rec.mediaType === 'video' && rec.mediaDataUrl) {
-        content.innerHTML = '<video src="' + rec.mediaDataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg"></video>';
-      } else if (rec.mediaDataUrl) {
-        content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
-      } else if (driveId) {
-        const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
-        const fallbackDriveViewUrl = 'https://drive.google.com/uc?export=view&id=' + driveId;
-        const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
-        content.innerHTML =
-          '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="if(!this.dataset.triedUc){this.dataset.triedUc=\'1\';this.src=\'' + escapeHtml(fallbackDriveViewUrl) + '\';}else{this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\';}" />';
-      } else if (rawUrl) {
-        content.innerHTML =
-          '<img src="' + escapeHtml(rawUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(rawUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
-      } else {
-        content.innerHTML =
-          '<div class="bg-white rounded-xl p-6 text-center space-y-1.5 max-w-xs w-full">' +
-            '<p class="text-[14.5px] font-bold text-[#415E91]">試算表已標記「有」現場附件</p>' +
-            '<p class="text-[12.5px] text-[#5B81B2]">此紀錄為舊版 Google 表單直接上傳，無內嵌預覽圖。</p>' +
-          '</div>';
+  openModal('mediaModal');
+
+  if (rec.mediaType === 'video' && rec.mediaDataUrl) {
+    content.innerHTML = '<video src="' + rec.mediaDataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg"></video>';
+    return;
+  }
+
+  if (rec.mediaDataUrl) {
+    content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+    return;
+  }
+
+  if (driveId) {
+    content.innerHTML =
+      '<div class="bg-white rounded-xl p-6 text-center space-y-2 max-w-xs w-full">' +
+        '<div class="w-7 h-7 border-3 border-[#5B81B2] border-t-transparent rounded-full animate-spin mx-auto"></div>' +
+        '<p class="text-[14px] font-bold text-[#415E91]">正在載入現場相片...</p>' +
+      '</div>';
+
+    try {
+      const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+      const res = await fetch(GAS_WEB_APP_URL + sep + 'action=get_image&fileId=' + encodeURIComponent(driveId) + '&t=' + Date.now());
+      const data = await res.json();
+      if (data && data.status === 'success' && data.dataUrl) {
+        rec.mediaDataUrl = data.dataUrl; // 快取於記憶體，下次秒開
+        content.innerHTML = '<img src="' + data.dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+        return;
       }
-      openModal('mediaModal');
-    }
+    } catch (e) {}
+
+    // 備援顯示
+    const fallbackUrl = 'https://lh3.googleusercontent.com/d/' + driveId + '=w1600';
+    content.innerHTML = '<img src="' + escapeHtml(fallbackUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+    return;
+  }
+
+  content.innerHTML =
+    '<div class="bg-white rounded-xl p-6 text-center space-y-1.5 max-w-xs w-full">' +
+      '<p class="text-[14.5px] font-bold text-[#415E91]">試算表已標記「有」現場附件</p>' +
+      '<p class="text-[12.5px] text-[#5B81B2]">此紀錄無內嵌預覽圖。</p>' +
+    '</div>';
+}
 
     function isGasNativeAvailable() {
       try {
