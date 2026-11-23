@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>明愛樂義學校維修呈報系統 - 教職員版</title>
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s512" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans TC"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fbfc',
+              100: '#BDF2F6',
+              200: '#9BD2E4',
+              300: '#779EC8',
+              500: '#5B81B2',
+              600: '#415E91',
+              700: '#415E91',
+            }
+          },
+          boxShadow: {
+            card: '0 2px 6px -1px rgba(65, 94, 145, 0.08), 0 1px 3px -1px rgba(65, 94, 145, 0.04)',
+            modal: '0 20px 25px -5px rgba(15, 23, 42, 0.16), 0 8px 10px -6px rgba(15, 23, 42, 0.1)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #f0fbfc;
+      color: #415E91;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .saas-input,
+    select,
+    input[type="text"],
+    textarea {
+      font-size: 16px !important;
+    }
+
+    .saas-input:focus {
+      outline: none;
+      border-color: #5B81B2;
+      box-shadow: 0 0 0 3px rgba(155, 210, 228, 0.45);
+    }
+
+    svg { flex-shrink: 0; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#f0fbfc] text-[#415E91] pb-24">
+
+  <!-- 頂部教職員專屬導覽列 -->
+  <header class="sticky top-0 z-30 bg-[#415E91] text-white border-b border-[#5B81B2] px-3.5 py-2.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 rounded-xl bg-white border border-[#9BD2E4]/50 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+        <img src="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" alt="校徽" class="w-full h-full object-cover" />
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5">
+          <h1 class="text-[15px] font-bold tracking-tight text-white truncate">明愛樂義學校維修平台</h1>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#5B81B2] text-[#BDF2F6] border border-[#9BD2E4]/40 shrink-0">教職員</span>
+        </div>
+        <p class="text-[11.5px] text-[#BDF2F6] truncate">校內特定教職員呈報與進度查詢</p>
+      </div>
+    </div>
+
+    <!-- 同步雲端進度按鈕 -->
+    <button
+      type="button"
+      onclick="fetchRecordsFromGas(true, false)"
+      title="同步雲端資料"
+      class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12.5px] font-bold text-[#415E91] bg-[#BDF2F6] active:bg-[#9BD2E4] border border-[#9BD2E4] shadow-card transition-colors shrink-0 cursor-pointer"
+    >
+      <svg id="refreshBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      <span class="pointer-events-none">同步雲端</span>
+    </button>
+  </header>
+
+  <!-- 主內容工作區 -->
+  <main class="flex-1 w-full max-w-xl mx-auto px-3.5 pt-3.5 space-y-3.5">
+
+    <!-- 視圖 1：填寫維修呈報（預設首頁） -->
+    <section id="view-form" class="space-y-3.5 pb-6">
+      <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+        <h2 class="text-[18px] font-bold text-[#415E91]">填寫維修呈報</h2>
+        <p class="text-[13px] text-[#5B81B2] mt-0.5">
+          標示 <span class="text-rose-600 font-bold">*</span> 為必填欄位。
+        </p>
+      </div>
+
+      <form id="repairForm" novalidate class="space-y-3.5">
+        <!-- 1. 維修呈報人 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+          <label for="reporterName" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+            維修呈報人 (請輸入全中文姓名)： <span class="text-rose-600">*</span>
+          </label>
+          <div class="relative">
+            <input
+              type="text"
+              id="reporterName"
+              name="reporterName"
+              placeholder="例如：陳大文"
+              required
+              class="saas-input w-full px-3.5 py-3 rounded-xl border border-[#779EC8] bg-white text-[#415E91] placeholder-[#779EC8]/80 transition-all"
+            />
+            <span id="nameValidationTag" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2.5 py-0.5 rounded-md"></span>
+          </div>
+          <p id="err-reporterName" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>請輸入有效的全中文姓名（2至10個中文字）</span>
+          </p>
+        </div>
+
+        <!-- 2. 維修類型 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2.5">
+            維修類型： <span class="text-rose-600">*</span>
+          </label>
+
+          <div class="grid grid-cols-1 gap-2.5">
+            <label class="cursor-pointer">
+              <input type="radio" name="repairType" value="水電 (例：漏水、馬桶、燈具插座、冷氣)" class="peer sr-only" required />
+              <div class="p-3.5 rounded-xl border-2 border-[#9BD2E4] bg-[#BDF2F6]/35 peer-checked:border-[#415E91] peer-checked:bg-[#415E91] transition-all flex items-center gap-3 [&_.type-title]:text-[#415E91] peer-checked:[&_.type-title]:text-white [&_.type-desc]:text-[#5B81B2] peer-checked:[&_.type-desc]:text-[#BDF2F6] [&_.type-icon]:bg-[#9BD2E4]/60 [&_.type-icon]:text-[#415E91] peer-checked:[&_.type-icon]:bg-[#5B81B2] peer-checked:[&_.type-icon]:text-white">
+                <div class="type-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[18px]">⚡</div>
+                <div>
+                  <p class="type-title text-[14.5px] font-bold">水電 (漏水、馬桶、燈具、冷氣)</p>
+                  <p class="type-desc text-[12px] mt-0.5">供水排水、衛浴潔具、照明電力及空調系統</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="repairType" value="其他" class="peer sr-only" />
+              <div class="p-3.5 rounded-xl border-2 border-[#779EC8]/70 bg-[#f0fbfc] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] transition-all flex items-center gap-3 [&_.type-title]:text-[#415E91] peer-checked:[&_.type-title]:text-white [&_.type-desc]:text-[#5B81B2] peer-checked:[&_.type-desc]:text-[#f0fbfc] [&_.type-icon]:bg-[#BDF2F6] [&_.type-icon]:text-[#5B81B2] peer-checked:[&_.type-icon]:bg-[#415E91] peer-checked:[&_.type-icon]:text-white">
+                <div class="type-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[18px]">🔨</div>
+                <div>
+                  <p class="type-title text-[14.5px] font-bold">其他設施維修</p>
+                  <p class="type-desc text-[12px] mt-0.5">門窗鎖具、課室或宿舍傢俬、牆身及一般設施</p>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <p id="err-repairType" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>請選擇一項維修類型</span>
+          </p>
+        </div>
+
+        <!-- 3 & 4. 須維修位置區域 與 房號地點 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card space-y-4">
+          <div>
+            <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+              須維修位置區域： <span class="text-rose-600">*</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2.5">
+              <label class="cursor-pointer">
+                <input type="radio" name="locationArea" value="日校" class="peer sr-only" checked />
+                <div class="py-3 px-4 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#5B81B2] font-bold text-[14.5px] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] peer-checked:text-white transition-all flex items-center justify-center gap-2 shadow-card">
+                  <span>🏫 日校</span>
+                </div>
+              </label>
+
+              <label class="cursor-pointer">
+                <input type="radio" name="locationArea" value="宿舍" class="peer sr-only" />
+                <div class="py-3 px-4 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#5B81B2] font-bold text-[14.5px] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] peer-checked:text-white transition-all flex items-center justify-center gap-2 shadow-card">
+                  <span>🛏️ 宿舍</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-3.5 border-t border-[#BDF2F6]">
+            <label for="locationDetail" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+              須維修項目位置 (房號 / 地點)： <span class="text-rose-600">*</span>
+            </label>
+            <div class="relative">
+              <select
+                id="locationDetail"
+                name="locationDetail"
+                required
+                class="saas-input w-full px-3.5 py-3 pr-10 rounded-xl border border-[#779EC8] bg-white text-[#415E91] appearance-none cursor-pointer"
+              >
+                <option value="">請選擇須維修項目位置</option>
+              </select>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-[#779EC8] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <p id="err-locationDetail" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>請選擇須維修項目位置 (房號 / 地點)</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- 5. 須維修項目具體資料 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+          <label for="issueDescription" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+            須維修項目具體資料： <span class="text-rose-600">*</span>
+          </label>
+          <textarea
+            id="issueDescription"
+            name="issueDescription"
+            rows="3"
+            placeholder="請詳細說明損壞情形、異常狀況或設備位置..."
+            required
+            class="saas-input w-full px-3.5 py-3 rounded-xl border border-[#779EC8] bg-white text-[#415E91] placeholder-[#779EC8]/80 transition-all resize-y"
+          ></textarea>
+          <p id="err-issueDescription" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>請填寫須維修項目具體資料</span>
+          </p>
+        </div>
+
+        <!-- 6. 須維修項目相片/影片 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+            須維修項目相片 / 影片：
+          </label>
+
+          <div id="dropZone" class="border-2 border-dashed border-[#779EC8] bg-[#f0fbfc] active:bg-[#BDF2F6]/40 rounded-2xl p-5 text-center cursor-pointer transition-all">
+            <input type="file" id="mediaInput" accept="image/*,video/*" class="hidden" />
+
+            <div id="dropZonePlaceholder" class="space-y-1.5">
+              <div class="w-11 h-11 rounded-xl bg-white border border-[#9BD2E4] shadow-card mx-auto flex items-center justify-center text-[#5B81B2]">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              </div>
+              <p class="text-[14px] font-bold text-[#415E91]">點擊拍照或從相簿選擇檔案</p>
+              <p class="text-[12px] text-[#779EC8]">支援相片（JPG/PNG）或影片（MP4/MOV）</p>
+            </div>
+
+            <div id="mediaPreviewBox" class="hidden flex items-center justify-between gap-3 text-left bg-white p-3 rounded-xl border border-[#9BD2E4] shadow-card">
+              <div class="flex items-center gap-3 overflow-hidden">
+                <div id="mediaThumbContainer" class="w-14 h-14 rounded-lg bg-[#BDF2F6]/60 overflow-hidden flex items-center justify-center shrink-0 border border-[#9BD2E4]"></div>
+                <div class="min-w-0">
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mb-1">✓ 已附加檔案</span>
+                  <p id="mediaFileName" class="text-[13px] font-semibold text-[#415E91] truncate">filename.jpg</p>
+                  <p id="mediaFileSize" class="text-[11.5px] text-[#779EC8]">0 KB</p>
+                </div>
+              </div>
+              <button type="button" onclick="clearUploadedMedia(event)" class="px-3 py-2 rounded-xl text-[12.5px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 shrink-0 cursor-pointer">移除</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. 材料購買 -->
+        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
+          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
+            材料購買：
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="materialPurchase" value="待中央購買" class="peer sr-only" />
+              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-purple-600 peer-checked:bg-purple-50 peer-checked:text-purple-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">待中央購買</div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="materialPurchase" value="自行購買物料" class="peer sr-only" />
+              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-amber-600 peer-checked:bg-amber-50 peer-checked:text-amber-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">自行購買物料</div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="materialPurchase" value="不需要購買" class="peer sr-only" checked />
+              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">不需要購買</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 底部操作按鈕 -->
+        <div class="flex items-center gap-2.5 pt-1">
+          <button
+            type="button"
+            onclick="resetFormFields()"
+            class="flex-1 py-3.5 rounded-2xl text-[14.5px] font-bold text-[#5B81B2] bg-white active:bg-[#BDF2F6]/60 border border-[#779EC8] transition-colors cursor-pointer"
+          >
+            清除重填
+          </button>
+
+          <button
+            type="submit"
+            id="submitFormBtn"
+            class="flex-[2] py-3.5 rounded-2xl text-[15px] font-bold text-white bg-[#5B81B2] active:bg-[#415E91] shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 pointer-events-none"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            <span class="pointer-events-none">提交維修呈報</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 視圖 2：待處理維修清單（雲端同步進度查詢） -->
+    <section id="view-pending" class="hidden space-y-3">
+      <div class="bg-white rounded-2xl p-3.5 border border-[#9BD2E4] shadow-card space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <h2 class="text-[18px] font-bold text-[#415E91] truncate">待處理維修進度</h2>
+            <p id="syncStatusSubtext" class="text-[12px] text-[#5B81B2] mt-0.5">如沒有顯示相關資料，表示已完成維修</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[11.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+            待處理：<span id="badge-pending">0</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- 載入中提示 -->
+      <div id="loadingCardsState" class="hidden bg-white rounded-2xl border border-[#9BD2E4] py-10 px-4 text-center shadow-card">
+        <div class="flex items-center justify-center gap-2 text-[#415E91] font-bold text-[14.5px]">
+          <svg class="w-5 h-5 animate-spin text-[#5B81B2]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>正在同步雲端最新維修紀錄...</span>
+        </div>
+      </div>
+
+      <div id="mobileCardsContainer" class="space-y-3"></div>
+
+      <div id="emptyCardsState" class="hidden bg-white rounded-2xl border border-[#9BD2E4] py-14 px-4 text-center shadow-card">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <p class="text-[15px] font-bold text-[#415E91]">目前沒有待處理的維修紀錄</p>
+        <p class="text-[12.5px] text-[#779EC8] mt-1">所有呈報項目皆已處理完成，或點擊右上角「同步雲端」更新</p>
+      </div>
+
+      <div id="mobilePaginationBar" class="bg-white rounded-2xl px-4 py-3 border border-[#9BD2E4] shadow-card flex items-center justify-between text-[13px] text-[#5B81B2]">
+        <span id="mobileFooterCount" class="font-medium">共 0 筆待處理</span>
+        <div class="flex items-center gap-2">
+          <span id="mobilePageIndicator" class="font-bold text-[#415E91]">第 1 / 1 頁</span>
+          <button type="button" id="mobilePrevPageBtn" onclick="changePage(-1)" disabled class="p-2.5 rounded-xl border border-[#779EC8] bg-[#f0fbfc] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 pointer-events-none"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button type="button" id="mobileNextPageBtn" onclick="changePage(1)" disabled class="p-2.5 rounded-xl border border-[#779EC8] bg-[#f0fbfc] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 pointer-events-none"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部固定導覽列（教職員專屬：填寫呈報 + 待處理維修，點擊圖示與文字皆可觸發） -->
+  <nav id="mobileBottomNav" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#9BD2E4] shadow-[0_-4px_16px_rgba(65,94,145,0.12)]">
+    <div class="max-w-xl mx-auto flex items-stretch justify-around h-[68px] px-2">
+      <button
+        type="button"
+        id="bnav-form"
+        onclick="switchMobileTab('form')"
+        class="flex-1 h-full flex flex-col items-center justify-center gap-1 text-[#415E91] font-bold transition-colors cursor-pointer select-none"
+      >
+        <div class="bnav-pill px-5 py-1 rounded-full bg-[#BDF2F6] text-[#415E91] transition-colors pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
+        </div>
+        <span class="text-[12.5px] leading-none pointer-events-none">填寫呈報</span>
+      </button>
+
+      <button
+        type="button"
+        id="bnav-pending"
+        onclick="switchMobileTab('pending')"
+        class="flex-1 h-full flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold transition-colors cursor-pointer select-none"
+      >
+        <div class="bnav-pill px-5 py-1 rounded-full transition-colors relative pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="bnavPendingBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+        </div>
+        <span class="text-[12.5px] leading-none pointer-events-none">待處理維修</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 彈窗：相片 / 影片預覽 Modal -->
+  <div id="mediaModal" onclick="if(event.target===this) closeModal('mediaModal')" class="hidden fixed inset-0 z-50 bg-[#1e293b]/85 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-modal max-w-lg w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="px-4 py-3 border-b border-[#9BD2E4] flex items-center justify-between bg-[#f0fbfc]">
+        <div class="min-w-0 pr-2">
+          <h3 id="modalMediaTitle" class="text-[15px] font-bold text-[#415E91] truncate">現場附件檢視</h3>
+          <p id="modalMediaMeta" class="text-[11.5px] text-[#5B81B2] truncate">位置與呈報人資訊</p>
+        </div>
+        <button type="button" onclick="closeModal('mediaModal')" class="w-9 h-9 rounded-xl bg-white border border-[#9BD2E4] flex items-center justify-center text-[#415E91] shrink-0 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 pointer-events-none"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div id="modalMediaContent" class="p-3 bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[78vh] overflow-auto"></div>
+    </div>
+  </div>
+
+  <!-- 彈窗：確認提交 Modal -->
+  <div id="submitConfirmModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="px-5 py-3.5 border-b border-[#9BD2E4] bg-[#f0fbfc] flex items-center gap-2">
+        <h3 class="text-[16px] font-bold text-[#415E91]">確認提交</h3>
+      </div>
+      <div id="submitConfirmPromptBody" class="p-6 text-center">
+        <p class="text-[15.5px] font-semibold text-[#415E91]">確定要提交此筆維修呈報資料嗎？</p>
+      </div>
+      <div id="submitConfirmLoadingBody" class="hidden p-7 flex items-center justify-center gap-3">
+        <span class="text-[15px] font-bold text-[#415E91]">請等候，提交表格中</span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#5B81B2] animate-bounce [animation-delay:-0.3s]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#779EC8] animate-bounce [animation-delay:-0.15s]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#415E91] animate-bounce"></span>
+        </div>
+      </div>
+      <div id="submitConfirmFooter" class="px-4 py-3 bg-[#f0fbfc] border-t border-[#9BD2E4] flex items-center gap-2.5">
+        <button type="button" onclick="executeConfirmedSubmit()" class="flex-1 py-3 rounded-xl bg-[#5B81B2] active:bg-[#415E91] text-white text-[14.5px] font-bold cursor-pointer">確定</button>
+        <button type="button" onclick="closeModal('submitConfirmModal')" class="flex-1 py-3 rounded-xl bg-white text-[#415E91] border border-[#779EC8] text-[14.5px] font-bold cursor-pointer">返回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示訊息 -->
+  <div id="appToast" class="fixed bottom-20 inset-x-3.5 z-50 translate-y-[160%] opacity-0 transition-all duration-300 max-w-md mx-auto bg-[#415E91] text-white shadow-modal rounded-2xl p-3.5 flex items-center gap-3 border border-[#779EC8]/50">
+    <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+    <p id="toastMessage" class="text-[13.5px] font-medium leading-snug flex-1">操作已完成</p>
+  </div>
+
+  <script>
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyCHwbGTPm_C4C5ekBjIBmwKx7yXzZQC_rSeFQaGHrjvbrSTUhvQVDFedLPD3AEIfm31g/exec';
+
+    const STORAGE_KEY = 'caritas_lok_yi_repair_records_v12';
+    const LOCATIONS_STORAGE_KEY = 'caritas_lok_yi_locations_v12';
+    const WEB_MEDIA_MAP_KEY = 'caritas_lok_yi_web_media_v9';
+    const PAGE_SIZE = 12;
+
+    const DEFAULT_LOCATIONS = [
+      '地下大堂', '101室', '102室', '201室', '202室',
+      '301室', '302室', '禮堂', '教員室', '男生宿舍 A座', '女生宿舍 B座'
+    ];
+
+    let records = [];
+    let locationOptions = [...DEFAULT_LOCATIONS];
+    let uploadedMedia = null;
+    let currentPage = 1;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalData();
+      renderLocationDropdown();
+      setupDropZone();
+      setupRealtimeNameCheck();
+      updateCounters();
+      switchMobileTab('form');
+
+      // 啟動時自動同步雲端資料
+      fetchRecordsFromGas(false, false);
+      setInterval(() => {
+        if (document.visibilityState === 'visible' && !isFetchingFromGas) {
+          fetchRecordsFromGas(false, true);
+        }
+      }, 30000);
+    });
+
+    function switchMobileTab(tab) {
+      const formView = document.getElementById('view-form');
+      const pendingView = document.getElementById('view-pending');
+
+      ['form', 'pending'].forEach(k => {
+        const btn = document.getElementById('bnav-' + k);
+        if (!btn) return;
+        const pill = btn.querySelector('.bnav-pill');
+        if (k === tab) {
+          btn.classList.remove('text-[#5B81B2]');
+          btn.classList.add('text-[#415E91]');
+          if (pill) pill.classList.add('bg-[#BDF2F6]', 'text-[#415E91]');
+        } else {
+          btn.classList.remove('text-[#415E91]');
+          btn.classList.add('text-[#5B81B2]');
+          if (pill) pill.classList.remove('bg-[#BDF2F6]', 'text-[#415E91]');
+        }
+      });
+
+      if (tab === 'form') {
+        formView.classList.remove('hidden');
+        pendingView.classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        formView.classList.add('hidden');
+        pendingView.classList.remove('hidden');
+        currentPage = 1;
+        renderPendingCards();
+        // 切換到「待處理維修」時同步最新雲端資料並刷新畫面
+        fetchRecordsFromGas(false, false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function getPendingRecords() {
+      return records.filter(rec => !(rec.status === '已完成' || Boolean(rec.completionDate)));
+    }
+
+    function changePage(delta) {
+      const filtered = getPendingRecords();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      const next = currentPage + delta;
+      if (next >= 1 && next <= totalPages) {
+        currentPage = next;
+        renderPendingCards();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function renderPendingCards() {
+      const container = document.getElementById('mobileCardsContainer');
+      const emptyState = document.getElementById('emptyCardsState');
+      const loadingState = document.getElementById('loadingCardsState');
+      const filtered = getPendingRecords();
+      const totalItems = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+      document.getElementById('mobileFooterCount').textContent =
+        '顯示 ' + (totalItems === 0 ? 0 : startIdx + 1) + '-' + Math.min(startIdx + PAGE_SIZE, totalItems) + ' / 共 ' + totalItems + ' 筆';
+      document.getElementById('mobilePageIndicator').textContent = '第 ' + currentPage + ' / ' + totalPages + ' 頁';
+      document.getElementById('mobilePrevPageBtn').disabled = currentPage <= 1;
+      document.getElementById('mobileNextPageBtn').disabled = currentPage >= totalPages;
+
+      if (pageItems.length === 0) {
+        container.innerHTML = '';
+        if (isFetchingFromGas) {
+          loadingState.classList.remove('hidden');
+          emptyState.classList.add('hidden');
+        } else {
+          loadingState.classList.add('hidden');
+          emptyState.classList.remove('hidden');
+        }
+        return;
+      }
+
+      loadingState.classList.add('hidden');
+      emptyState.classList.add('hidden');
+
+      container.innerHTML = pageItems.map(rec => {
+        const isPlumbing = String(rec.type || '').startsWith('水電');
+        const typeIcon = isPlumbing ? '⚡' : '🔨';
+
+        const areaBadge = rec.colD === '日校'
+          ? '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#BDF2F6]/80 text-[#415E91] border border-[#9BD2E4]">日校</span>'
+          : '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#9BD2E4]/50 text-[#415E91] border border-[#779EC8]">宿舍</span>';
+
+        const statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">待處理</span>';
+
+        const rawMediaText = String(rec.photoUpload || '').trim();
+        const isEmptyMediaText = !rawMediaText || ['無', '沒有', '否', '-', '—', 'N/A'].includes(rawMediaText);
+        const hasMediaFlag = !isEmptyMediaText || Boolean(rec.photoUrl || rec.mediaDataUrl);
+        const thumbSrc = getRecordThumbnailUrl(rec);
+
+        let mediaBlock = '';
+        if (hasMediaFlag) {
+          mediaBlock =
+            '<button type="button" onclick="openMediaPreview(\'' + rec.id + '\')" class="w-full mt-2.5 p-2 rounded-xl bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#779EC8] text-[#415E91] flex items-center justify-between gap-2.5 transition-colors cursor-pointer">' +
+              '<div class="flex items-center gap-2.5 min-w-0 pointer-events-none">' +
+                (thumbSrc
+                  ? '<img src="' + escapeHtml(thumbSrc) + '" alt="現場縮圖" class="w-11 h-11 rounded-lg object-cover border border-[#779EC8]/70 bg-white shrink-0" onerror="this.style.display=\'none\'" />'
+                  : '<div class="w-11 h-11 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>') +
+                '<div class="text-left min-w-0">' +
+                  '<p class="text-[13px] font-bold text-[#415E91] truncate">檢視現場相片 / 影片</p>' +
+                  '<p class="text-[11px] text-[#5B81B2]">點擊直接開啟放大預覽</p>' +
+                '</div>' +
+              '</div>' +
+              '<span class="px-2.5 py-1 rounded-lg bg-[#415E91] text-white text-[11.5px] font-bold shrink-0 pointer-events-none">開啟</span>' +
+            '</button>';
+        }
+
+        const remarkHtml = rec.remark
+          ? '<div class="mt-2.5 px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[12.5px] text-amber-900">' +
+              '<span class="font-bold">跟進備註：</span>' + escapeHtml(rec.remark) +
+            '</div>'
+          : '';
+
+        return '<article class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">' +
+          '<div class="flex items-start justify-between gap-2">' +
+            '<div class="flex items-center gap-1.5 flex-wrap">' +
+              '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[14px] bg-[#BDF2F6]/70 border border-[#9BD2E4]">' + typeIcon + '</span>' +
+              areaBadge +
+              '<span class="text-[16px] font-bold text-[#415E91]">' + escapeHtml(rec.location) + '</span>' +
+            '</div>' +
+            statusBadge +
+          '</div>' +
+
+          '<p class="text-[14px] text-[#415E91] mt-2.5 bg-[#f0fbfc] p-3 rounded-xl border border-[#BDF2F6] leading-relaxed break-words">' +
+            escapeHtml(rec.description) +
+          '</p>' +
+
+          '<div class="flex items-center justify-between text-[12px] text-[#5B81B2] mt-2.5">' +
+            '<span>呈報人：<strong class="text-[#415E91]">' + escapeHtml(rec.reporter) + '</strong></span>' +
+            '<span class="font-mono text-[11px]">' + escapeHtml(rec.timestamp) + '</span>' +
+          '</div>' +
+
+          remarkHtml +
+          mediaBlock +
+        '</article>';
+      }).join('');
+    }
+
+    function extractGoogleDriveFileId(url) {
+      if (!url) return '';
+      const str = String(url).trim();
+      const dMatch = str.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch) return dMatch[1];
+      const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch) return idMatch[1];
+      return '';
+    }
+
+    function getRecordThumbnailUrl(rec) {
+      if (rec.mediaDataUrl && rec.mediaType !== 'video') return rec.mediaDataUrl;
+      const driveId = extractGoogleDriveFileId(rec.photoUrl || rec.photoUpload);
+      if (driveId) return 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w240';
+      return '';
+    }
+
+    function openMediaPreview(id) {
+      const rec = records.find(r => r.id === id);
+      if (!rec) return;
+
+      document.getElementById('modalMediaTitle').textContent = rec.location + ' — 現場附件';
+      document.getElementById('modalMediaMeta').textContent = '呈報人：' + rec.reporter + ' ・ ' + rec.colD + ' ・ ' + rec.timestamp;
+
+      const content = document.getElementById('modalMediaContent');
+      const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http'))
+        ? rec.photoUrl
+        : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
+      const driveId = extractGoogleDriveFileId(rawUrl);
+
+      if (rec.mediaType === 'video' && rec.mediaDataUrl) {
+        content.innerHTML = '<video src="' + rec.mediaDataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg"></video>';
+      } else if (rec.mediaDataUrl) {
+        content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+      } else if (driveId) {
+        const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
+        const fallbackDriveViewUrl = 'https://drive.google.com/uc?export=view&id=' + driveId;
+        const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
+        content.innerHTML =
+          '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
+            'onerror="if(!this.dataset.triedUc){this.dataset.triedUc=\'1\';this.src=\'' + escapeHtml(fallbackDriveViewUrl) + '\';}else{this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\';}" />';
+      } else if (rawUrl) {
+        content.innerHTML =
+          '<img src="' + escapeHtml(rawUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
+            'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(rawUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
+      } else {
+        content.innerHTML =
+          '<div class="bg-white rounded-xl p-6 text-center space-y-1.5 max-w-xs w-full">' +
+            '<p class="text-[14.5px] font-bold text-[#415E91]">試算表已標記「有」現場附件</p>' +
+            '<p class="text-[12.5px] text-[#5B81B2]">此紀錄為舊版 Google 表單直接上傳，無內嵌預覽圖。</p>' +
+          '</div>';
+      }
+      openModal('mediaModal');
+    }
+
+    function isGasNativeAvailable() {
+      try {
+        return typeof window.google !== 'undefined' && Boolean(window.google.script) && Boolean(window.google.script.run);
+      } catch (e) { return false; }
+    }
+
+    function runGasServerFunction(fnName, arg, timeoutMs = 10000) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('雲端連線逾時')); } }, timeoutMs);
+        try {
+          const runner = window.google.script.run
+            .withSuccessHandler(res => { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } })
+            .withFailureHandler(err => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error(err && err.message ? err.message : String(err))); } });
+          if (arg !== undefined) runner[fnName](arg);
+          else runner[fnName]();
+        } catch (err) {
+          if (!settled) { settled = true; clearTimeout(timer); reject(err); }
+        }
+      });
+    }
+
+    function loadLocalData() {
+      try {
+        const rawRecords = localStorage.getItem(STORAGE_KEY);
+        if (rawRecords) {
+          const parsed = JSON.parse(rawRecords);
+          records = Array.isArray(parsed) ? parsed.map((item, idx) => normalizeRecordItem(item, idx)) : [];
+        }
+        const rawLocations = localStorage.getItem(LOCATIONS_STORAGE_KEY);
+        if (rawLocations) {
+          const parsedLoc = JSON.parse(rawLocations);
+          if (Array.isArray(parsedLoc) && parsedLoc.length > 0) locationOptions = parsedLoc;
+        }
+      } catch (e) { records = []; }
+    }
+
+    function saveLocalData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(locationOptions));
+      } catch (e) {}
+      updateCounters();
+    }
+
+    function updateCounters() {
+      const pending = getPendingRecords().length;
+      document.getElementById('badge-pending').textContent = pending;
+      document.getElementById('bnavPendingBadge').textContent = pending;
+    }
+
+    function sanitizeCellText(val) {
+      if (val === null || val === undefined) return '';
+      return String(val).replace(/[\r\n\t\u0000-\u001F]+/g, ' ').trim();
+    }
+
+    function normalizeDateForInput(rawVal) {
+      if (!rawVal) return '';
+      const str = String(rawVal).trim();
+      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+        const parts = str.split(' ')[0].split('-');
+        return parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+      }
+      if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(str)) {
+        const parts = str.split(' ')[0].split('/');
+        return parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+      }
+      return '';
+    }
+
+    function findWebMediaForRecord(ts, reporter, location) {
+      try {
+        const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
+        return map[ts + '||' + reporter + '||' + location] || null;
+      } catch (e) { return null; }
+    }
+
+    function saveWebMediaForRecord(ts, reporter, location, dataUrl, mediaType) {
+      if (!dataUrl) return;
+      try {
+        const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
+        map[ts + '||' + reporter + '||' + location] = { dataUrl, mediaType: mediaType || 'image' };
+        localStorage.setItem(WEB_MEDIA_MAP_KEY, JSON.stringify(map));
+      } catch (e) {}
+    }
+
+    function normalizeRecordItem(item, idx) {
+      const ts = sanitizeCellText(item.timestamp);
+      const rep = sanitizeCellText(item.reporter);
+      const typ = sanitizeCellText(item.type);
+      const area = sanitizeCellText(item.colD) || '日校';
+      const loc = sanitizeCellText(item.location);
+      const desc = sanitizeCellText(item.description);
+      const photo = sanitizeCellText(item.photoUpload);
+      const buy = sanitizeCellText(item.buy) || '不需要購買';
+      const cDate = normalizeDateForInput(sanitizeCellText(item.completionDate));
+      const sup = sanitizeCellText(item.support) || '不需要';
+      const rem = sanitizeCellText(item.remark);
+      const stat = sanitizeCellText(item.status) || (cDate ? '已完成' : '待處理');
+      const localMedia = findWebMediaForRecord(ts, rep, loc);
+
+      return {
+        id: 'gas-' + (item.rowIndex || idx) + '-' + String(ts || idx),
+        rowIndex: item.rowIndex || (idx + 2),
+        timestamp: ts,
+        reporter: rep,
+        type: typ,
+        colD: area,
+        location: loc,
+        description: desc,
+        photoUpload: photo,
+        buy: buy,
+        completionDate: cDate,
+        support: sup,
+        remark: rem,
+        status: stat,
+        photoUrl: sanitizeCellText(item.photoUrl),
+        mediaDataUrl: item.mediaDataUrl || (localMedia ? localMedia.dataUrl : ''),
+        mediaType: item.mediaType || (localMedia ? localMedia.mediaType : 'image')
+      };
+    }
+
+    let isFetchingFromGas = false;
+
+    async function fetchRecordsFromGas(showFeedback = true, isBackgroundPoll = false) {
+      if (isFetchingFromGas) return;
+      isFetchingFromGas = true;
+      const icon = document.getElementById('refreshBtnIcon');
+      if (icon) icon.classList.add('animate-spin');
+
+      if (!isBackgroundPoll && !document.getElementById('view-pending').classList.contains('hidden')) {
+        renderPendingCards();
+      }
+
+      try {
+        let payload = null;
+        if (isGasNativeAvailable()) {
+          const raw = await runGasServerFunction('apiReadAllData', undefined, 10000);
+          payload = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+        } else {
+          const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+          const res = await fetch(GAS_WEB_APP_URL + sep + 'action=read&t=' + Date.now(), { cache: 'no-store' });
+          payload = await res.json();
+        }
+
+        if (payload && payload.status === 'error') throw new Error(payload.message || '雲端讀取錯誤');
+        const rawList = Array.isArray(payload) ? payload : (payload && payload.records ? payload.records : []);
+        records = rawList.map((item, idx) => normalizeRecordItem(item, idx));
+
+        if (payload && Array.isArray(payload.locations) && payload.locations.length > 0) {
+          locationOptions = payload.locations;
+          renderLocationDropdown();
+        }
+
+        saveLocalData();
+        const subEl = document.getElementById('syncStatusSubtext');
+        if (subEl) {
+          const nowStr = new Date().toTimeString().slice(0, 5);
+          subEl.textContent = '已同步雲端（' + nowStr + ' 更新）・如無顯示則表示已完成維修';
+        }
+        if (showFeedback) showToast('已同步最新 ' + getPendingRecords().length + ' 筆待處理紀錄', 'success');
+      } catch (err) {
+        if (showFeedback) showToast('雲端同步失敗：' + err.message, 'error');
+      } finally {
+        isFetchingFromGas = false;
+        if (icon) icon.classList.remove('animate-spin');
+        if (!document.getElementById('view-pending').classList.contains('hidden')) {
+          renderPendingCards();
+        }
+      }
+    }
+
+    async function postToGas(payload) {
+      if (isGasNativeAvailable()) {
+        const rawRes = await runGasServerFunction('apiHandleAction', JSON.stringify(payload), payload.photoBase64 ? 30000 : 12000);
+        return (typeof rawRes === 'string') ? JSON.parse(rawRes) : rawRes;
+      }
+
+      const jsonStr = JSON.stringify(payload);
+      if (!payload.photoBase64 && encodeURIComponent(jsonStr).length < 6000) {
+        const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+        const res = await fetch(GAS_WEB_APP_URL + sep + 'payload=' + encodeURIComponent(jsonStr) + '&t=' + Date.now(), { cache: 'no-store' });
+        return await res.json();
+      }
+
+      try {
+        const res = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: jsonStr
+        });
+        return await res.json();
+      } catch (err) {
+        const formBody = new URLSearchParams();
+        formBody.append('payload', jsonStr);
+        await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: formBody });
+        return { status: 'success' };
+      }
+    }
+
+    function renderLocationDropdown() {
+      const selectEl = document.getElementById('locationDetail');
+      if (!selectEl) return;
+      const currentVal = selectEl.value;
+      selectEl.innerHTML = ['<option value="">請選擇須維修項目位置</option>']
+        .concat(locationOptions.map(loc => '<option value="' + escapeHtml(loc) + '">' + escapeHtml(loc) + '</option>'))
+        .join('');
+      if (currentVal && locationOptions.includes(currentVal)) selectEl.value = currentVal;
+    }
+
+    function isValidChineseName(name) {
+      return /^[\u4e00-\u9fa5·]{2,10}$/.test(name.trim());
+    }
+
+    function setupRealtimeNameCheck() {
+      const input = document.getElementById('reporterName');
+      const tag = document.getElementById('nameValidationTag');
+      const err = document.getElementById('err-reporterName');
+      if (!input) return;
+
+      input.addEventListener('input', () => {
+        const val = input.value.trim();
+        if (!val) { tag.classList.add('hidden'); err.classList.add('hidden'); return; }
+        tag.classList.remove('hidden');
+        if (isValidChineseName(val)) {
+          tag.textContent = '✓ 正確';
+          tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
+          err.classList.add('hidden');
+        } else {
+          tag.textContent = '請填全中文';
+          tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200';
+        }
+      });
+    }
+
+    function setupDropZone() {
+      const dropZone = document.getElementById('dropZone');
+      const mediaInput = document.getElementById('mediaInput');
+      if (!dropZone || !mediaInput) return;
+
+      dropZone.addEventListener('click', (e) => { if (!e.target.closest('button')) mediaInput.click(); });
+      mediaInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) handleSelectedFile(e.target.files[0]); });
+    }
+
+    function compressImageDataUrl(rawDataUrl, maxDim = 1024, quality = 0.75) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w >= h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          try { resolve(canvas.toDataURL('image/jpeg', quality)); }
+          catch (err) { resolve(rawDataUrl); }
+        };
+        img.onerror = () => resolve(rawDataUrl);
+        img.src = rawDataUrl;
+      });
+    }
+
+    function handleSelectedFile(file) {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      if (!isImage && !isVideo) { showToast('請選擇相片或影片檔案', 'error'); return; }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        let finalDataUrl = e.target.result;
+        let finalMime = file.type;
+        if (isImage) {
+          finalDataUrl = await compressImageDataUrl(finalDataUrl, 1024, 0.75);
+          finalMime = 'image/jpeg';
+        }
+        const approxBytes = Math.round((finalDataUrl.length * 3) / 4);
+        uploadedMedia = {
+          dataUrl: finalDataUrl,
+          name: file.name,
+          mimeType: finalMime,
+          size: (approxBytes / 1024).toFixed(1) + ' KB',
+          type: isImage ? 'image' : 'video'
+        };
+
+        document.getElementById('dropZonePlaceholder').classList.add('hidden');
+        document.getElementById('mediaPreviewBox').classList.remove('hidden');
+        document.getElementById('mediaFileName').textContent = uploadedMedia.name;
+        document.getElementById('mediaFileSize').textContent = uploadedMedia.size;
+
+        const thumb = document.getElementById('mediaThumbContainer');
+        thumb.innerHTML = isImage
+          ? '<img src="' + uploadedMedia.dataUrl + '" alt="預覽" class="w-full h-full object-cover" />'
+          : '<span class="text-[22px]">🎬</span>';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearUploadedMedia(e) {
+      if (e) e.stopPropagation();
+      uploadedMedia = null;
+      document.getElementById('mediaInput').value = '';
+      document.getElementById('dropZonePlaceholder').classList.remove('hidden');
+      document.getElementById('mediaPreviewBox').classList.add('hidden');
+    }
+
+    function resetFormFields() {
+      document.getElementById('repairForm').reset();
+      clearUploadedMedia();
+      document.getElementById('nameValidationTag').classList.add('hidden');
+      document.querySelectorAll('[id^="err-"]').forEach(el => el.classList.add('hidden'));
+    }
+
+    let pendingSubmitDraft = null;
+
+    document.getElementById('repairForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const reporterName = document.getElementById('reporterName').value.trim();
+      const repairTypeEl = document.querySelector('input[name="repairType"]:checked');
+      const locationAreaEl = document.querySelector('input[name="locationArea"]:checked');
+      const locationDetail = document.getElementById('locationDetail').value.trim();
+      const issueDescription = document.getElementById('issueDescription').value.trim();
+      const materialEl = document.querySelector('input[name="materialPurchase"]:checked');
+
+      let hasError = false;
+      if (!isValidChineseName(reporterName)) { document.getElementById('err-reporterName').classList.remove('hidden'); hasError = true; }
+      else { document.getElementById('err-reporterName').classList.add('hidden'); }
+
+      if (!repairTypeEl) { document.getElementById('err-repairType').classList.remove('hidden'); hasError = true; }
+      else { document.getElementById('err-repairType').classList.add('hidden'); }
+
+      if (!locationDetail) { document.getElementById('err-locationDetail').classList.remove('hidden'); hasError = true; }
+      else { document.getElementById('err-locationDetail').classList.add('hidden'); }
+
+      if (!issueDescription) { document.getElementById('err-issueDescription').classList.remove('hidden'); hasError = true; }
+      else { document.getElementById('err-issueDescription').classList.add('hidden'); }
+
+      if (hasError) { showToast('請填寫所有標有 * 的必填欄位', 'error'); return; }
+
+      pendingSubmitDraft = {
+        reporterName,
+        repairType: repairTypeEl.value,
+        locationArea: locationAreaEl ? locationAreaEl.value : '日校',
+        locationDetail,
+        issueDescription,
+        materialPurchase: materialEl ? materialEl.value : '不需要購買'
+      };
+
+      document.getElementById('submitConfirmPromptBody').classList.remove('hidden');
+      document.getElementById('submitConfirmLoadingBody').classList.add('hidden');
+      document.getElementById('submitConfirmFooter').classList.remove('hidden');
+      openModal('submitConfirmModal');
+    });
+
+    async function executeConfirmedSubmit() {
+      if (!pendingSubmitDraft) return;
+      document.getElementById('submitConfirmPromptBody').classList.add('hidden');
+      document.getElementById('submitConfirmFooter').classList.add('hidden');
+      document.getElementById('submitConfirmLoadingBody').classList.remove('hidden');
+
+      const draft = pendingSubmitDraft;
+      const now = new Date();
+      const ts = now.getFullYear() + '/' +
+        String(now.getMonth() + 1).padStart(2, '0') + '/' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0');
+
+      if (uploadedMedia && uploadedMedia.dataUrl) {
+        saveWebMediaForRecord(ts, draft.reporterName, draft.locationDetail, uploadedMedia.dataUrl, uploadedMedia.type);
+      }
+
+      try {
+        const res = await postToGas({
+          action: 'create',
+          timestamp: ts,
+          reporter: draft.reporterName,
+          type: draft.repairType,
+          colD: draft.locationArea,
+          location: draft.locationDetail,
+          description: draft.issueDescription,
+          photoUpload: uploadedMedia ? '有' : '',
+          buy: draft.materialPurchase,
+          support: '不需要',
+          photoBase64: uploadedMedia ? uploadedMedia.dataUrl : '',
+          photoName: uploadedMedia ? uploadedMedia.name : '',
+          mimeType: uploadedMedia ? uploadedMedia.mimeType : ''
+        });
+
+        if (res && res.status === 'error') throw new Error(res.message || '雲端寫入失敗');
+        await fetchRecordsFromGas(false, false);
+        closeModal('submitConfirmModal');
+        showToast('已成功呈報「' + draft.locationDetail + '」維修項目', 'success');
+        resetFormFields();
+        pendingSubmitDraft = null;
+        switchMobileTab('pending');
+      } catch (err) {
+        closeModal('submitConfirmModal');
+        showToast('提交失敗：' + err.message, 'error');
+      }
+    }
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('appToast');
+      const dot = document.getElementById('toastDot');
+      const msgEl = document.getElementById('toastMessage');
+      if (!toast || !msgEl) return;
+
+      msgEl.textContent = message;
+      if (dot) {
+        dot.className = 'w-2.5 h-2.5 rounded-full shrink-0 ' +
+          (type === 'error' ? 'bg-rose-400' : (type === 'info' ? 'bg-sky-300' : 'bg-emerald-400'));
+      }
+
+      toast.classList.remove('translate-y-[160%]', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-[160%]', 'opacity-0');
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+  </script>
+</body>
+</html>
