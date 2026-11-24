@@ -382,7 +382,7 @@
     </div>
   </nav>
 
-  <!-- 彈窗：相片 / 影片預覽 Modal -->
+  <!-- 彈窗：相片 / 影片預覽 Modal（GitHub Pages 專屬 GAS CORS 安全代理載入） -->
   <div id="mediaModal" onclick="if(event.target===this) closeModal('mediaModal')" class="hidden fixed inset-0 z-50 bg-[#1e293b]/85 backdrop-blur-xs flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-modal max-w-lg w-full overflow-hidden border border-[#9BD2E4]">
       <div class="px-4 py-3 border-b border-[#9BD2E4] flex items-center justify-between bg-[#f0fbfc]">
@@ -454,8 +454,19 @@
       updateCounters();
       switchMobileTab('form');
 
-      // 啟動時自動同步雲端資料
+      // 啟動時立即同步雲端資料（若本機已有快取則先預載待處理相片）
+      if (records.length > 0) {
+        preloadVisiblePendingMedia();
+      }
       fetchRecordsFromGas(false, false);
+
+      // 從背景切回 Safari 或重新開啟時即時同步
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && !isFetchingFromGas) {
+          fetchRecordsFromGas(false, true);
+        }
+      });
+
       setInterval(() => {
         if (document.visibilityState === 'visible' && !isFetchingFromGas) {
           fetchRecordsFromGas(false, true);
@@ -491,7 +502,6 @@
         pendingView.classList.remove('hidden');
         currentPage = 1;
         renderPendingCards();
-        // 切換到「待處理維修」時同步最新雲端資料並刷新畫面
         fetchRecordsFromGas(false, false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -566,8 +576,8 @@
             '<button type="button" onclick="openMediaPreview(\'' + rec.id + '\')" class="w-full mt-2.5 p-2 rounded-xl bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#779EC8] text-[#415E91] flex items-center justify-between gap-2.5 transition-colors cursor-pointer">' +
               '<div class="flex items-center gap-2.5 min-w-0 pointer-events-none">' +
                 (thumbSrc
-                  ? '<img src="' + escapeHtml(thumbSrc) + '" alt="現場縮圖" class="w-11 h-11 rounded-lg object-cover border border-[#779EC8]/70 bg-white shrink-0" onerror="this.style.display=\'none\'" />'
-                  : '<div class="w-11 h-11 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>') +
+                  ? '<img id="card-thumb-' + rec.id + '" src="' + escapeHtml(thumbSrc) + '" alt="現場縮圖" class="w-11 h-11 rounded-lg object-cover border border-[#779EC8]/70 bg-white shrink-0" onerror="this.style.display=\'none\'" />'
+                  : '<div id="card-thumb-fallback-' + rec.id + '" class="w-11 h-11 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>') +
                 '<div class="text-left min-w-0">' +
                   '<p class="text-[13px] font-bold text-[#415E91] truncate">檢視現場相片 / 影片</p>' +
                   '<p class="text-[11px] text-[#5B81B2]">點擊直接開啟放大預覽</p>' +
@@ -606,8 +616,13 @@
           mediaBlock +
         '</article>';
       }).join('');
+
+      preloadVisiblePendingMedia();
     }
 
+    // =========================================================================
+    // GitHub Pages 專屬：Google Apps Script CORS 安全通道讀取 + 背景預載
+    // =========================================================================
     function extractGoogleDriveFileId(url) {
       if (!url) return '';
       const str = String(url).trim();
@@ -619,13 +634,99 @@
     }
 
     function getRecordThumbnailUrl(rec) {
-      if (rec.mediaDataUrl && rec.mediaType !== 'video') return rec.mediaDataUrl;
+      if (rec.mediaDataUrl && rec.mediaType !== 'video') {
+        return rec.mediaDataUrl;
+      }
       const driveId = extractGoogleDriveFileId(rec.photoUrl || rec.photoUpload);
-      if (driveId) return 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w240';
+      if (driveId) {
+        return 'https://lh3.googleusercontent.com/d/' + driveId + '=s240';
+      }
       return '';
     }
 
-    function openMediaPreview(id) {
+    const sessionMediaCache = {};
+    const inflightMediaPromises = {};
+
+    function renderMediaDataUrlIntoContainer(content, dataUrl, mimeType) {
+      const isVideo = (mimeType && mimeType.startsWith('video/')) || String(dataUrl).startsWith('data:video/');
+      if (isVideo) {
+        content.innerHTML = '<video src="' + dataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg bg-black"></video>';
+      } else {
+        content.innerHTML = '<img src="' + dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+      }
+    }
+
+    function fetchDriveMediaViaGasProxy(driveId) {
+      if (sessionMediaCache[driveId]) {
+        return Promise.resolve(sessionMediaCache[driveId]);
+      }
+      if (inflightMediaPromises[driveId]) {
+        return inflightMediaPromises[driveId];
+      }
+
+      const promise = (async () => {
+        try {
+          let resObj = null;
+          if (isGasNativeAvailable()) {
+            const raw = await runGasServerFunction('apiGetDriveMediaBase64', driveId, 20000);
+            resObj = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+          } else {
+            // GitHub Pages 跨網域 CORS 讀取：使用 redirect: 'follow' 且不加自訂 Header（避免 preflight 失敗）
+            const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+            const url = GAS_WEB_APP_URL + sep + 'action=get_image&fileId=' + encodeURIComponent(driveId);
+            const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+            resObj = await resp.json();
+          }
+          if (resObj && resObj.status === 'success' && resObj.dataUrl) {
+            sessionMediaCache[driveId] = resObj;
+            const matchedRec = records.find(r => extractGoogleDriveFileId(r.photoUrl || r.photoUpload) === driveId);
+            if (matchedRec) {
+              matchedRec.mediaDataUrl = resObj.dataUrl;
+              matchedRec.mediaType = (resObj.mimeType && resObj.mimeType.startsWith('video/')) ? 'video' : 'image';
+            }
+          }
+          return resObj;
+        } finally {
+          delete inflightMediaPromises[driveId];
+        }
+      })();
+
+      inflightMediaPromises[driveId] = promise;
+      return promise;
+    }
+
+    // 背景錯峰預載目前頁面「待處理」且含有附件的前 5 筆相片
+    function preloadVisiblePendingMedia() {
+      const filtered = getPendingRecords();
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+      let preloadCount = 0;
+      for (const rec of pageItems) {
+        if (preloadCount >= 5) break;
+        if (rec.mediaDataUrl) continue;
+        const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http'))
+          ? rec.photoUrl
+          : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
+        const driveId = extractGoogleDriveFileId(rawUrl);
+        if (driveId && !sessionMediaCache[driveId] && !inflightMediaPromises[driveId]) {
+          preloadCount++;
+          setTimeout(() => {
+            fetchDriveMediaViaGasProxy(driveId).then(res => {
+              if (res && res.status === 'success' && res.dataUrl) {
+                const thumbImg = document.getElementById('card-thumb-' + rec.id);
+                if (thumbImg) {
+                  thumbImg.src = res.dataUrl;
+                  thumbImg.style.display = 'block';
+                }
+              }
+            }).catch(() => {});
+          }, preloadCount * 200);
+        }
+      }
+    }
+
+    async function openMediaPreview(id) {
       const rec = records.find(r => r.id === id);
       if (!rec) return;
 
@@ -638,18 +739,49 @@
         : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
       const driveId = extractGoogleDriveFileId(rawUrl);
 
-      if (rec.mediaType === 'video' && rec.mediaDataUrl) {
-        content.innerHTML = '<video src="' + rec.mediaDataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg"></video>';
-      } else if (rec.mediaDataUrl) {
-        content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
-      } else if (driveId) {
+      // 1. 本機快取或已完成背景預載直接秒開
+      if (rec.mediaDataUrl) {
+        renderMediaDataUrlIntoContainer(content, rec.mediaDataUrl, rec.mediaType === 'video' ? 'video/mp4' : 'image/jpeg');
+        openModal('mediaModal');
+        return;
+      }
+
+      // 2. 透過 GAS 後端 CORS 安全通道讀取 Base64（完全不受 Google 跨網域與帳號權限限制）
+      if (driveId) {
+        if (sessionMediaCache[driveId]) {
+          renderMediaDataUrlIntoContainer(content, sessionMediaCache[driveId].dataUrl, sessionMediaCache[driveId].mimeType);
+          openModal('mediaModal');
+          return;
+        }
+
+        content.innerHTML =
+          '<div class="flex flex-col items-center justify-center py-10 px-4 text-center space-y-3 text-white">' +
+            '<div class="w-9 h-9 border-4 border-[#BDF2F6] border-t-transparent rounded-full animate-spin"></div>' +
+            '<p class="text-[14px] font-bold text-[#BDF2F6]">正在快速載入現場相片...</p>' +
+            '<p class="text-[11.5px] text-slate-300">正在透過安全高速通道讀取</p>' +
+          '</div>';
+        openModal('mediaModal');
+
+        try {
+          const proxyRes = await fetchDriveMediaViaGasProxy(driveId);
+          if (proxyRes && proxyRes.status === 'success' && proxyRes.dataUrl) {
+            renderMediaDataUrlIntoContainer(content, proxyRes.dataUrl, proxyRes.mimeType);
+            return;
+          }
+        } catch (err) {
+          // 若代理逾時則退回 Google 公開圖片直連備援
+        }
+
+        const lh3ImgUrl = 'https://lh3.googleusercontent.com/d/' + driveId + '=s1600';
         const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
-        const fallbackDriveViewUrl = 'https://drive.google.com/uc?export=view&id=' + driveId;
         const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
         content.innerHTML =
-          '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="if(!this.dataset.triedUc){this.dataset.triedUc=\'1\';this.src=\'' + escapeHtml(fallbackDriveViewUrl) + '\';}else{this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\';}" />';
-      } else if (rawUrl) {
+          '<img src="' + escapeHtml(lh3ImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
+            'onerror="if(!this.dataset.triedThumb){this.dataset.triedThumb=\'1\';this.src=\'' + escapeHtml(previewImgUrl) + '\';}else{this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\';}" />';
+        return;
+      }
+
+      if (rawUrl) {
         content.innerHTML =
           '<img src="' + escapeHtml(rawUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
             'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(rawUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
@@ -657,7 +789,7 @@
         content.innerHTML =
           '<div class="bg-white rounded-xl p-6 text-center space-y-1.5 max-w-xs w-full">' +
             '<p class="text-[14.5px] font-bold text-[#415E91]">試算表已標記「有」現場附件</p>' +
-            '<p class="text-[12.5px] text-[#5B81B2]">此紀錄為舊版 Google 表單直接上傳，無內嵌預覽圖。</p>' +
+            '<p class="text-[12.5px] text-[#5B81B2]">此為舊版 Google 表單直接上傳，無內嵌預覽圖。</p>' +
           '</div>';
       }
       openModal('mediaModal');
@@ -763,6 +895,9 @@
       const rem = sanitizeCellText(item.remark);
       const stat = sanitizeCellText(item.status) || (cDate ? '已完成' : '待處理');
       const localMedia = findWebMediaForRecord(ts, rep, loc);
+      const pUrl = sanitizeCellText(item.photoUrl);
+      const driveId = extractGoogleDriveFileId(pUrl || photo);
+      const cachedProxy = driveId ? sessionMediaCache[driveId] : null;
 
       return {
         id: 'gas-' + (item.rowIndex || idx) + '-' + String(ts || idx),
@@ -779,9 +914,9 @@
         support: sup,
         remark: rem,
         status: stat,
-        photoUrl: sanitizeCellText(item.photoUrl),
-        mediaDataUrl: item.mediaDataUrl || (localMedia ? localMedia.dataUrl : ''),
-        mediaType: item.mediaType || (localMedia ? localMedia.mediaType : 'image')
+        photoUrl: pUrl,
+        mediaDataUrl: item.mediaDataUrl || (cachedProxy ? cachedProxy.dataUrl : (localMedia ? localMedia.dataUrl : '')),
+        mediaType: item.mediaType || (cachedProxy ? ((cachedProxy.mimeType && cachedProxy.mimeType.startsWith('video/')) ? 'video' : 'image') : (localMedia ? localMedia.mediaType : 'image'))
       };
     }
 
@@ -804,7 +939,7 @@
           payload = (typeof raw === 'string') ? JSON.parse(raw) : raw;
         } else {
           const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
-          const res = await fetch(GAS_WEB_APP_URL + sep + 'action=read&t=' + Date.now(), { cache: 'no-store' });
+          const res = await fetch(GAS_WEB_APP_URL + sep + 'action=read&t=' + Date.now(), { method: 'GET', redirect: 'follow' });
           payload = await res.json();
         }
 
@@ -831,6 +966,8 @@
         if (icon) icon.classList.remove('animate-spin');
         if (!document.getElementById('view-pending').classList.contains('hidden')) {
           renderPendingCards();
+        } else {
+          preloadVisiblePendingMedia();
         }
       }
     }
@@ -844,7 +981,7 @@
       const jsonStr = JSON.stringify(payload);
       if (!payload.photoBase64 && encodeURIComponent(jsonStr).length < 6000) {
         const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
-        const res = await fetch(GAS_WEB_APP_URL + sep + 'payload=' + encodeURIComponent(jsonStr) + '&t=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch(GAS_WEB_APP_URL + sep + 'payload=' + encodeURIComponent(jsonStr) + '&t=' + Date.now(), { method: 'GET', redirect: 'follow' });
         return await res.json();
       }
 
