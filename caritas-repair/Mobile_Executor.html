@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>明愛樂義學校維修管理平台 - Mobile 專屬版</title>
+  <title>明愛樂義學校維修管理平台 - 執行人專頁 (Mobile)</title>
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s512" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -102,7 +102,7 @@
           <h1 class="text-[15px] font-bold tracking-tight text-white truncate">明愛樂義學校維修平台</h1>
           <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#5B81B2] text-[#BDF2F6] border border-[#9BD2E4]/40 shrink-0">Mobile</span>
         </div>
-        <p id="mobileRoleSubtitle" class="text-[11.5px] text-[#BDF2F6] truncate">執行人（全部功能）</p>
+        <p id="mobileRoleSubtitle" class="text-[11.5px] text-[#BDF2F6] truncate">執行人專頁（全部功能）</p>
       </div>
     </div>
 
@@ -117,31 +117,11 @@
         class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[12px] font-bold text-[#415E91] bg-[#BDF2F6] active:bg-[#9BD2E4] border border-[#9BD2E4] shadow-card transition-colors"
       >
         <svg id="syncBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        <span>同步</span>
         <span id="syncBtnBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px]">0</span>
       </button>
 
-      <!-- 權限設定按鈕（執行人專屬） -->
-      <button
-        type="button"
-        id="accessSettingsBtn"
-        data-executor-only="true"
-        onclick="openAccessSettingsModal()"
-        title="權限設定"
-        class="p-2 rounded-xl text-white bg-[#5B81B2] active:bg-[#779EC8] border border-[#9BD2E4]/40 transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
-      </button>
 
-      <!-- 切換登入身分按鈕 -->
-      <button
-        type="button"
-        onclick="openAuthGateModal(true)"
-        title="切換登入身分"
-        class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[12px] font-semibold text-[#BDF2F6] bg-[#5B81B2]/75 active:bg-[#5B81B2] border border-[#9BD2E4]/40 transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-        <span>身分</span>
-      </button>
     </div>
   </header>
 
@@ -149,234 +129,7 @@
   <main class="flex-1 w-full max-w-xl mx-auto px-3.5 pt-3.5 space-y-3.5">
 
     <!-- =================================================================== -->
-    <!-- 視圖 1：填寫維修呈報（Mobile 單手觸控表單）                          -->
-    <!-- =================================================================== -->
-    <section id="view-form" class="hidden space-y-3.5 pb-6">
-      <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-        <h2 class="text-[18px] font-bold text-[#415E91]">填寫維修呈報</h2>
-        <p class="text-[13px] text-[#5B81B2] mt-0.5">
-          標示 <span class="text-rose-600 font-bold">*</span> 為必填欄位。
-        </p>
-      </div>
-
-      <form id="repairForm" novalidate class="space-y-3.5">
-        <!-- 1. 維修呈報人 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-          <label for="reporterName" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-            維修呈報人 (請輸入全中文姓名)： <span class="text-rose-600">*</span>
-          </label>
-          <div class="relative">
-            <input
-              type="text"
-              id="reporterName"
-              name="reporterName"
-              placeholder="例如：陳大文"
-              required
-              class="saas-input w-full px-3.5 py-3 rounded-xl border border-[#779EC8] bg-white text-[#415E91] placeholder-[#779EC8]/80 transition-all"
-            />
-            <span id="nameValidationTag" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2.5 py-0.5 rounded-md"></span>
-          </div>
-          <p id="err-reporterName" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>請輸入有效的全中文姓名（2至10個中文字）</span>
-          </p>
-        </div>
-
-        <!-- 2. 維修類型 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2.5">
-            維修類型： <span class="text-rose-600">*</span>
-          </label>
-
-          <div class="grid grid-cols-1 gap-2.5">
-            <label class="cursor-pointer">
-              <input type="radio" name="repairType" value="水電 (例：漏水、馬桶、燈具插座、冷氣)" class="peer sr-only" required />
-              <div class="p-3.5 rounded-xl border-2 border-[#9BD2E4] bg-[#BDF2F6]/35 peer-checked:border-[#415E91] peer-checked:bg-[#415E91] transition-all flex items-center gap-3 [&_.type-title]:text-[#415E91] peer-checked:[&_.type-title]:text-white [&_.type-desc]:text-[#5B81B2] peer-checked:[&_.type-desc]:text-[#BDF2F6] [&_.type-icon]:bg-[#9BD2E4]/60 [&_.type-icon]:text-[#415E91] peer-checked:[&_.type-icon]:bg-[#5B81B2] peer-checked:[&_.type-icon]:text-white">
-                <div class="type-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[18px]">⚡</div>
-                <div>
-                  <p class="type-title text-[14.5px] font-bold">水電 (漏水、馬桶、燈具、冷氣)</p>
-                  <p class="type-desc text-[12px] mt-0.5">供水排水、衛浴潔具、照明電力及空調系統</p>
-                </div>
-              </div>
-            </label>
-
-            <label class="cursor-pointer">
-              <input type="radio" name="repairType" value="其他" class="peer sr-only" />
-              <div class="p-3.5 rounded-xl border-2 border-[#779EC8]/70 bg-[#f0fbfc] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] transition-all flex items-center gap-3 [&_.type-title]:text-[#415E91] peer-checked:[&_.type-title]:text-white [&_.type-desc]:text-[#5B81B2] peer-checked:[&_.type-desc]:text-[#f0fbfc] [&_.type-icon]:bg-[#BDF2F6] [&_.type-icon]:text-[#5B81B2] peer-checked:[&_.type-icon]:bg-[#415E91] peer-checked:[&_.type-icon]:text-white">
-                <div class="type-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[18px]">🔨</div>
-                <div>
-                  <p class="type-title text-[14.5px] font-bold">其他設施維修</p>
-                  <p class="type-desc text-[12px] mt-0.5">門窗鎖具、課室或宿舍傢俬、牆身及一般設施</p>
-                </div>
-              </div>
-            </label>
-          </div>
-
-          <p id="err-repairType" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>請選擇一項維修類型</span>
-          </p>
-        </div>
-
-        <!-- 3 & 4. 須維修位置區域 與 房號地點 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card space-y-4">
-          <div>
-            <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-              須維修位置區域： <span class="text-rose-600">*</span>
-            </label>
-            <div class="grid grid-cols-2 gap-2.5">
-              <label class="cursor-pointer">
-                <input type="radio" name="locationArea" value="日校" class="peer sr-only" checked />
-                <div class="py-3 px-4 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#5B81B2] font-bold text-[14.5px] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] peer-checked:text-white transition-all flex items-center justify-center gap-2 shadow-card">
-                  <span>🏫 日校</span>
-                </div>
-              </label>
-
-              <label class="cursor-pointer">
-                <input type="radio" name="locationArea" value="宿舍" class="peer sr-only" />
-                <div class="py-3 px-4 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#5B81B2] font-bold text-[14.5px] peer-checked:border-[#415E91] peer-checked:bg-[#5B81B2] peer-checked:text-white transition-all flex items-center justify-center gap-2 shadow-card">
-                  <span>🛏️ 宿舍</span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div class="pt-3.5 border-t border-[#BDF2F6]">
-            <label for="locationDetail" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-              須維修項目位置 (房號 / 地點)： <span class="text-rose-600">*</span>
-            </label>
-            <div class="relative">
-              <select
-                id="locationDetail"
-                name="locationDetail"
-                required
-                class="saas-input w-full px-3.5 py-3 pr-10 rounded-xl border border-[#779EC8] bg-white text-[#415E91] appearance-none cursor-pointer"
-              >
-                <option value="">請選擇須維修項目位置</option>
-              </select>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-[#779EC8] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2"><path d="m6 9 6 6 6-6"/></svg>
-            </div>
-            <p id="err-locationDetail" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span>請選擇須維修項目位置 (房號 / 地點)</span>
-            </p>
-          </div>
-        </div>
-
-        <!-- 5. 須維修項目具體資料 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-          <label for="issueDescription" class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-            須維修項目具體資料： <span class="text-rose-600">*</span>
-          </label>
-          <textarea
-            id="issueDescription"
-            name="issueDescription"
-            rows="3"
-            placeholder="請詳細說明損壞情形、異常狀況或設備位置..."
-            required
-            class="saas-input w-full px-3.5 py-3 rounded-xl border border-[#779EC8] bg-white text-[#415E91] placeholder-[#779EC8]/80 transition-all resize-y"
-          ></textarea>
-          <p id="err-issueDescription" class="hidden text-[12.5px] text-rose-600 mt-2 flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>請填寫須維修項目具體資料</span>
-          </p>
-        </div>
-
-        <!-- 6. 須維修項目相片/影片 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-            須維修項目相片 / 影片：
-          </label>
-
-          <div
-            id="dropZone"
-            class="border-2 border-dashed border-[#779EC8] bg-[#f0fbfc] active:bg-[#BDF2F6]/40 rounded-2xl p-5 text-center cursor-pointer transition-all"
-          >
-            <input type="file" id="mediaInput" accept="image/*,video/*" class="hidden" />
-
-            <div id="dropZonePlaceholder" class="space-y-1.5">
-              <div class="w-11 h-11 rounded-xl bg-white border border-[#9BD2E4] shadow-card mx-auto flex items-center justify-center text-[#5B81B2]">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-              </div>
-              <p class="text-[14px] font-bold text-[#415E91]">點擊拍照或從相簿選擇檔案</p>
-              <p class="text-[12px] text-[#779EC8]">支援相片（JPG/PNG）或影片（MP4/MOV）</p>
-            </div>
-
-            <div id="mediaPreviewBox" class="hidden flex items-center justify-between gap-3 text-left bg-white p-3 rounded-xl border border-[#9BD2E4] shadow-card">
-              <div class="flex items-center gap-3 overflow-hidden">
-                <div id="mediaThumbContainer" class="w-14 h-14 rounded-lg bg-[#BDF2F6]/60 overflow-hidden flex items-center justify-center shrink-0 border border-[#9BD2E4]"></div>
-                <div class="min-w-0">
-                  <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mb-1">
-                    ✓ 已附加檔案
-                  </span>
-                  <p id="mediaFileName" class="text-[13px] font-semibold text-[#415E91] truncate">filename.jpg</p>
-                  <p id="mediaFileSize" class="text-[11.5px] text-[#779EC8]">0 KB</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onclick="clearUploadedMedia(event)"
-                class="px-3 py-2 rounded-xl text-[12.5px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 shrink-0"
-              >
-                移除
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 7. 材料購買 -->
-        <div class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">
-          <label class="block text-[14.5px] font-bold text-[#415E91] mb-2">
-            材料購買：
-          </label>
-          <div class="grid grid-cols-3 gap-2">
-            <label class="cursor-pointer">
-              <input type="radio" name="materialPurchase" value="待中央購買" class="peer sr-only" />
-              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-purple-600 peer-checked:bg-purple-50 peer-checked:text-purple-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">
-                待中央購買
-              </div>
-            </label>
-
-            <label class="cursor-pointer">
-              <input type="radio" name="materialPurchase" value="自行購買物料" class="peer sr-only" />
-              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-amber-600 peer-checked:bg-amber-50 peer-checked:text-amber-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">
-                自行購買物料
-              </div>
-            </label>
-
-            <label class="cursor-pointer">
-              <input type="radio" name="materialPurchase" value="不需要購買" class="peer sr-only" checked />
-              <div class="py-3 px-1.5 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 text-[12.5px] font-bold text-[#415E91] text-center transition-all">
-                不需要購買
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- 底部操作按鈕 -->
-        <div class="flex items-center gap-2.5 pt-1">
-          <button
-            type="button"
-            onclick="resetFormFields()"
-            class="flex-1 py-3.5 rounded-2xl text-[14.5px] font-bold text-[#5B81B2] bg-white active:bg-[#BDF2F6]/60 border border-[#779EC8] transition-colors"
-          >
-            清除重填
-          </button>
-
-          <button
-            type="submit"
-            id="submitFormBtn"
-            class="flex-[2] py-3.5 rounded-2xl text-[15px] font-bold text-white bg-[#5B81B2] active:bg-[#415E91] shadow-sm transition-all flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-            <span>提交維修呈報</span>
-          </button>
-        </div>
-      </form>
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- 視圖 2：直立式卡片維修清單（Card View + 摺疊執行人管理面板）        -->
+    <!-- 視圖：直立式卡片維修清單（Card View + 摺疊執行人管理面板）          -->
     <!-- =================================================================== -->
     <section id="view-sheet" class="space-y-3">
 
@@ -491,32 +244,7 @@
         <span class="text-[12px]">更多篩選</span>
       </button>
 
-      <!-- 校內特定教職員 Tab 1：填寫呈報 -->
-      <button
-        type="button"
-        id="bnav-form"
-        onclick="switchMobileTab('form')"
-        class="hidden flex-1 flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold transition-colors"
-      >
-        <div class="bnav-pill px-5 py-1 rounded-full transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
-        </div>
-        <span class="text-[12px]">填寫呈報</span>
-      </button>
 
-      <!-- 校內特定教職員 Tab 2：待處理維修 -->
-      <button
-        type="button"
-        id="bnav-pending"
-        onclick="switchMobileTab('pending')"
-        class="hidden flex-1 flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold transition-colors"
-      >
-        <div class="bnav-pill px-5 py-1 rounded-full transition-colors relative">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span id="bnavPendingBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
-        </div>
-        <span class="text-[12px]">待處理維修</span>
-      </button>
 
     </div>
   </nav>
@@ -567,15 +295,7 @@
         </div>
       </div>
 
-      <div class="pt-2 border-t border-[#BDF2F6]">
-        <button
-          type="button"
-          onclick="closeFilterDrawer(); switchMobileTab('form');"
-          class="w-full py-3 rounded-2xl bg-[#5B81B2] text-white font-bold text-[14.5px] flex items-center justify-center gap-2"
-        >
-          <span>＋ 新增維修呈報表單</span>
-        </button>
-      </div>
+
     </div>
   </div>
 
@@ -595,50 +315,6 @@
       </div>
 
       <div id="modalMediaContent" class="p-3 bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[78vh] overflow-auto"></div>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 彈窗：確認提交 Modal                                                   -->
-  <!-- ===================================================================== -->
-  <div id="submitConfirmModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
-      <div class="px-5 py-3.5 border-b border-[#9BD2E4] bg-[#f0fbfc] flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-        </div>
-        <h3 class="text-[16px] font-bold text-[#415E91]">確認提交</h3>
-      </div>
-
-      <div id="submitConfirmPromptBody" class="p-6 text-center">
-        <p class="text-[15.5px] font-semibold text-[#415E91]">確定要提交此筆維修呈報資料嗎？</p>
-      </div>
-
-      <div id="submitConfirmLoadingBody" class="hidden p-7 flex items-center justify-center gap-3">
-        <span class="text-[15px] font-bold text-[#415E91]">請等候，提交表格中</span>
-        <div class="flex items-center gap-1.5">
-          <span class="w-2.5 h-2.5 rounded-full bg-[#5B81B2] animate-bounce [animation-delay:-0.3s]"></span>
-          <span class="w-2.5 h-2.5 rounded-full bg-[#779EC8] animate-bounce [animation-delay:-0.15s]"></span>
-          <span class="w-2.5 h-2.5 rounded-full bg-[#415E91] animate-bounce"></span>
-        </div>
-      </div>
-
-      <div id="submitConfirmFooter" class="px-4 py-3 bg-[#f0fbfc] border-t border-[#9BD2E4] flex items-center gap-2.5">
-        <button
-          type="button"
-          onclick="executeConfirmedSubmit()"
-          class="flex-1 py-3 rounded-xl bg-[#5B81B2] active:bg-[#415E91] text-white text-[14.5px] font-bold"
-        >
-          確定
-        </button>
-        <button
-          type="button"
-          onclick="closeModal('submitConfirmModal')"
-          class="flex-1 py-3 rounded-xl bg-white text-[#415E91] border border-[#779EC8] text-[14.5px] font-bold"
-        >
-          返回
-        </button>
-      </div>
     </div>
   </div>
 
@@ -677,124 +353,6 @@
     </div>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- 彈窗：身分驗證登入閘門 Modal                                           -->
-  <!-- ===================================================================== -->
-  <div id="authGateModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
-      <div class="bg-[#415E91] px-5 py-4 text-white flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-[#5B81B2] border border-[#9BD2E4]/50 text-[#BDF2F6] flex items-center justify-center">
-            <img src="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" 
-            alt="校徽" 
-            class="w-full h-full object-cover" 
-            />
-          </div>
-          <div>
-            <h3 class="text-[15.5px] font-bold">明愛樂義學校維修管理平台</h3>
-            <p class="text-[11.5px] text-[#BDF2F6]">Mobile 專屬版・請選擇登入身分</p>
-          </div>
-        </div>
-        <button id="closeAuthGateBtn" onclick="closeModal('authGateModal')" class="hidden w-8 h-8 rounded-lg hover:bg-[#5B81B2] flex items-center justify-center text-[#BDF2F6]">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-4">
-        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#f0fbfc] border border-[#9BD2E4]">
-          <button
-            type="button"
-            id="tabRoleTeacher"
-            onclick="selectAuthTab('teacher')"
-            class="py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all bg-[#5B81B2] text-white"
-          >
-            校內特定教職員
-          </button>
-          <button
-            type="button"
-            id="tabRoleExecutor"
-            onclick="selectAuthTab('executor')"
-            class="py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all text-[#5B81B2]"
-          >
-            執行人登入
-          </button>
-        </div>
-
-        <div id="rolePermissionHint" class="p-3 rounded-xl bg-[#BDF2F6]/35 border border-[#9BD2E4] text-[12.5px] text-[#415E91] leading-relaxed">
-          <span class="font-bold">校內特定教職員權限：</span>免密碼登入，可使用「填寫維修呈報」與「待處理維修」。
-        </div>
-
-        <form id="authLoginForm" onsubmit="handleRoleLogin(event)" class="space-y-3.5">
-          <div id="passcodeInputGroup" class="hidden">
-            <label for="accessPasscodeInput" class="block text-[13.5px] font-bold text-[#415E91] mb-1.5">
-              請輸入執行人登入通行碼：
-            </label>
-            <input
-              type="password"
-              id="accessPasscodeInput"
-              placeholder="請輸入通行碼..."
-              class="saas-input w-full px-3.5 py-2.5 rounded-xl border border-[#779EC8] bg-white text-[#415E91]"
-            />
-            <p id="authErrorMsg" class="hidden text-[12px] text-rose-600 mt-1.5">登入通行碼不正確，請重新輸入</p>
-          </div>
-
-          <button
-            type="submit"
-            id="authSubmitBtn"
-            class="w-full py-3 px-4 rounded-xl bg-[#5B81B2] active:bg-[#415E91] text-white text-[14.5px] font-bold shadow-sm transition-colors"
-          >
-            <span id="authSubmitBtnText">以校內特定教職員身分進入</span>
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 彈窗：執行人權限與通行碼設定 Modal                                      -->
-  <!-- ===================================================================== -->
-  <div id="accessSettingsModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
-      <div class="px-5 py-3.5 border-b border-[#9BD2E4] flex items-center justify-between bg-[#f0fbfc]">
-        <h3 class="text-[15.5px] font-bold text-[#415E91]">執行人通行碼設定</h3>
-        <button onclick="closeModal('accessSettingsModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#5B81B2]">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-
-      <form onsubmit="saveAccessPasscodes(event)" class="p-5 space-y-4">
-        <div>
-          <label for="settingExecutorCode" class="block text-[13.5px] font-bold text-[#415E91] mb-1.5">
-            執行人登入通行碼：
-          </label>
-          <input
-            type="text"
-            id="settingExecutorCode"
-            required
-            class="saas-input w-full px-3.5 py-2.5 rounded-xl border border-[#779EC8] bg-white text-[#415E91] font-mono"
-          />
-          <p class="text-[11.5px] text-[#779EC8] mt-1">預設為 577</p>
-        </div>
-
-        <div class="flex items-center gap-2.5 pt-1">
-          <button
-            type="button"
-            onclick="closeModal('accessSettingsModal')"
-            class="flex-1 py-2.5 rounded-xl bg-white border border-[#779EC8] text-[14px] font-bold text-[#415E91]"
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            class="flex-1 py-2.5 rounded-xl bg-[#5B81B2] text-white text-[14px] font-bold"
-          >
-            儲存設定
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Mobile Toast 提示訊息 -->
   <div id="appToast" class="fixed bottom-20 inset-x-3.5 z-50 translate-y-[160%] opacity-0 transition-all duration-300 max-w-md mx-auto bg-[#415E91] text-white shadow-modal rounded-2xl p-3.5 flex items-center gap-3 border border-[#779EC8]/50">
     <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
@@ -810,12 +368,9 @@
     const STORAGE_KEY = 'caritas_lok_yi_repair_records_v12';
     const LOCATIONS_STORAGE_KEY = 'caritas_lok_yi_locations_v12';
     const PENDING_OPS_STORAGE_KEY = 'caritas_lok_yi_pending_ops_v1';
-    const ROLE_SESSION_KEY = 'caritas_lok_yi_active_role_v1';
-    const PASSCODES_STORAGE_KEY = 'caritas_lok_yi_passcodes_v1';
     const WEB_MEDIA_MAP_KEY = 'caritas_lok_yi_web_media_v9';
     const PAGE_SIZE = 12;
 
-    const DEFAULT_PASSCODES = { executor: '577' };
     const DEFAULT_LOCATIONS = [
       '地下大堂', '101室', '102室', '201室', '202室',
       '301室', '302室', '禮堂', '教員室', '男生宿舍 A座', '女生宿舍 B座'
@@ -824,9 +379,7 @@
     let records = [];
     let locationOptions = [...DEFAULT_LOCATIONS];
     let pendingSyncOps = [];
-    let uploadedMedia = null;
     let currentUserRole = 'executor'; // 'teacher' | 'executor'
-    let selectedAuthRoleTab = 'teacher';
     let currentPage = 1;
     let filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
 
@@ -839,26 +392,12 @@
     // =========================================================================
     window.addEventListener('DOMContentLoaded', () => {
       loadLocalData();
-      renderLocationDropdown();
-      setupDropZone();
-      setupRealtimeNameCheck();
       updateCounters();
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const paramRole = urlParams.get('role');
-      let savedRole = null;
-      try {
-        savedRole = sessionStorage.getItem(ROLE_SESSION_KEY);
-      } catch (e) {}
-
-      if (paramRole === 'executor' || savedRole === 'executor') {
-        applyRolePermissions('executor', true);
-      } else if (paramRole === 'teacher' || savedRole === 'teacher') {
-        applyRolePermissions('teacher', true);
-      } else {
-        applyRolePermissions('teacher', true);
-        openAuthGateModal(false);
-      }
+      // 只供執行人使用，無需登入直接進入執行人專頁（保留完整所有功能）
+      currentUserRole = 'executor';
+      filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
+      switchMobileTab('sheet');
 
       if (isGasNativeAvailable() || GAS_WEB_APP_URL) {
         fetchRecordsFromGas(false);
@@ -871,68 +410,13 @@
     });
 
     // =========================================================================
-    // 3. 身分權限與底部導覽列切換
+    // 3. 底部導覽列切換（執行人專頁完整功能）
     // =========================================================================
-    function getPasscodes() {
-      try {
-        const raw = localStorage.getItem(PASSCODES_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return { executor: parsed.executor || DEFAULT_PASSCODES.executor };
-        }
-      } catch (e) {}
-      return { ...DEFAULT_PASSCODES };
-    }
-
-    function applyRolePermissions(role, navigateToDefault = true) {
-      currentUserRole = role;
-      try {
-        sessionStorage.setItem(ROLE_SESSION_KEY, role);
-      } catch (e) {}
-
-      const isExecutor = role === 'executor';
-      document.querySelectorAll('[data-executor-only="true"]').forEach(el => {
-        if (isExecutor) el.classList.remove('hidden');
-        else el.classList.add('hidden');
-      });
-
-      const subEl = document.getElementById('mobileRoleSubtitle');
-      if (subEl) {
-        subEl.textContent = isExecutor ? '執行人（全部功能）' : '校內特定教職員';
-      }
-
-      const bnavSheet = document.getElementById('bnav-sheet');
-      const bnavFilter = document.getElementById('bnav-filter');
-      const bnavForm = document.getElementById('bnav-form');
-      const bnavPending = document.getElementById('bnav-pending');
-
-      if (isExecutor) {
-        // 執行人底部導覽列：顯示「維修總表」與「更多篩選」
-        bnavSheet.classList.remove('hidden');
-        bnavFilter.classList.remove('hidden');
-        bnavForm.classList.add('hidden');
-        bnavPending.classList.add('hidden');
-        if (navigateToDefault) {
-          filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
-          switchMobileTab('sheet');
-        }
-      } else {
-        // 教職員底部導覽列：顯示「填寫呈報」與「待處理維修」
-        bnavSheet.classList.add('hidden');
-        bnavFilter.classList.add('hidden');
-        bnavForm.classList.remove('hidden');
-        bnavPending.classList.remove('hidden');
-        if (navigateToDefault) {
-          switchMobileTab('form');
-        }
-      }
-    }
 
     function switchMobileTab(tab) {
-      const formView = document.getElementById('view-form');
       const sheetView = document.getElementById('view-sheet');
 
-      ['sheet', 'filter', 'form', 'pending'].forEach(k => {
+      ['sheet', 'filter'].forEach(k => {
         const btn = document.getElementById('bnav-' + k);
         if (!btn) return;
         const pill = btn.querySelector('.bnav-pill');
@@ -947,34 +431,17 @@
         }
       });
 
-      if (tab === 'form') {
-        formView.classList.remove('hidden');
-        sheetView.classList.add('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (tab === 'pending') {
-        formView.classList.add('hidden');
-        sheetView.classList.remove('hidden');
-        filters = { area: 'ALL', status: 'pending', label: '待處理維修' };
-        currentPage = 1;
-        document.getElementById('sheetViewTitle').textContent = '待處理維修';
-        document.getElementById('activeFilterPill').textContent = '待處理維修';
+      sheetView.classList.remove('hidden');
+      const titlePrefix = (filters.area === 'ALL' && filters.status === 'ALL') ? '維修總表（全部紀錄）' : '維修總表（' + filters.label + '）';
+      document.getElementById('sheetViewTitle').textContent = titlePrefix;
+      document.getElementById('activeFilterPill').textContent = filters.label;
+      if (filters.status === 'pending') {
         document.getElementById('pendingHintTag').classList.remove('hidden');
-        renderCards();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        formView.classList.add('hidden');
-        sheetView.classList.remove('hidden');
-        const titlePrefix = (filters.area === 'ALL' && filters.status === 'ALL') ? '維修總表（全部紀錄）' : '維修總表（' + filters.label + '）';
-        document.getElementById('sheetViewTitle').textContent = titlePrefix;
-        document.getElementById('activeFilterPill').textContent = filters.label;
-        if (filters.status === 'pending') {
-          document.getElementById('pendingHintTag').classList.remove('hidden');
-        } else {
-          document.getElementById('pendingHintTag').classList.add('hidden');
-        }
-        renderCards();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('pendingHintTag').classList.add('hidden');
       }
+      renderCards();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // =========================================================================
@@ -1166,18 +633,13 @@
                     '</select>' +
                   '</div>' +
                   '<div>' +
-                  '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">完成日期</label>' +
-                  '<div class="flex items-center gap-1.5">' +
+                    '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">完成日期</label>' +
                     '<input type="date" id="date-input-' + rec.id + '" value="' + escapeHtml(dateValue) + '" ' +
-                      'onfocus="this.dataset.origVal = this.value; showDateClearBtn(\'' + rec.id + '\', true);" ' +
-                      'onblur="handleCompletionDateBlur(\'' + rec.id + '\', this)" ' +
-                      'class="flex-1 min-w-0 px-2.5 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]" />' +
-                    '<button type="button" id="date-clear-' + rec.id + '" ' +
-                      'onmousedown="event.preventDefault(); clearCompletionDate(\'' + rec.id + '\');" ' +
-                      'ontouchstart="event.preventDefault(); clearCompletionDate(\'' + rec.id + '\');" ' +
-                      'class="' + (dateValue ? '' : 'hidden ') + 'px-2.5 py-2 rounded-xl text-[12px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 shrink-0 cursor-pointer">清除</button>' +
+                    'onfocus="this.dataset.origVal = this.value;" ' +
+                    'onchange="handleCompletionDateChange(\'' + rec.id + '\', this)" ' +
+                    'onblur="handleCompletionDateBlur(\'' + rec.id + '\', this)" ' +
+                    'class="w-full px-2.5 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]" />' +
                   '</div>' +
-                '</div>' +
                 '</div>' +
 
                 '<div class="grid grid-cols-2 gap-2.5">' +
@@ -1200,10 +662,14 @@
                   '<input type="text" value="' + escapeHtml(rec.remark || '') + '" onchange="updateRecordField(\'' + rec.id + '\', \'remark\', this.value)" placeholder="輸入備註..." class="w-full px-3 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]" />' +
                 '</div>' +
 
-                '<div class="pt-1 flex justify-end">' +
-                  '<button type="button" onclick="openDeleteConfirmModal(\'' + rec.id + '\')" class="w-full py-2.5 px-4 rounded-xl text-[13.5px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 flex items-center justify-center gap-1.5">' +
+                '<div class="pt-1 flex items-center gap-2">' +
+                  '<button type="button" onclick="clearCompletionDate(\'' + rec.id + '\')" class="flex-1 py-2.5 px-3 rounded-xl text-[13.5px] font-bold text-[#415E91] bg-white active:bg-[#BDF2F6] border border-[#779EC8] flex items-center justify-center gap-1.5 transition-colors">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-[#5B81B2]"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m14.5 14.5-5 5"/><path d="m9.5 14.5 5 5"/></svg>' +
+                    '<span>清除日期</span>' +
+                  '</button>' +
+                  '<button type="button" onclick="openDeleteConfirmModal(\'' + rec.id + '\')" class="flex-1 py-2.5 px-3 rounded-xl text-[13.5px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 flex items-center justify-center gap-1.5 transition-colors">' +
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>' +
-                    '<span>刪除此筆維修紀錄</span>' +
+                    '<span>刪除紀錄</span>' +
                   '</button>' +
                 '</div>' +
               '</div>' +
@@ -1403,7 +869,6 @@
       document.getElementById('badge-pending').textContent = pending;
       document.getElementById('badge-completed').textContent = completed;
       document.getElementById('bnavTotalBadge').textContent = total;
-      document.getElementById('bnavPendingBadge').textContent = pending;
 
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setText('fcount-all', total);
@@ -1515,8 +980,7 @@
 
         if (payload && Array.isArray(payload.locations) && payload.locations.length > 0) {
           locationOptions = payload.locations;
-          renderLocationDropdown();
-        }
+            }
 
         saveLocalData();
         if (!isBackgroundPoll) renderCards();
@@ -1581,14 +1045,22 @@
       }
     }
 
+    function handleCompletionDateChange(id, inputEl) {
+      inputEl.dataset.userChanged = '1';
+      const newVal = inputEl.value || '';
+      inputEl.dataset.origVal = newVal;
+      updateRecordField(id, 'completionDate', newVal);
+    }
+
     function handleCompletionDateBlur(id, inputEl) {
+      if (inputEl.dataset.userChanged === '1') {
+        inputEl.dataset.userChanged = '';
+        return;
+      }
       const origVal = inputEl.dataset.origVal || '';
       const newVal = inputEl.value || '';
-      // 若數值與點開前完全相同，不做任何動作
       if (newVal === origVal) return;
 
-      // 防止 iOS Safari 僅點開空白日期欄就自動帶入今日日期並關閉時的誤觸發：
-      // 若原本為空且自動帶入了今天日期，詢問或確認是否要設為今日完成
       const todayStr = new Date().toISOString().split('T')[0];
       if (!origVal && newVal === todayStr) {
         if (!confirm('是否將完成日期設為今日（' + todayStr + '）並標記為「已完成」？')) {
@@ -1597,52 +1069,19 @@
         }
       }
 
+      inputEl.dataset.origVal = newVal;
       updateRecordField(id, 'completionDate', newVal);
-    }
-
-    function showDateClearBtn(id, show) {
-      const btn = document.getElementById('date-clear-' + id);
-      if (!btn) return;
-      if (show) btn.classList.remove('hidden');
-      else btn.classList.add('hidden');
     }
 
     function clearCompletionDate(id) {
       const inputEl = document.getElementById('date-input-' + id);
       if (inputEl) {
-        inputEl.dataset.cleared = '1';
         inputEl.value = '';
-        inputEl.blur();
+        inputEl.dataset.origVal = '';
+        inputEl.dataset.userChanged = '';
       }
-      showDateClearBtn(id, false);
-      const rec = records.find(r => r.id === id);
-      if (rec && (rec.completionDate || rec.status === '已完成')) {
-        updateRecordField(id, 'completionDate', '');
-      }
-    }
-
-    function handleCompletionDateBlur(id, inputEl) {
-      if (inputEl.dataset.cleared === '1') {
-        delete inputEl.dataset.cleared;
-        return;
-      }
-
-      const origVal = inputEl.dataset.origVal || '';
-      const newVal = inputEl.value || '';
-
-      if (!newVal) showDateClearBtn(id, false);
-      if (newVal === origVal) return;
-
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (!origVal && newVal === todayStr) {
-        if (!confirm('是否將完成日期設為今日（' + todayStr + '）並標記為「已完成」？')) {
-          inputEl.value = '';
-          showDateClearBtn(id, false);
-          return;
-        }
-      }
-
-      updateRecordField(id, 'completionDate', newVal);
+      updateRecordField(id, 'completionDate', '');
+      showToast('已清除完成日期（回復空白）', 'info');
     }
 
     async function updateRecordField(id, field, value) {
@@ -1694,237 +1133,7 @@
     }
 
     // =========================================================================
-    // 9. 表單處理、驗證與提交
-    // =========================================================================
-    function renderLocationDropdown() {
-      const selectEl = document.getElementById('locationDetail');
-      if (!selectEl) return;
-      const currentVal = selectEl.value;
-      selectEl.innerHTML = ['<option value="">請選擇須維修項目位置</option>']
-        .concat(locationOptions.map(loc => '<option value="' + escapeHtml(loc) + '">' + escapeHtml(loc) + '</option>'))
-        .join('');
-      if (currentVal && locationOptions.includes(currentVal)) selectEl.value = currentVal;
-    }
-
-    function isValidChineseName(name) {
-      return /^[\u4e00-\u9fa5·]{2,10}$/.test(name.trim());
-    }
-
-    function setupRealtimeNameCheck() {
-      const input = document.getElementById('reporterName');
-      const tag = document.getElementById('nameValidationTag');
-      const err = document.getElementById('err-reporterName');
-      if (!input) return;
-
-      input.addEventListener('input', () => {
-        const val = input.value.trim();
-        if (!val) {
-          tag.classList.add('hidden');
-          err.classList.add('hidden');
-          return;
-        }
-        tag.classList.remove('hidden');
-        if (isValidChineseName(val)) {
-          tag.textContent = '✓ 正確';
-          tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
-          err.classList.add('hidden');
-        } else {
-          tag.textContent = '請填全中文';
-          tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200';
-        }
-      });
-    }
-
-    function setupDropZone() {
-      const dropZone = document.getElementById('dropZone');
-      const mediaInput = document.getElementById('mediaInput');
-      if (!dropZone || !mediaInput) return;
-
-      dropZone.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        mediaInput.click();
-      });
-
-      mediaInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) handleSelectedFile(e.target.files[0]);
-      });
-    }
-
-    function compressImageDataUrl(rawDataUrl, maxDim = 1024, quality = 0.75) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          let w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w >= h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-            else { w = Math.round((w * maxDim) / h); h = maxDim; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          try { resolve(canvas.toDataURL('image/jpeg', quality)); }
-          catch (err) { resolve(rawDataUrl); }
-        };
-        img.onerror = () => resolve(rawDataUrl);
-        img.src = rawDataUrl;
-      });
-    }
-
-    function handleSelectedFile(file) {
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
-      if (!isImage && !isVideo) {
-        showToast('請選擇相片或影片檔案', 'error');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        let finalDataUrl = e.target.result;
-        let finalMime = file.type;
-        if (isImage) {
-          finalDataUrl = await compressImageDataUrl(finalDataUrl, 1024, 0.75);
-          finalMime = 'image/jpeg';
-        }
-        const approxBytes = Math.round((finalDataUrl.length * 3) / 4);
-        uploadedMedia = {
-          dataUrl: finalDataUrl,
-          name: file.name,
-          mimeType: finalMime,
-          size: (approxBytes / 1024).toFixed(1) + ' KB',
-          type: isImage ? 'image' : 'video'
-        };
-
-        document.getElementById('dropZonePlaceholder').classList.add('hidden');
-        document.getElementById('mediaPreviewBox').classList.remove('hidden');
-        document.getElementById('mediaFileName').textContent = uploadedMedia.name;
-        document.getElementById('mediaFileSize').textContent = uploadedMedia.size;
-
-        const thumb = document.getElementById('mediaThumbContainer');
-        thumb.innerHTML = isImage
-          ? '<img src="' + uploadedMedia.dataUrl + '" alt="預覽" class="w-full h-full object-cover" />'
-          : '<span class="text-[22px]">🎬</span>';
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function clearUploadedMedia(e) {
-      if (e) e.stopPropagation();
-      uploadedMedia = null;
-      document.getElementById('mediaInput').value = '';
-      document.getElementById('dropZonePlaceholder').classList.remove('hidden');
-      document.getElementById('mediaPreviewBox').classList.add('hidden');
-    }
-
-    function resetFormFields() {
-      document.getElementById('repairForm').reset();
-      clearUploadedMedia();
-      document.getElementById('nameValidationTag').classList.add('hidden');
-      document.querySelectorAll('[id^="err-"]').forEach(el => el.classList.add('hidden'));
-    }
-
-    let pendingSubmitDraft = null;
-
-    document.getElementById('repairForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const reporterName = document.getElementById('reporterName').value.trim();
-      const repairTypeEl = document.querySelector('input[name="repairType"]:checked');
-      const locationAreaEl = document.querySelector('input[name="locationArea"]:checked');
-      const locationDetail = document.getElementById('locationDetail').value.trim();
-      const issueDescription = document.getElementById('issueDescription').value.trim();
-      const materialEl = document.querySelector('input[name="materialPurchase"]:checked');
-
-      let hasError = false;
-      if (!isValidChineseName(reporterName)) { document.getElementById('err-reporterName').classList.remove('hidden'); hasError = true; }
-      else { document.getElementById('err-reporterName').classList.add('hidden'); }
-
-      if (!repairTypeEl) { document.getElementById('err-repairType').classList.remove('hidden'); hasError = true; }
-      else { document.getElementById('err-repairType').classList.add('hidden'); }
-
-      if (!locationDetail) { document.getElementById('err-locationDetail').classList.remove('hidden'); hasError = true; }
-      else { document.getElementById('err-locationDetail').classList.add('hidden'); }
-
-      if (!issueDescription) { document.getElementById('err-issueDescription').classList.remove('hidden'); hasError = true; }
-      else { document.getElementById('err-issueDescription').classList.add('hidden'); }
-
-      if (hasError) {
-        showToast('請填寫所有標有 * 的必填欄位', 'error');
-        return;
-      }
-
-      pendingSubmitDraft = {
-        reporterName,
-        repairType: repairTypeEl.value,
-        locationArea: locationAreaEl ? locationAreaEl.value : '日校',
-        locationDetail,
-        issueDescription,
-        materialPurchase: materialEl ? materialEl.value : '不需要購買'
-      };
-
-      document.getElementById('submitConfirmPromptBody').classList.remove('hidden');
-      document.getElementById('submitConfirmLoadingBody').classList.add('hidden');
-      document.getElementById('submitConfirmFooter').classList.remove('hidden');
-      openModal('submitConfirmModal');
-    });
-
-    async function executeConfirmedSubmit() {
-      if (!pendingSubmitDraft) return;
-      document.getElementById('submitConfirmPromptBody').classList.add('hidden');
-      document.getElementById('submitConfirmFooter').classList.add('hidden');
-      document.getElementById('submitConfirmLoadingBody').classList.remove('hidden');
-
-      const draft = pendingSubmitDraft;
-      const now = new Date();
-      const ts = now.getFullYear() + '/' +
-        String(now.getMonth() + 1).padStart(2, '0') + '/' +
-        String(now.getDate()).padStart(2, '0') + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' +
-        String(now.getMinutes()).padStart(2, '0') + ':' +
-        String(now.getSeconds()).padStart(2, '0');
-
-      if (uploadedMedia && uploadedMedia.dataUrl) {
-        saveWebMediaForRecord(ts, draft.reporterName, draft.locationDetail, uploadedMedia.dataUrl, uploadedMedia.type);
-      }
-
-      try {
-        const res = await postToGas({
-          action: 'create',
-          timestamp: ts,
-          reporter: draft.reporterName,
-          type: draft.repairType,
-          colD: draft.locationArea,
-          location: draft.locationDetail,
-          description: draft.issueDescription,
-          photoUpload: uploadedMedia ? '有' : '',
-          buy: draft.materialPurchase,
-          support: '不需要',
-          photoBase64: uploadedMedia ? uploadedMedia.dataUrl : '',
-          photoName: uploadedMedia ? uploadedMedia.name : '',
-          mimeType: uploadedMedia ? uploadedMedia.mimeType : ''
-        });
-
-        if (res && res.status === 'error') throw new Error(res.message || '雲端寫入失敗');
-        await fetchRecordsFromGas(false);
-        closeModal('submitConfirmModal');
-        showToast('已成功呈報「' + draft.locationDetail + '」維修項目', 'success');
-        resetFormFields();
-        pendingSubmitDraft = null;
-
-        if (currentUserRole === 'executor') {
-          filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
-          switchMobileTab('sheet');
-        } else {
-          switchMobileTab('pending');
-        }
-      } catch (err) {
-        closeModal('submitConfirmModal');
-        showToast('提交失敗：' + err.message, 'error');
-      }
-    }
-
-    // =========================================================================
-    // 10. 刪除紀錄與彈窗管理
+    // 9. 刪除紀錄與彈窗管理
     // =========================================================================
     let pendingDeleteId = null;
 
@@ -1985,82 +1194,7 @@
       if (id === 'deleteConfirmModal') pendingDeleteId = null;
     }
 
-    function selectAuthTab(tabRole) {
-      selectedAuthRoleTab = tabRole;
-      const tabTeacher = document.getElementById('tabRoleTeacher');
-      const tabExecutor = document.getElementById('tabRoleExecutor');
-      const hintBox = document.getElementById('rolePermissionHint');
-      const errMsg = document.getElementById('authErrorMsg');
-      const passcodeGroup = document.getElementById('passcodeInputGroup');
-      const submitBtnText = document.getElementById('authSubmitBtnText');
-      const input = document.getElementById('accessPasscodeInput');
 
-      errMsg.classList.add('hidden');
-      if (tabRole === 'teacher') {
-        tabTeacher.className = 'py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all bg-[#5B81B2] text-white';
-        tabExecutor.className = 'py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all text-[#5B81B2]';
-        hintBox.classList.remove('hidden');
-        passcodeGroup.classList.add('hidden');
-        input.required = false;
-        submitBtnText.textContent = '以校內特定教職員身分進入';
-      } else {
-        tabExecutor.className = 'py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all bg-[#415E91] text-white';
-        tabTeacher.className = 'py-2.5 px-2 rounded-lg text-[13px] font-bold transition-all text-[#5B81B2]';
-        hintBox.classList.add('hidden');
-        passcodeGroup.classList.remove('hidden');
-        input.required = true;
-        input.value = '';
-        submitBtnText.textContent = '以執行人身份進入';
-        setTimeout(() => input.focus(), 60);
-      }
-    }
-
-    function openAuthGateModal(allowClose = false) {
-      const closeBtn = document.getElementById('closeAuthGateBtn');
-      if (closeBtn) {
-        if (allowClose) closeBtn.classList.remove('hidden');
-        else closeBtn.classList.add('hidden');
-      }
-      selectAuthTab(currentUserRole || 'teacher');
-      openModal('authGateModal');
-    }
-
-    function handleRoleLogin(e) {
-      e.preventDefault();
-      const inputVal = (document.getElementById('accessPasscodeInput').value || '').trim();
-      const codes = getPasscodes();
-      const errMsg = document.getElementById('authErrorMsg');
-
-      if (selectedAuthRoleTab === 'teacher') {
-        errMsg.classList.add('hidden');
-        closeModal('authGateModal');
-        applyRolePermissions('teacher', true);
-        showToast('已以「校內特定教職員」身分進入', 'success');
-      } else if (selectedAuthRoleTab === 'executor' && inputVal === codes.executor) {
-        errMsg.classList.add('hidden');
-        closeModal('authGateModal');
-        applyRolePermissions('executor', true);
-        showToast('已以「執行人」身分登入', 'success');
-      } else {
-        errMsg.classList.remove('hidden');
-      }
-    }
-
-    function openAccessSettingsModal() {
-      document.getElementById('settingExecutorCode').value = getPasscodes().executor;
-      openModal('accessSettingsModal');
-    }
-
-    function saveAccessPasscodes(e) {
-      e.preventDefault();
-      const code = document.getElementById('settingExecutorCode').value.trim();
-      if (!code) return;
-      try {
-        localStorage.setItem(PASSCODES_STORAGE_KEY, JSON.stringify({ executor: code }));
-      } catch (err) {}
-      closeModal('accessSettingsModal');
-      showToast('已更新執行人通行碼', 'success');
-    }
 
     let toastTimer = null;
     function showToast(message, type = 'success') {
