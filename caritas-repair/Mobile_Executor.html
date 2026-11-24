@@ -400,10 +400,24 @@
       switchMobileTab('sheet');
 
       if (isGasNativeAvailable() || GAS_WEB_APP_URL) {
-        fetchRecordsFromGas(false);
+        // 開啟頁面立即執行完整雲端同步（若有本機待同步佇列亦會一併上傳並更新畫面）
+        syncToCloud(false);
+
+        // 當從背景切回 Safari 網頁或從「加入主畫面」重新開啟時，立即自動同步最新雲端資料
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && !isManualSyncing && !isFetchingFromGas) {
+            syncToCloud(false);
+          }
+        });
+        window.addEventListener('pageshow', (event) => {
+          if (event.persisted && !isManualSyncing && !isFetchingFromGas) {
+            syncToCloud(false);
+          }
+        });
+
         setInterval(() => {
           if (document.visibilityState === 'visible' && !isManualSyncing && !isFetchingFromGas) {
-            fetchRecordsFromGas(false, true);
+            syncToCloud(false);
           }
         }, 30000);
       }
@@ -725,7 +739,38 @@
       return '';
     }
 
-    function openMediaPreview(id) {
+    const sessionMediaCache = {};
+
+    function renderMediaDataUrlIntoContainer(content, dataUrl, mimeType) {
+      const isVideo = (mimeType && mimeType.startsWith('video/')) || String(dataUrl).startsWith('data:video/');
+      if (isVideo) {
+        content.innerHTML = '<video src="' + dataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg bg-black"></video>';
+      } else {
+        content.innerHTML = '<img src="' + dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+      }
+    }
+
+    async function fetchDriveMediaViaGasProxy(driveId) {
+      if (sessionMediaCache[driveId]) {
+        return sessionMediaCache[driveId];
+      }
+      let resObj = null;
+      if (isGasNativeAvailable()) {
+        const raw = await runGasServerFunction('apiGetDriveMediaBase64', driveId, 25000);
+        resObj = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+      } else {
+        const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+        const url = GAS_WEB_APP_URL + sep + 'action=get_image&fileId=' + encodeURIComponent(driveId) + '&t=' + Date.now();
+        const resp = await fetch(url, { cache: 'no-store' });
+        resObj = await resp.json();
+      }
+      if (resObj && resObj.status === 'success' && resObj.dataUrl) {
+        sessionMediaCache[driveId] = resObj;
+      }
+      return resObj;
+    }
+
+    async function openMediaPreview(id) {
       const rec = records.find(r => r.id === id);
       if (!rec) return;
 
@@ -738,18 +783,49 @@
         : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
       const driveId = extractGoogleDriveFileId(rawUrl);
 
-      if (rec.mediaType === 'video' && rec.mediaDataUrl) {
-        content.innerHTML = '<video src="' + rec.mediaDataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg"></video>';
-      } else if (rec.mediaDataUrl) {
-        content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
-      } else if (driveId) {
+      if (rec.mediaDataUrl) {
+        renderMediaDataUrlIntoContainer(content, rec.mediaDataUrl, rec.mediaType === 'video' ? 'video/mp4' : 'image/jpeg');
+        openModal('mediaModal');
+        return;
+      }
+
+      if (driveId) {
+        if (sessionMediaCache[driveId]) {
+          renderMediaDataUrlIntoContainer(content, sessionMediaCache[driveId].dataUrl, sessionMediaCache[driveId].mimeType);
+          openModal('mediaModal');
+          return;
+        }
+
+        // 先顯示載入動畫，並透過 GAS 後端代理讀取相片（徹底繞過 Safari ITP 與 Google Drive 外部存取限制）
+        content.innerHTML =
+          '<div class="flex flex-col items-center justify-center py-10 px-4 text-center space-y-3 text-white">' +
+            '<div class="w-9 h-9 border-4 border-[#BDF2F6] border-t-transparent rounded-full animate-spin"></div>' +
+            '<p class="text-[14px] font-bold text-[#BDF2F6]">正在透過安全通道載入現場相片...</p>' +
+            '<p class="text-[11.5px] text-slate-300">已針對 Safari 自動優化連線</p>' +
+          '</div>';
+        openModal('mediaModal');
+
+        try {
+          const proxyRes = await fetchDriveMediaViaGasProxy(driveId);
+          if (proxyRes && proxyRes.status === 'success' && proxyRes.dataUrl) {
+            rec.mediaDataUrl = proxyRes.dataUrl;
+            rec.mediaType = (proxyRes.mimeType && proxyRes.mimeType.startsWith('video/')) ? 'video' : 'image';
+            renderMediaDataUrlIntoContainer(content, proxyRes.dataUrl, proxyRes.mimeType);
+            return;
+          }
+        } catch (err) {
+          // 若代理逾時則退回備援預覽方式
+        }
+
         const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
-        const fallbackDriveViewUrl = 'https://drive.google.com/uc?export=view&id=' + driveId;
         const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
         content.innerHTML =
           '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="if(!this.dataset.triedUc){this.dataset.triedUc=\'1\';this.src=\'' + escapeHtml(fallbackDriveViewUrl) + '\';}else{this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\';}" />';
-      } else if (rawUrl) {
+            'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\'" />';
+        return;
+      }
+
+      if (rawUrl) {
         content.innerHTML =
           '<img src="' + escapeHtml(rawUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
             'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(rawUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
@@ -983,7 +1059,9 @@
             }
 
         saveLocalData();
-        if (!isBackgroundPoll) renderCards();
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        const isEditingInput = (activeTag === 'INPUT' || activeTag === 'SELECT' || activeTag === 'TEXTAREA');
+        if (!isBackgroundPoll || !isEditingInput) renderCards();
         if (showFeedback) showToast('已同步最新 ' + records.length + ' 筆雲端資料', 'success');
       } catch (err) {
         if (showFeedback) showToast('同步失敗：' + err.message, 'error');
