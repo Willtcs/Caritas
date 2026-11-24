@@ -1,1306 +1,931 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>明愛樂義學校維修管理平台 - 執行人專頁 (Mobile)</title>
-  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" />
-  <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s512" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+/**
+ * 明愛樂義學校維修管理平台 - Google Apps Script 後端程式 (v20
+ * 10秒防抖動自動備份工作表(保留15天) + Safari相片代理讀取優化版)
+ */
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Inter"', '"Noto Sans TC"', 'system-ui', '-apple-system', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0fbfc',   // #BDF2F6 淺化背景
-              100: '#BDF2F6',  // 冰川藍
-              200: '#9BD2E4',  // 晴空藍
-              300: '#779EC8',  // 霧霾藍
-              500: '#5B81B2',  // 鋼青藍
-              600: '#415E91',  // 深海藍
-              700: '#415E91',  // 深海藍
-            }
-          },
-          boxShadow: {
-            card: '0 2px 6px -1px rgba(65, 94, 145, 0.08), 0 1px 3px -1px rgba(65, 94, 145, 0.04)',
-            modal: '0 20px 25px -5px rgba(15, 23, 42, 0.16), 0 8px 10px -6px rgba(15, 23, 42, 0.1)',
-          }
+const SPREADSHEET_NAME = '水電及其他 2627';
+const SPREADSHEET_ID = '1gUnCDPw2hoUKm1ovGiRbY1bB0hs8T1a3oYFHvI7ivcA';
+const SHEET_NAME = '水電及其他 2627';
+const LOCATION_SHEET_NAME = 'RoomName';
+const FALLBACK_LOCATION_SHEET_NAME = '位置選項';
+const DRIVE_FOLDER_ID = '1UpmkY8BL08PBraLZcN_ahclhtgNKwBGuq_CIeLTNLUKPMXRdO2yzBcAE11MhRBk8X5oPUF_q';
+const DRIVE_FOLDER_NAME = '明愛樂義學校維修附件';
+
+function getTargetSpreadsheet() {
+  if (SPREADSHEET_ID) {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+  const targetClean = SPREADSHEET_NAME.trim();
+  try {
+    const activeSs = SpreadsheetApp.getActiveSpreadsheet();
+    if (activeSs) return activeSs;
+  } catch (e) {}
+
+  const files = DriveApp.getFilesByName(targetClean);
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getMimeType() === MimeType.GOOGLE_SHEETS && !file.isTrashed()) {
+      return SpreadsheetApp.openById(file.getId());
+    }
+  }
+  throw new Error('找不到試算表：' + targetClean);
+}
+
+function getDriveMediaPayload(fileId, preferThumb) {
+  const cleanId = cleanStr(fileId);
+  if (!cleanId) return { status: 'error', message: '缺少檔案 ID' };
+  const file = DriveApp.getFileById(cleanId);
+  const mime = file.getMimeType() || 'image/jpeg';
+  const isImage = mime.indexOf('image/') === 0;
+
+  // 1. 優先嘗試取得 Google Drive 已自動生成的快速壓縮預覽圖 (約 80KB-180KB，0.5 秒內極速回傳，避免下載 5MB+ 原圖造成手機卡頓)
+  if (isImage && preferThumb !== false) {
+    try {
+      const thumbBlob = file.getThumbnail();
+      if (thumbBlob) {
+        const tBytes = thumbBlob.getBytes();
+        if (tBytes && tBytes.length > 1024) {
+          const tMime = thumbBlob.getContentType() || 'image/jpeg';
+          return {
+            status: 'success',
+            isFastPreview: true,
+            mimeType: tMime,
+            fileName: file.getName(),
+            dataUrl: 'data:' + tMime + ';base64,' + Utilities.base64Encode(tBytes)
+          };
         }
       }
+    } catch (e) {
+      // 若尚未生成縮圖則繼續讀取原檔
+    }
+  }
+
+  // 2. 若無縮圖或為影片，讀取原檔並檢查大小
+  const sizeBytes = file.getSize();
+  if (sizeBytes > 18 * 1024 * 1024) {
+    return {
+      status: 'too_large',
+      mimeType: mime,
+      fileName: file.getName(),
+      message: '附件檔案較大 (' + Math.round(sizeBytes / 1024 / 1024) + 'MB)，無法直接內嵌預覽'
     };
-  </script>
+  }
+  const blob = file.getBlob();
+  const actualMime = blob.getContentType() || mime;
+  const b64 = Utilities.base64Encode(blob.getBytes());
+  return {
+    status: 'success',
+    mimeType: actualMime,
+    fileName: file.getName(),
+    dataUrl: 'data:' + actualMime + ';base64,' + b64
+  };
+}
 
-  <style>
-    body {
-      background-color: #f0fbfc;
-      color: #415E91;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -webkit-tap-highlight-color: transparent;
+function apiGetDriveMediaBase64(fileId) {
+  try {
+    return JSON.stringify(getDriveMediaPayload(fileId));
+  } catch (err) {
+    return JSON.stringify({ status: 'error', message: err.message });
+  }
+}
+
+function apiReadAllData() {
+  try {
+    return JSON.stringify(readAllData());
+  } catch (err) {
+    return JSON.stringify({ status: 'error', message: err.message });
+  }
+}
+
+function apiHandleAction(payloadInput) {
+  try {
+    const data = (typeof payloadInput === 'string') ? JSON.parse(payloadInput) : (payloadInput || {});
+    return JSON.stringify(handleAction(data));
+  } catch (err) {
+    return JSON.stringify({ status: 'error', message: '操作解析失敗：' + err.message });
+  }
+}
+
+function doGet(e) {
+  try {
+    const params = (e && e.parameter) ? e.parameter : {};
+
+    // 1. 讀取單張 Google Drive 相片/附件 Base64（解決校內外 Safari ITP 與 Google Drive 外部存取限制）
+    if ((params.action === 'get_image' || params.action === 'get_media') && params.fileId) {
+      return jsonResponse(getDriveMediaPayload(params.fileId));
     }
 
-    /* 防 iOS 畫面自動放大：所有輸入框與下拉選單字體強制設定為 16px */
-    .saas-input,
-    select,
-    input[type="text"],
-    input[type="password"],
-    input[type="date"],
-    textarea {
-      font-size: 16px !important;
+    // 2. 前端同步讀取所有資料 (?action=read)
+    if (params.action === 'read') {
+      return jsonResponse(readAllData());
     }
 
-    .saas-input:focus {
-      outline: none;
-      border-color: #5B81B2;
-      box-shadow: 0 0 0 3px rgba(155, 210, 228, 0.45);
+    // 3. 前端透過 GET payload 寫入/更新/刪除 (?payload=...)
+    if (params.payload) {
+      return jsonResponse(handleAction(JSON.parse(params.payload)));
     }
 
-    svg {
-      flex-shrink: 0;
+    // 4. 一般網頁開啟（保留原本的電腦版 / 手機版路由）
+    var page = params.page ? params.page.toLowerCase() : '';
+    var templateName = (page === 'mobile') ? 'Mobile' : 'index';
+    var pageTitle = (page === 'mobile')
+      ? '明愛樂義學校維修管理平台 - Mobile 專屬版'
+      : '明愛樂義學校維修管理平台';
+
+    return HtmlService.createTemplateFromFile(templateName)
+      .evaluate()
+      .setTitle(pageTitle)
+      .setFaviconUrl('https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s512?.png')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=5.0')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  } catch (err) {
+    return jsonResponse({ status: 'error', message: err.message });
+  }
+}
+
+function doPost(e) {
+  try {
+    let rawBody = '{}';
+    if (e && e.parameter && e.parameter.payload) {
+      rawBody = e.parameter.payload;
+    } else if (e && e.postData && e.postData.contents) {
+      rawBody = e.postData.contents;
     }
+    return jsonResponse(handleAction(JSON.parse(rawBody)));
+  } catch (err) {
+    return jsonResponse({ status: 'error', message: err.message });
+  }
+}
 
-    /* 隱藏橫向捲軸但保留滑動流暢度 */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
+function handleAction(data) {
+  const action = data.action || '';
+  if (action === 'read') return readAllData();
+  if ((action === 'get_image' || action === 'get_media') && data.fileId) {
+    return getDriveMediaPayload(data.fileId);
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(8000)) {
+    return { status: 'error', message: '系統忙碌中，請稍後 2 秒再試' };
+  }
+
+  try {
+    let result = { status: 'error', message: '未知的操作類型：' + action };
+    if (action === 'create') result = createRecord(data);
+    else if (action === 'update_field') result = updateRecordField(data);
+    else if (action === 'delete_record') result = deleteRecord(data);
+
+    // 凡有新增、更新或刪除成功，即排程 10 秒後自動定時備份（含自動清理超過 15 天舊備份）
+    if (result && result.status === 'success') {
+      scheduleAutoBackup10s();
     }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
 
-    /* 展開收疊平滑過渡 */
-    .accordion-chevron {
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .accordion-chevron.is-open {
-      transform: rotate(180deg);
-    }
-  </style>
-</head>
-<body class="min-h-screen flex flex-col bg-[#f0fbfc] text-[#415E91] pb-24">
+function isBackupSheetName_(name) {
+  return name.indexOf(BACKUP_CONFIG.BACKUP_PREFIX) === 0 ||
+         name.indexOf(BACKUP_SHEET_PREFIX) === 0 ||
+         name === PRE_DELETE_BACKUP_NAME;
+}
 
-  <!-- 頂部 Mobile 專屬導覽列 -->
-  <header class="sticky top-0 z-30 bg-[#415E91] text-white border-b border-[#5B81B2] px-3.5 py-2.5 flex items-center justify-between shadow-sm">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-9 h-9 rounded-xl bg-[#5B81B2] border border-[#9BD2E4]/50 text-[#BDF2F6] flex items-center justify-center shadow-sm shrink-0">
-        <img src="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" 
-        alt="校徽" 
-        class="w-full h-full object-cover" 
-        />
-      </div>
-      <div class="min-w-0">
-        <div class="flex items-center gap-1.5">
-          <h1 class="text-[15px] font-bold tracking-tight text-white truncate">明愛樂義學校維修平台</h1>
-          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#5B81B2] text-[#BDF2F6] border border-[#9BD2E4]/40 shrink-0">Mobile</span>
-        </div>
-        <p id="mobileRoleSubtitle" class="text-[11.5px] text-[#BDF2F6] truncate">執行人專頁（全部功能）</p>
-      </div>
-    </div>
+function getTargetSheet() {
+  const ss = getTargetSpreadsheet();
+  const allSheets = ss.getSheets();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = allSheets.find(s => s.getName().indexOf('水電及其他 2627') !== -1 && !isBackupSheetName_(s.getName()));
+  }
+  if (!sheet) {
+    sheet = allSheets.find(s => s.getName() !== LOCATION_SHEET_NAME && s.getName() !== MEDIA_INDEX_SHEET_NAME && !isBackupSheetName_(s.getName()) && s.getLastRow() > 0) || allSheets[0];
+  }
+  return sheet;
+}
 
-    <div class="flex items-center gap-1.5 shrink-0">
-      <!-- 同步雲端資料按鈕（執行人專屬） -->
-      <button
-        type="button"
-        id="syncBtn"
-        data-executor-only="true"
-        onclick="syncToCloud(true)"
-        title="同步雲端資料"
-        class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[12px] font-bold text-[#415E91] bg-[#BDF2F6] active:bg-[#9BD2E4] border border-[#9BD2E4] shadow-card transition-colors"
-      >
-        <svg id="syncBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-        <span>同步</span>
-        <span id="syncBtnBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px]">0</span>
-      </button>
+const MEDIA_INDEX_SHEET_NAME = '_附件索引';
 
+function normalizeMediaKey(ts, reporter, location) {
+  const s = cleanStr(ts);
+  let normTs = s;
+  const ymd = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  const dmy = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  if (ymd) {
+    normTs = ymd[1] + '-' + ('0' + ymd[2]).slice(-2) + '-' + ('0' + ymd[3]).slice(-2) + ' ' + ('0' + (ymd[4] || '00')).slice(-2) + ':' + ('0' + (ymd[5] || '00')).slice(-2);
+  } else if (dmy) {
+    normTs = dmy[3] + '-' + ('0' + dmy[2]).slice(-2) + '-' + ('0' + dmy[1]).slice(-2) + ' ' + ('0' + (dmy[4] || '00')).slice(-2) + ':' + ('0' + (dmy[5] || '00')).slice(-2);
+  }
+  return normTs + '||' + cleanStr(reporter) + '||' + cleanStr(location);
+}
 
-    </div>
-  </header>
-
-  <!-- 主內容工作區（無桌面左側邊欄，專注手機單手直立瀏覽） -->
-  <main class="flex-1 w-full max-w-xl mx-auto px-3.5 pt-3.5 space-y-3.5">
-
-    <!-- =================================================================== -->
-    <!-- 視圖：直立式卡片維修清單（Card View + 摺疊執行人管理面板）          -->
-    <!-- =================================================================== -->
-    <section id="view-sheet" class="space-y-3">
-
-      <!-- 標題與即時統計列 -->
-      <div class="bg-white rounded-2xl p-3.5 border border-[#9BD2E4] shadow-card space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <h2 id="sheetViewTitle" class="text-[18px] font-bold text-[#415E91] truncate">維修總表（全部紀錄）</h2>
-            <p id="pendingHintTag" class="hidden text-[12px] text-[#5B81B2] mt-0.5">如沒有顯示相關資料，表示已完成維修</p>
-          </div>
-          <span id="activeFilterPill" class="px-2.5 py-1 rounded-full text-[11.5px] font-bold bg-[#BDF2F6] text-[#415E91] border border-[#779EC8] shrink-0">
-            全部紀錄
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between pt-2 border-t border-[#BDF2F6]">
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[12px] font-bold">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              待處理：<span id="badge-pending">0</span>
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] font-bold">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              已完成：<span id="badge-completed">0</span>
-            </span>
-          </div>
-
-          <button
-            type="button"
-            id="expandAllToggleBtn"
-            data-executor-only="true"
-            onclick="toggleAllAccordions()"
-            class="px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-[#5B81B2] bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#9BD2E4]"
-          >
-            展開全部管理
-          </button>
-        </div>
-      </div>
-
-      <!-- 卡片列表容器（無橫向捲動，直立式卡片檢視） -->
-      <div id="mobileCardsContainer" class="space-y-3"></div>
-
-      <!-- 空資料提示 -->
-      <div id="emptyCardsState" class="hidden bg-white rounded-2xl border border-[#9BD2E4] py-14 px-4 text-center shadow-card">
-        <div class="w-12 h-12 rounded-2xl bg-[#BDF2F6]/60 text-[#779EC8] mx-auto flex items-center justify-center mb-3">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-        </div>
-        <p class="text-[15px] font-bold text-[#415E91]">目前沒有符合的維修紀錄</p>
-        <p class="text-[12.5px] text-[#779EC8] mt-1">可點擊下方「更多篩選」切換其他條件</p>
-      </div>
-
-      <!-- Mobile 分頁列 -->
-      <div id="mobilePaginationBar" class="bg-white rounded-2xl px-4 py-3 border border-[#9BD2E4] shadow-card flex items-center justify-between text-[13px] text-[#5B81B2]">
-        <span id="mobileFooterCount" class="font-medium">共 0 筆紀錄</span>
-        <div class="flex items-center gap-2">
-          <span id="mobilePageIndicator" class="font-bold text-[#415E91]">第 1 / 1 頁</span>
-          <button
-            type="button"
-            id="mobilePrevPageBtn"
-            onclick="changePage(-1)"
-            disabled
-            class="p-2.5 rounded-xl border border-[#779EC8] bg-[#f0fbfc] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <button
-            type="button"
-            id="mobileNextPageBtn"
-            onclick="changePage(1)"
-            disabled
-            class="p-2.5 rounded-xl border border-[#779EC8] bg-[#f0fbfc] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ===================================================================== -->
-  <!-- 底部固定導覽列（Bottom Navigation Bar）：單手大拇指操作                 -->
-  <!-- ===================================================================== -->
-  <nav id="mobileBottomNav" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#9BD2E4] shadow-[0_-4px_16px_rgba(65,94,145,0.12)]">
-    <div class="max-w-xl mx-auto flex items-stretch justify-around h-[68px] px-2">
-
-      <!-- 執行人專屬 Tab 1：維修總表 -->
-      <button
-        type="button"
-        id="bnav-sheet"
-        onclick="switchMobileTab('sheet')"
-        class="flex-1 flex flex-col items-center justify-center gap-1 text-[#415E91] font-bold transition-colors"
-      >
-        <div class="bnav-pill px-5 py-1 rounded-full bg-[#BDF2F6] text-[#415E91] transition-colors relative">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
-          <span id="bnavTotalBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#415E91] text-white text-[10px] font-bold flex items-center justify-center">0</span>
-        </div>
-        <span class="text-[12px]">維修總表</span>
-      </button>
-
-      <!-- 執行人專屬 Tab 2：更多篩選（開啟底部篩選抽屜） -->
-      <button
-        type="button"
-        id="bnav-filter"
-        onclick="openFilterDrawer()"
-        class="flex-1 flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold transition-colors"
-      >
-        <div class="bnav-pill px-5 py-1 rounded-full transition-colors relative">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          <span id="bnavFilterDot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white"></span>
-        </div>
-        <span class="text-[12px]">更多篩選</span>
-      </button>
-
-
-
-    </div>
-  </nav>
-
-  <!-- ===================================================================== -->
-  <!-- 底部滑出抽屜：更多篩選（單手大拇指快速切換條件）                        -->
-  <!-- ===================================================================== -->
-  <div id="filterDrawerBackdrop" onclick="if(event.target===this) closeFilterDrawer()" class="hidden fixed inset-0 z-40 bg-[#415E91]/55 backdrop-blur-xs flex items-end justify-center">
-    <div class="bg-white w-full max-w-xl rounded-t-3xl border-t border-[#9BD2E4] shadow-modal p-5 pb-8 space-y-4">
-      <div class="w-10 h-1.5 rounded-full bg-[#9BD2E4] mx-auto -mt-1 mb-2"></div>
-
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-[17px] font-bold text-[#415E91]">更多篩選條件</h3>
-          <p class="text-[12px] text-[#5B81B2]">點擊即可篩選維修總表紀錄</p>
-        </div>
-        <button type="button" onclick="closeFilterDrawer()" class="w-9 h-9 rounded-xl bg-[#f0fbfc] text-[#415E91] flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 gap-2.5">
-        <button type="button" id="fopt-ALL-ALL" onclick="selectDrawerFilter('ALL', 'ALL', '全部紀錄')" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 border-[#415E91] bg-[#BDF2F6]/50 text-[#415E91] font-bold text-[15px]">
-          <span>📋 全部紀錄</span>
-          <span id="fcount-all" class="px-2.5 py-0.5 rounded-full bg-[#415E91] text-white text-[12px]">0</span>
-        </button>
-
-        <button type="button" id="fopt-ALL-pending" onclick="selectDrawerFilter('ALL', 'pending', '待處理維修')" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#415E91] font-bold text-[15px]">
-          <span>⏳ 待處理維修</span>
-          <span id="fcount-pending" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[12px]">0</span>
-        </button>
-
-        <button type="button" id="fopt-ALL-completed" onclick="selectDrawerFilter('ALL', 'completed', '已完成維修')" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#415E91] font-bold text-[15px]">
-          <span>✅ 已完成維修</span>
-          <span id="fcount-completed" class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[12px]">0</span>
-        </button>
-
-        <div class="grid grid-cols-2 gap-2.5 pt-1">
-          <button type="button" id="fopt-日校-ALL" onclick="selectDrawerFilter('日校', 'ALL', '日校區域')" class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-[#9BD2E4] bg-white text-[#415E91] font-bold text-[14.5px]">
-            <span>🏫 日校區域</span>
-            <span id="fcount-day" class="text-[12.5px] font-bold text-[#5B81B2]">0</span>
-          </button>
-
-          <button type="button" id="fopt-宿舍-ALL" onclick="selectDrawerFilter('宿舍', 'ALL', '宿舍區域')" class="flex items-center justify-between px-4 py-3.5 rounded-2xl border border-[#9BD2E4] bg-white text-[#415E91] font-bold text-[14.5px]">
-            <span>🛏️ 宿舍區域</span>
-            <span id="fcount-dorm" class="text-[12.5px] font-bold text-[#5B81B2]">0</span>
-          </button>
-        </div>
-      </div>
-
-
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 彈窗：直接開啟相片 / 影片檢視 Modal（無「Google Drive 開啟原始檔案」）   -->
-  <!-- ===================================================================== -->
-  <div id="mediaModal" onclick="if(event.target===this) closeModal('mediaModal')" class="hidden fixed inset-0 z-50 bg-[#1e293b]/85 backdrop-blur-xs flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-modal max-w-lg w-full overflow-hidden border border-[#9BD2E4]">
-      <div class="px-4 py-3 border-b border-[#9BD2E4] flex items-center justify-between bg-[#f0fbfc]">
-        <div class="min-w-0 pr-2">
-          <h3 id="modalMediaTitle" class="text-[15px] font-bold text-[#415E91] truncate">現場附件檢視</h3>
-          <p id="modalMediaMeta" class="text-[11.5px] text-[#5B81B2] truncate">位置與呈報人資訊</p>
-        </div>
-        <button type="button" onclick="closeModal('mediaModal')" class="w-9 h-9 rounded-xl bg-white border border-[#9BD2E4] flex items-center justify-center text-[#415E91] shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-
-      <div id="modalMediaContent" class="p-3 bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[78vh] overflow-auto"></div>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 彈窗：刪除確認 Modal                                                   -->
-  <!-- ===================================================================== -->
-  <div id="deleteConfirmModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
-      <div class="p-5 flex items-start gap-3">
-        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="text-[16px] font-bold text-[#415E91]">確認刪除此筆維修紀錄？</h3>
-          <p id="deleteConfirmDesc" class="text-[13px] text-[#5B81B2] mt-1 leading-relaxed">
-            刪除後將無法復原，確定要移除嗎？
-          </p>
-        </div>
-      </div>
-      <div class="px-4 py-3 bg-[#f0fbfc] border-t border-[#9BD2E4] flex items-center gap-2.5">
-        <button
-          type="button"
-          onclick="closeModal('deleteConfirmModal')"
-          class="flex-1 py-2.5 rounded-xl bg-white border border-[#779EC8] text-[14px] font-bold text-[#415E91]"
-        >
-          取消
-        </button>
-        <button
-          type="button"
-          onclick="confirmDeleteRecord()"
-          class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-[14px] font-bold"
-        >
-          確認刪除
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Mobile Toast 提示訊息 -->
-  <div id="appToast" class="fixed bottom-20 inset-x-3.5 z-50 translate-y-[160%] opacity-0 transition-all duration-300 max-w-md mx-auto bg-[#415E91] text-white shadow-modal rounded-2xl p-3.5 flex items-center gap-3 border border-[#779EC8]/50">
-    <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
-    <p id="toastMessage" class="text-[13.5px] font-medium leading-snug flex-1">操作已完成</p>
-  </div>
-
-  <script>
-    // =========================================================================
-    // 1. 系統設定與狀態變數
-    // =========================================================================
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyCHwbGTPm_C4C5ekBjIBmwKx7yXzZQC_rSeFQaGHrjvbrSTUhvQVDFedLPD3AEIfm31g/exec';
-
-    const STORAGE_KEY = 'caritas_lok_yi_repair_records_v12';
-    const LOCATIONS_STORAGE_KEY = 'caritas_lok_yi_locations_v12';
-    const PENDING_OPS_STORAGE_KEY = 'caritas_lok_yi_pending_ops_v1';
-    const WEB_MEDIA_MAP_KEY = 'caritas_lok_yi_web_media_v9';
-    const PAGE_SIZE = 12;
-
-    const DEFAULT_LOCATIONS = [
-      '地下大堂', '101室', '102室', '201室', '202室',
-      '301室', '302室', '禮堂', '教員室', '男生宿舍 A座', '女生宿舍 B座'
-    ];
-
-    let records = [];
-    let locationOptions = [...DEFAULT_LOCATIONS];
-    let pendingSyncOps = [];
-    let currentUserRole = 'executor'; // 'teacher' | 'executor'
-    let currentPage = 1;
-    let filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
-
-    // 紀錄每一張卡片的展開收疊狀態（key 為 rec.id，true 為展開，預設全部收疊）
-    let expandedCardMap = {};
-    let isAllExpanded = false;
-
-    // =========================================================================
-    // 2. 初始化載入
-    // =========================================================================
-    window.addEventListener('DOMContentLoaded', () => {
-      loadLocalData();
-      updateCounters();
-
-      // 只供執行人使用，無需登入直接進入執行人專頁（保留完整所有功能）
-      currentUserRole = 'executor';
-      filters = { area: 'ALL', status: 'ALL', label: '全部紀錄' };
-      switchMobileTab('sheet');
-
-      if (isGasNativeAvailable() || GAS_WEB_APP_URL) {
-        // 開啟頁面立即執行完整雲端同步（若有本機待同步佇列亦會一併上傳並更新畫面）
-        syncToCloud(false);
-
-        // 當從背景切回 Safari 網頁或從「加入主畫面」重新開啟時，立即自動同步最新雲端資料
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && !isManualSyncing && !isFetchingFromGas) {
-            syncToCloud(false);
+function getMediaIndexMap() {
+  const map = {};
+  try {
+    const ss = getTargetSpreadsheet();
+    const idxSheet = ss.getSheetByName(MEDIA_INDEX_SHEET_NAME);
+    if (idxSheet && idxSheet.getLastRow() >= 1) {
+      const vals = idxSheet.getRange(1, 1, idxSheet.getLastRow(), 2).getDisplayValues();
+      for (let i = 0; i < vals.length; i++) {
+        const k = cleanStr(vals[i][0]);
+        const u = cleanStr(vals[i][1]);
+        if (k && u) {
+          map[k] = u;
+          const parts = k.split('||');
+          if (parts.length === 3) {
+            map[normalizeMediaKey(parts[0], parts[1], parts[2])] = u;
           }
-        });
-        window.addEventListener('pageshow', (event) => {
-          if (event.persisted && !isManualSyncing && !isFetchingFromGas) {
-            syncToCloud(false);
-          }
-        });
-
-        setInterval(() => {
-          if (document.visibilityState === 'visible' && !isManualSyncing && !isFetchingFromGas) {
-            syncToCloud(false);
-          }
-        }, 30000);
-      }
-    });
-
-    // =========================================================================
-    // 3. 底部導覽列切換（執行人專頁完整功能）
-    // =========================================================================
-
-    function switchMobileTab(tab) {
-      const sheetView = document.getElementById('view-sheet');
-
-      ['sheet', 'filter'].forEach(k => {
-        const btn = document.getElementById('bnav-' + k);
-        if (!btn) return;
-        const pill = btn.querySelector('.bnav-pill');
-        if (k === tab) {
-          btn.classList.remove('text-[#5B81B2]');
-          btn.classList.add('text-[#415E91]');
-          if (pill) pill.classList.add('bg-[#BDF2F6]', 'text-[#415E91]');
-        } else {
-          btn.classList.remove('text-[#415E91]');
-          btn.classList.add('text-[#5B81B2]');
-          if (pill) pill.classList.remove('bg-[#BDF2F6]', 'text-[#415E91]');
         }
-      });
-
-      sheetView.classList.remove('hidden');
-      const titlePrefix = (filters.area === 'ALL' && filters.status === 'ALL') ? '維修總表（全部紀錄）' : '維修總表（' + filters.label + '）';
-      document.getElementById('sheetViewTitle').textContent = titlePrefix;
-      document.getElementById('activeFilterPill').textContent = filters.label;
-      if (filters.status === 'pending') {
-        document.getElementById('pendingHintTag').classList.remove('hidden');
-      } else {
-        document.getElementById('pendingHintTag').classList.add('hidden');
       }
-      renderCards();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  } catch (e) {}
+  return map;
+}
 
-    // =========================================================================
-    // 4. 底部篩選抽屜（更多篩選）
-    // =========================================================================
-    function openFilterDrawer() {
-      updateFilterDrawerHighlight();
-      document.getElementById('filterDrawerBackdrop').classList.remove('hidden');
+function saveMediaIndexEntry(key, url) {
+  if (!key || !url) return;
+  try {
+    const ss = getTargetSpreadsheet();
+    let idxSheet = ss.getSheetByName(MEDIA_INDEX_SHEET_NAME);
+    if (!idxSheet) {
+      idxSheet = ss.insertSheet(MEDIA_INDEX_SHEET_NAME);
+      idxSheet.hideSheet();
     }
+    idxSheet.appendRow([key, url]);
+  } catch (e) {}
+}
 
-    function closeFilterDrawer() {
-      document.getElementById('filterDrawerBackdrop').classList.add('hidden');
-    }
-
-    function updateFilterDrawerHighlight() {
-      const optIds = ['fopt-ALL-ALL', 'fopt-ALL-pending', 'fopt-ALL-completed', 'fopt-日校-ALL', 'fopt-宿舍-ALL'];
-      const activeId = 'fopt-' + filters.area + '-' + filters.status;
-      optIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const isGridItem = id.includes('日校') || id.includes('宿舍');
-        if (id === activeId) {
-          el.className = (isGridItem ? 'flex ' : 'w-full flex ') + 'items-center justify-between px-4 py-3.5 rounded-2xl border-2 border-[#415E91] bg-[#BDF2F6]/60 text-[#415E91] font-bold text-[14.5px]';
-        } else {
-          el.className = (isGridItem ? 'flex ' : 'w-full flex ') + 'items-center justify-between px-4 py-3.5 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] text-[#415E91] font-bold text-[14.5px]';
-        }
+function getDriveFilesLookupMaps() {
+  const byExactTag = {};
+  const byLoc = {};
+  const byReporter = {};
+  const allItems = [];
+  try {
+    const folder = getTargetDriveFolder();
+    const files = folder.getFiles();
+    while (files.hasNext()) {
+      const f = files.next();
+      if (f.isTrashed()) continue;
+      allItems.push({
+        id: f.getId(),
+        name: cleanStr(f.getName()),
+        url: 'https://drive.google.com/file/d/' + f.getId() + '/view',
+        created: f.getDateCreated().getTime()
       });
     }
-
-    function selectDrawerFilter(area, status, label) {
-      filters = { area, status, label };
-      currentPage = 1;
-      closeFilterDrawer();
-
-      const dot = document.getElementById('bnavFilterDot');
-      if (dot) {
-        if (area !== 'ALL' || status !== 'ALL') dot.classList.remove('hidden');
-        else dot.classList.add('hidden');
-      }
-
-      switchMobileTab('sheet');
-    }
-
-    // =========================================================================
-    // 5. 展開 / 收疊（Accordion）控制
-    // =========================================================================
-    function toggleCardAccordion(id) {
-      expandedCardMap[id] = !expandedCardMap[id];
-      const panel = document.getElementById('acc-panel-' + id);
-      const chevron = document.getElementById('acc-chev-' + id);
-      const label = document.getElementById('acc-label-' + id);
-      if (panel) {
-        if (expandedCardMap[id]) panel.classList.remove('hidden');
-        else panel.classList.add('hidden');
-      }
-      if (chevron) {
-        if (expandedCardMap[id]) chevron.classList.add('is-open');
-        else chevron.classList.remove('is-open');
-      }
-      if (label) {
-        label.textContent = expandedCardMap[id] ? '收疊進度與編輯操作' : '展開進度與編輯操作（狀態 / 日期 / 物料 / 刪除）';
-      }
-    }
-
-    function toggleAllAccordions() {
-      isAllExpanded = !isAllExpanded;
-      records.forEach(r => {
-        expandedCardMap[r.id] = isAllExpanded;
-      });
-      const btn = document.getElementById('expandAllToggleBtn');
-      if (btn) {
-        btn.textContent = isAllExpanded ? '收疊全部管理' : '展開全部管理';
-      }
-      renderCards();
-    }
-
-    // =========================================================================
-    // 6. 卡片列表渲染（Card View）
-    // =========================================================================
-    function getFilteredRecords() {
-      return records.filter(rec => {
-        const isDone = rec.status === '已完成' || Boolean(rec.completionDate);
-        if (filters.area !== 'ALL' && rec.colD !== filters.area) return false;
-        if (filters.status === 'pending' && isDone) return false;
-        if (filters.status === 'completed' && !isDone) return false;
-        return true;
-      });
-    }
-
-    function changePage(delta) {
-      const filtered = getFilteredRecords();
-      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-      const next = currentPage + delta;
-      if (next >= 1 && next <= totalPages) {
-        currentPage = next;
-        renderCards();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-
-    function renderCards() {
-      const container = document.getElementById('mobileCardsContainer');
-      const emptyState = document.getElementById('emptyCardsState');
-      const filtered = getFilteredRecords();
-      const totalItems = filtered.length;
-      const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-      if (currentPage > totalPages) currentPage = totalPages;
-
-      const startIdx = (currentPage - 1) * PAGE_SIZE;
-      const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
-
-      document.getElementById('mobileFooterCount').textContent =
-        '顯示 ' + (totalItems === 0 ? 0 : startIdx + 1) + '-' + Math.min(startIdx + PAGE_SIZE, totalItems) + ' / 共 ' + totalItems + ' 筆';
-      document.getElementById('mobilePageIndicator').textContent = '第 ' + currentPage + ' / ' + totalPages + ' 頁';
-      document.getElementById('mobilePrevPageBtn').disabled = currentPage <= 1;
-      document.getElementById('mobileNextPageBtn').disabled = currentPage >= totalPages;
-
-      if (pageItems.length === 0) {
-        container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        return;
-      }
-
-      emptyState.classList.add('hidden');
-      const isExecutor = currentUserRole === 'executor';
-
-      container.innerHTML = pageItems.map(rec => {
-        const isCompleted = rec.status === '已完成' || Boolean(rec.completionDate);
-        const isPlumbing = String(rec.type || '').startsWith('水電');
-        const typeIcon = isPlumbing ? '⚡' : '🔨';
-        const isExpanded = Boolean(expandedCardMap[rec.id]);
-
-        const areaBadge = rec.colD === '日校'
-          ? '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#BDF2F6]/80 text-[#415E91] border border-[#9BD2E4]">日校</span>'
-          : '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#9BD2E4]/50 text-[#415E91] border border-[#779EC8]">宿舍</span>';
-
-        const statusBadge = isCompleted
-          ? '<span class="px-2.5 py-0.5 rounded-full text-[11.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">已完成</span>'
-          : '<span class="px-2.5 py-0.5 rounded-full text-[11.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">待處理</span>';
-
-        // 現場相片縮圖與直接預覽按鈕
-        const rawMediaText = String(rec.photoUpload || '').trim();
-        const isEmptyMediaText = !rawMediaText || ['無', '沒有', '否', '-', '—', 'N/A'].includes(rawMediaText);
-        const hasMediaFlag = !isEmptyMediaText || Boolean(rec.photoUrl || rec.mediaDataUrl);
-        const thumbSrc = getRecordThumbnailUrl(rec);
-
-        let mediaBlock = '';
-        if (hasMediaFlag) {
-          mediaBlock =
-            '<button type="button" onclick="openMediaPreview(\'' + rec.id + '\')" class="w-full mt-2.5 p-2 rounded-xl bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#779EC8] text-[#415E91] flex items-center justify-between gap-2.5 transition-colors">' +
-              '<div class="flex items-center gap-2.5 min-w-0">' +
-                (thumbSrc
-                  ? '<img src="' + escapeHtml(thumbSrc) + '" alt="現場縮圖" class="w-11 h-11 rounded-lg object-cover border border-[#779EC8]/70 bg-white shrink-0" onerror="this.style.display=\'none\'" />'
-                  : '<div class="w-11 h-11 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>') +
-                '<div class="text-left min-w-0">' +
-                  '<p class="text-[13px] font-bold text-[#415E91] truncate">檢視現場相片 / 影片</p>' +
-                  '<p class="text-[11px] text-[#5B81B2]">點擊直接開啟放大預覽</p>' +
-                '</div>' +
-              '</div>' +
-              '<span class="px-2.5 py-1 rounded-lg bg-[#415E91] text-white text-[11.5px] font-bold shrink-0">開啟</span>' +
-            '</button>';
+    allItems.sort((a, b) => b.created - a.created);
+    for (let i = 0; i < allItems.length; i++) {
+      const it = allItems[i];
+      const doubleParts = it.name.split('__');
+      if (doubleParts.length >= 3) {
+        const locPart = cleanStr(doubleParts[0]);
+        const tsPart = cleanStr(doubleParts[1]);
+        if (locPart && tsPart) {
+          const exactKey = locPart + '__' + tsPart.slice(0, 12);
+          if (!byExactTag[exactKey]) byExactTag[exactKey] = it.url;
         }
-
-        // 執行人專屬：展開 / 收疊操作區塊（處理狀態、待處理、完成日期、材料購買、輸入備註、刪除按鈕）
-        let executorAccordionHtml = '';
-        if (isExecutor) {
-          const buyOptions = ['待中央購買', '自行購買物料', '不需要購買'];
-          if (rec.buy && !buyOptions.includes(rec.buy)) buyOptions.unshift(rec.buy);
-          const supportOptions = ['不需要', '須外界支援', '已聯絡承辦商'];
-          if (rec.support && !supportOptions.includes(rec.support)) supportOptions.unshift(rec.support);
-          const dateValue = normalizeDateForInput(rec.completionDate);
-
-          executorAccordionHtml =
-            '<div class="mt-3 pt-2.5 border-t border-[#BDF2F6]">' +
-              '<button type="button" onclick="toggleCardAccordion(\'' + rec.id + '\')" class="w-full py-2 px-3 rounded-xl bg-[#f0fbfc] active:bg-[#BDF2F6]/80 border border-[#9BD2E4] flex items-center justify-between text-left transition-colors">' +
-                '<span id="acc-label-' + rec.id + '" class="text-[12.5px] font-bold text-[#415E91]">' +
-                  (isExpanded ? '收疊進度與編輯操作' : '展開進度與編輯操作（狀態 / 日期 / 物料 / 刪除）') +
-                '</span>' +
-                '<svg id="acc-chev-' + rec.id + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron w-4 h-4 text-[#5B81B2] shrink-0 ' + (isExpanded ? 'is-open' : '') + '"><path d="m6 9 6 6 6-6"/></svg>' +
-              '</button>' +
-
-              '<div id="acc-panel-' + rec.id + '" class="' + (isExpanded ? '' : 'hidden ') + 'mt-2.5 p-3.5 rounded-2xl bg-[#f0fbfc] border border-[#9BD2E4] space-y-3">' +
-                '<div class="grid grid-cols-2 gap-2.5">' +
-                  '<div>' +
-                    '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">處理狀態</label>' +
-                    '<select onchange="updateRecordField(\'' + rec.id + '\', \'status\', this.value)" class="w-full px-2.5 py-2 rounded-xl border ' + (isCompleted ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800') + ' font-bold">' +
-                      '<option value="待處理" ' + (!isCompleted ? 'selected' : '') + '>待處理</option>' +
-                      '<option value="已完成" ' + (isCompleted ? 'selected' : '') + '>已完成</option>' +
-                    '</select>' +
-                  '</div>' +
-                  '<div>' +
-                    '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">完成日期</label>' +
-                    '<input type="date" id="date-input-' + rec.id + '" value="' + escapeHtml(dateValue) + '" ' +
-                    'onfocus="this.dataset.origVal = this.value;" ' +
-                    'onchange="handleCompletionDateChange(\'' + rec.id + '\', this)" ' +
-                    'onblur="handleCompletionDateBlur(\'' + rec.id + '\', this)" ' +
-                    'class="w-full px-2.5 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]" />' +
-                  '</div>' +
-                '</div>' +
-
-                '<div class="grid grid-cols-2 gap-2.5">' +
-                  '<div>' +
-                    '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">材料購買</label>' +
-                    '<select onchange="updateRecordField(\'' + rec.id + '\', \'buy\', this.value)" class="w-full px-2.5 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]">' +
-                      buyOptions.map(opt => '<option value="' + escapeHtml(opt) + '" ' + (rec.buy === opt ? 'selected' : '') + '>' + escapeHtml(opt) + '</option>').join('') +
-                    '</select>' +
-                  '</div>' +
-                  '<div>' +
-                    '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">須外界支援</label>' +
-                    '<select onchange="updateRecordField(\'' + rec.id + '\', \'support\', this.value)" class="w-full px-2.5 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]">' +
-                      supportOptions.map(opt => '<option value="' + escapeHtml(opt) + '" ' + (rec.support === opt ? 'selected' : '') + '>' + escapeHtml(opt) + '</option>').join('') +
-                    '</select>' +
-                  '</div>' +
-                '</div>' +
-
-                '<div>' +
-                  '<label class="block text-[11.5px] font-bold text-[#5B81B2] mb-1">備註欄</label>' +
-                  '<input type="text" value="' + escapeHtml(rec.remark || '') + '" onchange="updateRecordField(\'' + rec.id + '\', \'remark\', this.value)" placeholder="輸入備註..." class="w-full px-3 py-2 rounded-xl border border-[#9BD2E4] bg-white text-[#415E91]" />' +
-                '</div>' +
-
-                '<div class="pt-1 flex items-center gap-2">' +
-                  '<button type="button" onclick="clearCompletionDate(\'' + rec.id + '\')" class="flex-1 py-2.5 px-3 rounded-xl text-[13.5px] font-bold text-[#415E91] bg-white active:bg-[#BDF2F6] border border-[#779EC8] flex items-center justify-center gap-1.5 transition-colors">' +
-                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-[#5B81B2]"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m14.5 14.5-5 5"/><path d="m9.5 14.5 5 5"/></svg>' +
-                    '<span>清除日期</span>' +
-                  '</button>' +
-                  '<button type="button" onclick="openDeleteConfirmModal(\'' + rec.id + '\')" class="flex-1 py-2.5 px-3 rounded-xl text-[13.5px] font-bold text-rose-600 bg-rose-50 active:bg-rose-100 border border-rose-200 flex items-center justify-center gap-1.5 transition-colors">' +
-                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>' +
-                    '<span>刪除紀錄</span>' +
-                  '</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
+        if (locPart && !byLoc[locPart]) {
+          byLoc[locPart] = it.url;
         }
-
-        return '<article class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">' +
-          '<div class="flex items-start justify-between gap-2">' +
-            '<div class="flex items-center gap-1.5 flex-wrap">' +
-              '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[14px] bg-[#BDF2F6]/70 border border-[#9BD2E4]">' + typeIcon + '</span>' +
-              areaBadge +
-              '<span class="text-[16px] font-bold text-[#415E91]">' + escapeHtml(rec.location) + '</span>' +
-            '</div>' +
-            statusBadge +
-          '</div>' +
-
-          '<p class="text-[14px] text-[#415E91] mt-2.5 bg-[#f0fbfc] p-3 rounded-xl border border-[#BDF2F6] leading-relaxed break-words">' +
-            escapeHtml(rec.description) +
-          '</p>' +
-
-          '<div class="flex items-center justify-between text-[12px] text-[#5B81B2] mt-2.5">' +
-            '<span>呈報人：<strong class="text-[#415E91]">' + escapeHtml(rec.reporter) + '</strong></span>' +
-            '<span class="font-mono text-[11px]">' + escapeHtml(rec.timestamp) + '</span>' +
-          '</div>' +
-
-          mediaBlock +
-          executorAccordionHtml +
-        '</article>';
-      }).join('');
-    }
-
-    // =========================================================================
-    // 7. 直接開啟相片 / 影片預覽（無「Google Drive 開啟原始檔案」文字與連結）
-    // =========================================================================
-    function extractGoogleDriveFileId(url) {
-      if (!url) return '';
-      const str = String(url).trim();
-      const dMatch = str.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (dMatch) return dMatch[1];
-      const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (idMatch) return idMatch[1];
-      return '';
-    }
-
-    function getRecordThumbnailUrl(rec) {
-      if (rec.mediaDataUrl && rec.mediaType !== 'video') {
-        return rec.mediaDataUrl;
-      }
-      const driveId = extractGoogleDriveFileId(rec.photoUrl || rec.photoUpload);
-      if (driveId) {
-        return 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w240';
-      }
-      return '';
-    }
-
-    const sessionMediaCache = {};
-
-    function renderMediaDataUrlIntoContainer(content, dataUrl, mimeType) {
-      const isVideo = (mimeType && mimeType.startsWith('video/')) || String(dataUrl).startsWith('data:video/');
-      if (isVideo) {
-        content.innerHTML = '<video src="' + dataUrl + '" controls autoplay playsinline class="w-full max-h-[70vh] rounded-xl shadow-lg bg-black"></video>';
       } else {
-        content.innerHTML = '<img src="' + dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
-      }
-    }
-
-    async function fetchDriveMediaViaGasProxy(driveId) {
-      if (sessionMediaCache[driveId]) {
-        return sessionMediaCache[driveId];
-      }
-      let resObj = null;
-      if (isGasNativeAvailable()) {
-        const raw = await runGasServerFunction('apiGetDriveMediaBase64', driveId, 25000);
-        resObj = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-      } else {
-        const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
-        const url = GAS_WEB_APP_URL + sep + 'action=get_image&fileId=' + encodeURIComponent(driveId) + '&t=' + Date.now();
-        const resp = await fetch(url, { cache: 'no-store' });
-        resObj = await resp.json();
-      }
-      if (resObj && resObj.status === 'success' && resObj.dataUrl) {
-        sessionMediaCache[driveId] = resObj;
-      }
-      return resObj;
-    }
-
-    async function openMediaPreview(id) {
-      const rec = records.find(r => r.id === id);
-      if (!rec) return;
-
-      document.getElementById('modalMediaTitle').textContent = rec.location + ' — 現場附件';
-      document.getElementById('modalMediaMeta').textContent = '呈報人：' + rec.reporter + ' ・ ' + rec.colD + ' ・ ' + rec.timestamp;
-
-      const content = document.getElementById('modalMediaContent');
-      const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http'))
-        ? rec.photoUrl
-        : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
-      const driveId = extractGoogleDriveFileId(rawUrl);
-
-      if (rec.mediaDataUrl) {
-        renderMediaDataUrlIntoContainer(content, rec.mediaDataUrl, rec.mediaType === 'video' ? 'video/mp4' : 'image/jpeg');
-        openModal('mediaModal');
-        return;
-      }
-
-      if (driveId) {
-        if (sessionMediaCache[driveId]) {
-          renderMediaDataUrlIntoContainer(content, sessionMediaCache[driveId].dataUrl, sessionMediaCache[driveId].mimeType);
-          openModal('mediaModal');
-          return;
-        }
-
-        // 先顯示載入動畫，並透過 GAS 後端代理讀取相片（徹底繞過 Safari ITP 與 Google Drive 外部存取限制）
-        content.innerHTML =
-          '<div class="flex flex-col items-center justify-center py-10 px-4 text-center space-y-3 text-white">' +
-            '<div class="w-9 h-9 border-4 border-[#BDF2F6] border-t-transparent rounded-full animate-spin"></div>' +
-            '<p class="text-[14px] font-bold text-[#BDF2F6]">正在透過安全通道載入現場相片...</p>' +
-            '<p class="text-[11.5px] text-slate-300">已針對 Safari 自動優化連線</p>' +
-          '</div>';
-        openModal('mediaModal');
-
-        try {
-          const proxyRes = await fetchDriveMediaViaGasProxy(driveId);
-          if (proxyRes && proxyRes.status === 'success' && proxyRes.dataUrl) {
-            rec.mediaDataUrl = proxyRes.dataUrl;
-            rec.mediaType = (proxyRes.mimeType && proxyRes.mimeType.startsWith('video/')) ? 'video' : 'image';
-            renderMediaDataUrlIntoContainer(content, proxyRes.dataUrl, proxyRes.mimeType);
-            return;
+        const underscoreIdx = it.name.indexOf('_');
+        if (underscoreIdx > 0) {
+          const locPrefix = cleanStr(it.name.substring(0, underscoreIdx));
+          if (locPrefix && !byLoc[locPrefix]) {
+            byLoc[locPrefix] = it.url;
           }
-        } catch (err) {
-          // 若代理逾時則退回備援預覽方式
         }
-
-        const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
-        const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
-        content.innerHTML =
-          '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\' allow=\\\'autoplay\\\'></iframe>\'" />';
-        return;
       }
-
-      if (rawUrl) {
-        content.innerHTML =
-          '<img src="' + escapeHtml(rawUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" ' +
-            'onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(rawUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
-      } else {
-        content.innerHTML =
-          '<div class="bg-white rounded-xl p-6 text-center space-y-1.5 max-w-xs w-full">' +
-            '<p class="text-[14.5px] font-bold text-[#415E91]">試算表已標記「有」現場附件</p>' +
-            '<p class="text-[12.5px] text-[#5B81B2]">此紀錄為舊版 Google 表單直接上傳，無內嵌預覽圖。</p>' +
-          '</div>';
+      // 支援 Google 表單上傳命名格式：原檔名 - 呈報人姓名.副檔名
+      const formDashMatch = it.name.match(/\s-\s([^.]+)\.[^.]+$/);
+      if (formDashMatch && formDashMatch[1]) {
+        const repName = cleanStr(formDashMatch[1]);
+        if (repName && !byReporter[repName]) {
+          byReporter[repName] = it.url;
+        }
       }
-
-      openModal('mediaModal');
     }
+  } catch (e) {}
+  return { byExactTag: byExactTag, byLoc: byLoc, byReporter: byReporter, allItems: allItems };
+}
 
-    // =========================================================================
-    // 8. 雲端資料同步與本機快取（與 Code.gs / 程式碼_v11.gs 完全相容）
-    // =========================================================================
-    function isGasNativeAvailable() {
+function parseSheetTimestampMs(tsStr) {
+  const s = cleanStr(tsStr);
+  const m = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[^\d]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!m) return 0;
+  let hh = Number(m[4] || 0);
+  if (s.indexOf('下午') !== -1 && hh < 12) hh += 12;
+  if (s.indexOf('上午') !== -1 && hh === 12) hh = 0;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), hh, Number(m[5] || 0), Number(m[6] || 0)).getTime();
+}
+
+function getTargetDriveFolder() {
+  if (DRIVE_FOLDER_ID) {
+    try {
+      return DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    } catch (e) {}
+  }
+  const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(DRIVE_FOLDER_NAME);
+}
+
+function buildCompactTsTag(ts) {
+  const digits = cleanStr(ts).replace(/[^0-9]/g, '');
+  return digits.slice(0, 14) || String(Date.now());
+}
+
+function getTargetDriveFolderStrict() {
+  if (DRIVE_FOLDER_ID) {
+    return DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  }
+  const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(DRIVE_FOLDER_NAME);
+}
+
+function saveMediaToDrive(base64DataUrl, fileName, mimeType, location, timestamp) {
+  const parts = String(base64DataUrl).split('base64,');
+  if (parts.length < 2 || !parts[1]) {
+    throw new Error('無效的檔案內容 (base64 為空)');
+  }
+  const contentType = mimeType || parts[0].replace('data:', '').replace(';', '') || 'image/jpeg';
+  const bytes = Utilities.base64Decode(parts[1]);
+  const tsTag = buildCompactTsTag(timestamp);
+  const cleanLoc = cleanStr(location).replace(/[\\/:*?"<>|]/g, '-');
+  const cleanFile = cleanStr(fileName || 'photo.jpg').replace(/[\\/:*?"<>|]/g, '-');
+  const safeName = (cleanLoc ? cleanLoc + '__' : 'LOC__') + tsTag + '__' + cleanFile;
+  const blob = Utilities.newBlob(bytes, contentType, safeName);
+  const folder = getTargetDriveFolderStrict();
+  const file = folder.createFile(blob);
+  try {
+    file.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (e) {
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e2) {}
+  }
+  return 'https://drive.google.com/file/d/' + file.getId() + '/view';
+}
+
+function cleanStr(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return '';
+  return String(val).replace(/[\r\n\t\u0000-\u001F]+/g, ' ').trim();
+}
+
+function sanitizeCompletionDate(rawVal) {
+  const str = cleanStr(rawVal);
+  if (!str) return '';
+  const ymd = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (ymd) {
+    return ymd[1] + '-' + ('0' + ymd[2]).slice(-2) + '-' + ('0' + ymd[3]).slice(-2);
+  }
+  const dmy = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (dmy) {
+    return dmy[3] + '-' + ('0' + dmy[2]).slice(-2) + '-' + ('0' + dmy[1]).slice(-2);
+  }
+  return '';
+}
+
+function getEffectiveLastRow(sheet) {
+  const maxRow = sheet.getLastRow();
+  if (maxRow < 2) return maxRow;
+  const checkCols = Math.min(sheet.getLastColumn(), 6);
+  const keyVals = sheet.getRange(2, 1, maxRow - 1, checkCols).getValues();
+  for (let i = keyVals.length - 1; i >= 0; i--) {
+    const r = keyVals[i];
+    if (r[0] !== '' || r[1] !== '' || r[4] !== '' || r[5] !== '') {
+      return i + 2;
+    }
+  }
+  return 1;
+}
+
+/**
+ * 讀取所有維修紀錄（精準對應 H~L 欄，並自動修正任何向左位移 1 欄的舊資料列）
+ */
+function readAllData() {
+  const ss = getTargetSpreadsheet();
+  const sheet = getTargetSheet();
+  const effectiveLastRow = getEffectiveLastRow(sheet);
+  const records = [];
+
+  const mediaIndexMap = getMediaIndexMap();
+  const driveLookup = getDriveFilesLookupMaps();
+
+  if (effectiveLastRow >= 2) {
+    const numRows = effectiveLastRow - 1;
+    const maxCols = Math.min(Math.max(sheet.getLastColumn(), 12), 16);
+    const gRange = sheet.getRange(2, 7, numRows, 1);
+    const gRichTexts = gRange.getRichTextValues();
+    const gFormulas = gRange.getFormulas();
+    const displayValues = sheet.getRange(2, 1, numRows, maxCols).getDisplayValues();
+
+    const buySet = ['不需要購買', '待中央購買', '自行購買物料'];
+    const supportSet = ['不需要', '須外界支援', '已聯絡承辦商'];
+    const statusSet = ['待處理', '已完成'];
+
+    for (let i = 0; i < displayValues.length; i++) {
+      const row = displayValues[i];
+
+      const tsVal = cleanStr(row[0]);   // A欄：時間戳記
+      const repVal = cleanStr(row[1]);  // B欄：維修呈報人
+      const typeVal = cleanStr(row[2]); // C欄：維修類型
+      const areaVal = cleanStr(row[3]) || '日校'; // D欄：須維修位置區域
+      const locVal = cleanStr(row[4]);  // E欄：須維修項目位置
+      const descVal = cleanStr(row[5]); // F欄：須維修項目具體資料
+
+      if (!tsVal && !repVal && !locVal && !descVal) continue;
+      if (tsVal === '時間戳記' || repVal === '維修呈報人') continue;
+
+      // G欄 (row[6])：檢查文字、儲存格超連結或 HYPERLINK 公式
+      const gVal = cleanStr(row[6]);
+      let gCellLink = '';
       try {
-        return typeof window.google !== 'undefined' &&
-               Boolean(window.google.script) &&
-               Boolean(window.google.script.run);
-      } catch (e) {
-        return false;
-      }
-    }
-
-    function runGasServerFunction(fnName, arg, timeoutMs = 10000) {
-      return new Promise((resolve, reject) => {
-        let settled = false;
-        const timer = setTimeout(() => {
-          if (!settled) {
-            settled = true;
-            reject(new Error('雲端連線逾時'));
-          }
-        }, timeoutMs);
-
-        try {
-          const runner = window.google.script.run
-            .withSuccessHandler(res => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timer);
-                resolve(res);
-              }
-            })
-            .withFailureHandler(err => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timer);
-                reject(new Error(err && err.message ? err.message : String(err)));
-              }
-            });
-          if (arg !== undefined) runner[fnName](arg);
-          else runner[fnName]();
-        } catch (err) {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            reject(err);
-          }
-        }
-      });
-    }
-
-    function loadLocalData() {
-      try {
-        const rawRecords = localStorage.getItem(STORAGE_KEY);
-        if (rawRecords) {
-          const parsed = JSON.parse(rawRecords);
-          records = Array.isArray(parsed) ? parsed.map((item, idx) => normalizeRecordItem(item, idx)) : [];
-        }
-        const rawLocations = localStorage.getItem(LOCATIONS_STORAGE_KEY);
-        if (rawLocations) {
-          const parsedLoc = JSON.parse(rawLocations);
-          if (Array.isArray(parsedLoc) && parsedLoc.length > 0) locationOptions = parsedLoc;
-        }
-        const rawOps = localStorage.getItem(PENDING_OPS_STORAGE_KEY);
-        if (rawOps) {
-          const parsedOps = JSON.parse(rawOps);
-          if (Array.isArray(parsedOps)) pendingSyncOps = parsedOps;
-        }
-      } catch (e) {
-        records = [];
-      }
-      updateSyncButtonUI();
-    }
-
-    function saveLocalData() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-        localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(locationOptions));
-        localStorage.setItem(PENDING_OPS_STORAGE_KEY, JSON.stringify(pendingSyncOps));
+        const rt = gRichTexts[i] && gRichTexts[i][0];
+        if (rt && rt.getLinkUrl()) gCellLink = cleanStr(rt.getLinkUrl());
       } catch (e) {}
-      updateCounters();
-      updateSyncButtonUI();
-    }
-
-    function updateSyncButtonUI() {
-      const badge = document.getElementById('syncBtnBadge');
-      if (!badge) return;
-      if (pendingSyncOps.length > 0) {
-        badge.textContent = pendingSyncOps.length;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
+      if (!gCellLink && gFormulas[i] && gFormulas[i][0]) {
+        const fMatch = String(gFormulas[i][0]).match(/https?:\/\/[^"'\s)]+/i);
+        if (fMatch) gCellLink = cleanStr(fMatch[0]);
       }
-    }
+      const hVal = cleanStr(row[7]);
+      const iVal = cleanStr(row[8]);
+      const jVal = cleanStr(row[9]);
+      const kVal = cleanStr(row[10]);
+      const lVal = cleanStr(row[11]);
 
-    function updateCounters() {
-      const total = records.length;
-      const completed = records.filter(r => r.status === '已完成' || Boolean(r.completionDate)).length;
-      const pending = total - completed;
-      const dayCount = records.filter(r => r.colD === '日校').length;
-      const dormCount = records.filter(r => r.colD === '宿舍').length;
+      let buyVal = hVal;
+      let dateVal = sanitizeCompletionDate(iVal);
+      let supportVal = jVal;
+      let remarkVal = kVal;
+      let statusVal = lVal;
 
-      document.getElementById('badge-pending').textContent = pending;
-      document.getElementById('badge-completed').textContent = completed;
-      document.getElementById('bnavTotalBadge').textContent = total;
-
-      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      setText('fcount-all', total);
-      setText('fcount-pending', pending);
-      setText('fcount-completed', completed);
-      setText('fcount-day', dayCount);
-      setText('fcount-dorm', dormCount);
-    }
-
-    function sanitizeCellText(val) {
-      if (val === null || val === undefined) return '';
-      return String(val).replace(/[\r\n\t\u0000-\u001F]+/g, ' ').trim();
-    }
-
-    function normalizeDateForInput(rawVal) {
-      if (!rawVal) return '';
-      const str = String(rawVal).trim();
-      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
-        const parts = str.split(' ')[0].split('-');
-        return parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+      // 防呆：若舊資料中某一列曾把 G 欄整格向左刪除，導致「材料購買」出現在 G 欄 (row[6])
+      if (buySet.indexOf(gVal) !== -1) {
+        buyVal = gVal;
+        dateVal = sanitizeCompletionDate(hVal);
+        supportVal = supportSet.indexOf(iVal) !== -1 ? iVal : (supportSet.indexOf(hVal) !== -1 ? hVal : '不需要');
+        statusVal = statusSet.indexOf(kVal) !== -1 ? kVal : (statusSet.indexOf(jVal) !== -1 ? jVal : '');
+        const remCandidates = [hVal, iVal, jVal].filter(v =>
+          v && v !== '—' && v !== '-' &&
+          buySet.indexOf(v) === -1 &&
+          supportSet.indexOf(v) === -1 &&
+          statusSet.indexOf(v) === -1 &&
+          sanitizeCompletionDate(v) === ''
+        );
+        remarkVal = remCandidates.join(' ');
       }
-      if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(str)) {
-        const parts = str.split(' ')[0].split('/');
-        return parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
-      }
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
-        const parts = str.split(' ')[0].split('/');
-        return parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-      }
-      return '';
-    }
 
-    function findWebMediaForRecord(ts, reporter, location) {
-      try {
-        const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
-        return map[ts + '||' + reporter + '||' + location] || null;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function saveWebMediaForRecord(ts, reporter, location, dataUrl, mediaType) {
-      if (!dataUrl) return;
-      try {
-        const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
-        map[ts + '||' + reporter + '||' + location] = { dataUrl, mediaType: mediaType || 'image' };
-        localStorage.setItem(WEB_MEDIA_MAP_KEY, JSON.stringify(map));
-      } catch (e) {}
-    }
-
-    function normalizeRecordItem(item, idx) {
-      const ts = sanitizeCellText(item.timestamp);
-      const rep = sanitizeCellText(item.reporter);
-      const typ = sanitizeCellText(item.type);
-      const area = sanitizeCellText(item.colD) || '日校';
-      const loc = sanitizeCellText(item.location);
-      const desc = sanitizeCellText(item.description);
-      const photo = sanitizeCellText(item.photoUpload);
-      const buy = sanitizeCellText(item.buy) || '不需要購買';
-      const cDate = normalizeDateForInput(sanitizeCellText(item.completionDate));
-      const sup = sanitizeCellText(item.support) || '不需要';
-      const rem = sanitizeCellText(item.remark);
-      const stat = sanitizeCellText(item.status) || (cDate ? '已完成' : '待處理');
-      const localMedia = findWebMediaForRecord(ts, rep, loc);
-
-      return {
-        id: 'gas-' + (item.rowIndex || idx) + '-' + String(ts || idx),
-        rowIndex: item.rowIndex || (idx + 2),
-        timestamp: ts,
-        reporter: rep,
-        type: typ,
-        colD: area,
-        location: loc,
-        description: desc,
-        photoUpload: photo,
-        buy: buy,
-        completionDate: cDate,
-        support: sup,
-        remark: rem,
-        status: stat,
-        photoUrl: sanitizeCellText(item.photoUrl),
-        mediaDataUrl: item.mediaDataUrl || (localMedia ? localMedia.dataUrl : ''),
-        mediaType: item.mediaType || (localMedia ? localMedia.mediaType : 'image')
-      };
-    }
-
-    let isFetchingFromGas = false;
-    let isManualSyncing = false;
-
-    async function fetchRecordsFromGas(showFeedback = true, isBackgroundPoll = false) {
-      if (isFetchingFromGas) return;
-      isFetchingFromGas = true;
-      try {
-        let payload = null;
-        if (isGasNativeAvailable()) {
-          const raw = await runGasServerFunction('apiReadAllData', undefined, 10000);
-          payload = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-        } else {
-          const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
-          const res = await fetch(GAS_WEB_APP_URL + sep + 'action=read&t=' + Date.now(), { cache: 'no-store' });
-          payload = await res.json();
-        }
-
-        if (payload && payload.status === 'error') {
-          throw new Error(payload.message || '雲端讀取錯誤');
-        }
-        const rawList = Array.isArray(payload) ? payload : (payload && payload.records ? payload.records : []);
-        records = rawList.map((item, idx) => normalizeRecordItem(item, idx));
-
-        if (payload && Array.isArray(payload.locations) && payload.locations.length > 0) {
-          locationOptions = payload.locations;
-            }
-
-        saveLocalData();
-        const activeTag = document.activeElement ? document.activeElement.tagName : '';
-        const isEditingInput = (activeTag === 'INPUT' || activeTag === 'SELECT' || activeTag === 'TEXTAREA');
-        if (!isBackgroundPoll || !isEditingInput) renderCards();
-        if (showFeedback) showToast('已同步最新 ' + records.length + ' 筆雲端資料', 'success');
-      } catch (err) {
-        if (showFeedback) showToast('同步失敗：' + err.message, 'error');
-      } finally {
-        isFetchingFromGas = false;
-      }
-    }
-
-    async function syncToCloud(showFeedback = true) {
-      if (isManualSyncing) return;
-      isManualSyncing = true;
-      const icon = document.getElementById('syncBtnIcon');
-      if (icon) icon.classList.add('animate-spin');
-
-      try {
-        if (pendingSyncOps.length > 0) {
-          const snapshot = [...pendingSyncOps];
-          for (const op of snapshot) {
-            const res = await postToGas(op);
-            if (res && res.status === 'success') {
-              pendingSyncOps = pendingSyncOps.filter(item => item !== op);
+      const finalStatus = (statusSet.indexOf(statusVal) !== -1) ? statusVal : (dateVal ? '已完成' : '待處理');
+      const mediaKey = tsVal + '||' + repVal + '||' + locVal;
+      const normMediaKey = normalizeMediaKey(tsVal, repVal, locVal);
+      const exactDriveTag = cleanStr(locVal).replace(/[\\/:*?"<>|]/g, '-') + '__' + buildCompactTsTag(tsVal).slice(0, 12);
+      let tsProximityUrl = '';
+      if ((gVal === '有' || gCellLink) && !gCellLink && driveLookup.allItems && driveLookup.allItems.length > 0) {
+        const rowMs = parseSheetTimestampMs(tsVal);
+        if (rowMs > 0) {
+          let bestDiff = 5 * 60 * 1000; // 5 分鐘內建立的檔案
+          for (let k = 0; k < driveLookup.allItems.length; k++) {
+            const diff = Math.abs(driveLookup.allItems[k].created - rowMs);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              tsProximityUrl = driveLookup.allItems[k].url;
             }
           }
-          saveLocalData();
         }
-        await fetchRecordsFromGas(showFeedback, false);
-      } finally {
-        isManualSyncing = false;
-        if (icon) icon.classList.remove('animate-spin');
       }
+      const mappedDriveUrl = gCellLink ||
+        (gVal.indexOf('http') === 0 ? gVal : '') ||
+        mediaIndexMap[mediaKey] ||
+        mediaIndexMap[normMediaKey] ||
+        driveLookup.byExactTag[exactDriveTag] ||
+        tsProximityUrl ||
+        ((gVal === '有' && repVal && driveLookup.byReporter[repVal]) ? driveLookup.byReporter[repVal] : '') ||
+        ((gVal === '有' && locVal && driveLookup.byLoc[locVal]) ? driveLookup.byLoc[locVal] : '');
+      const hasGPhotoText = (gVal === '有' || gVal.indexOf('http') === 0 || Boolean(gCellLink));
+      const finalPhotoFlag = (mappedDriveUrl || hasGPhotoText) ? '有' : '';
+
+      records.push({
+        rowIndex: i + 2,
+        timestamp: tsVal,
+        reporter: repVal,
+        type: typeVal,
+        colD: areaVal,
+        location: locVal,
+        description: descVal,
+        photoUpload: finalPhotoFlag,
+        buy: buyVal || '不需要購買',
+        completionDate: dateVal,
+        support: supportVal || '不需要',
+        remark: remarkVal,
+        status: finalStatus,
+        photoUrl: mappedDriveUrl || (gVal.indexOf('http') === 0 ? gVal : '')
+      });
     }
+  }
 
-    async function postToGas(payload) {
-      if (isGasNativeAvailable()) {
-        const rawRes = await runGasServerFunction('apiHandleAction', JSON.stringify(payload), payload.photoBase64 ? 30000 : 12000);
-        return (typeof rawRes === 'string') ? JSON.parse(rawRes) : rawRes;
-      }
-
-      const jsonStr = JSON.stringify(payload);
-      if (!payload.photoBase64 && encodeURIComponent(jsonStr).length < 6000) {
-        const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
-        const res = await fetch(GAS_WEB_APP_URL + sep + 'payload=' + encodeURIComponent(jsonStr) + '&t=' + Date.now(), { cache: 'no-store' });
-        return await res.json();
-      }
-
-      try {
-        const res = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: jsonStr
+  const locations = [];
+  try {
+    const namedRange = ss.getRangeByName('RoomName');
+    if (namedRange) {
+      const nrVals = namedRange.getDisplayValues();
+      nrVals.forEach(row => {
+        row.forEach(cell => {
+          const val = cleanStr(cell);
+          if (val && val !== 'RoomName' && val !== '位置' && val !== '須維修項目位置' && locations.indexOf(val) === -1) {
+            locations.push(val);
+          }
         });
-        return await res.json();
-      } catch (err) {
-        const formBody = new URLSearchParams();
-        formBody.append('payload', jsonStr);
-        await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: formBody });
-        return { status: 'success' };
+      });
+    }
+  } catch (e) {}
+
+  if (locations.length === 0) {
+    const locSheet = ss.getSheetByName(LOCATION_SHEET_NAME) || ss.getSheetByName(FALLBACK_LOCATION_SHEET_NAME);
+    if (locSheet && locSheet.getLastRow() >= 1) {
+      const locVals = locSheet.getRange(1, 1, Math.min(locSheet.getLastRow(), 300), 1).getDisplayValues();
+      locVals.forEach(r => {
+        const val = cleanStr(r[0]);
+        if (val && val !== 'RoomName' && val !== '位置' && val !== '須維修項目位置' && locations.indexOf(val) === -1) {
+          locations.push(val);
+        }
+      });
+    }
+  }
+
+  records.reverse();
+
+  return {
+    status: 'success',
+    version: 'v20',
+    sheetName: sheet.getName(),
+    records: records,
+    locations: locations,
+    driveFolderUrl: 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID
+  };
+}
+
+/**
+ * 新增一筆維修呈報（不寫入任何圖片文字或連結到 G 欄，保持試算表 G 欄乾淨）
+ */
+
+const BACKUP_SHEET_PREFIX = '自動備份_';
+const PRE_DELETE_BACKUP_NAME = '自動備份_刪除前最新';
+const MAX_DAILY_BACKUPS = 7;
+
+/**
+ * 自動建立每日備份工作表（保留最近 7 天），避免意外覆蓋或誤刪時可隨時還原
+ */
+function ensureDailyBackupSheet(ss, sourceSheet) {
+  try {
+    if (!ss) ss = getTargetSpreadsheet();
+    if (!sourceSheet) sourceSheet = getTargetSheet();
+    const todayTag = Utilities.formatDate(new Date(), 'Asia/Hong_Kong', 'yyyy-MM-dd');
+    const backupName = BACKUP_SHEET_PREFIX + todayTag;
+
+    if (!ss.getSheetByName(backupName)) {
+      const copied = sourceSheet.copyTo(ss);
+      copied.setName(backupName);
+      // 移至試算表最後方，避免干擾主要工作表分頁順序
+      ss.setActiveSheet(copied);
+      ss.moveActiveSheet(ss.getSheets().length);
+      ss.setActiveSheet(sourceSheet);
+    }
+
+    // 自動清理超過 7 天的舊每日備份，保持工作表整潔
+    const allSheets = ss.getSheets();
+    const dailyBackups = allSheets
+      .filter(s => /^自動備份_\d{4}-\d{2}-\d{2}$/.test(s.getName()))
+      .sort((a, b) => a.getName().localeCompare(b.getName()));
+
+    while (dailyBackups.length > MAX_DAILY_BACKUPS) {
+      const oldest = dailyBackups.shift();
+      if (oldest) {
+        ss.deleteSheet(oldest);
+      }
+    }
+  } catch (e) {
+    Logger.log('自動備份工作表略過：' + e.message);
+  }
+}
+
+/**
+ * 在執行刪除列前，即時建立一份「自動備份_刪除前最新」快照工作表
+ */
+function createPreDeleteBackupSheet(ss, sourceSheet) {
+  try {
+    if (!ss) ss = getTargetSpreadsheet();
+    if (!sourceSheet) sourceSheet = getTargetSheet();
+    const existing = ss.getSheetByName(PRE_DELETE_BACKUP_NAME);
+    if (existing) {
+      ss.deleteSheet(existing);
+    }
+    const copied = sourceSheet.copyTo(ss);
+    copied.setName(PRE_DELETE_BACKUP_NAME);
+    ss.setActiveSheet(copied);
+    ss.moveActiveSheet(ss.getSheets().length);
+    ss.setActiveSheet(sourceSheet);
+  } catch (e) {
+    Logger.log('刪除前備份工作表略過：' + e.message);
+  }
+}
+
+/**
+ * 可手動執行或設定排程觸發的備份函式（立即更新今日備份工作表）
+ */
+function runManualSheetBackup() {
+  const ss = getTargetSpreadsheet();
+  const sourceSheet = getTargetSheet();
+  const todayTag = Utilities.formatDate(new Date(), 'Asia/Hong_Kong', 'yyyy-MM-dd');
+  const backupName = BACKUP_SHEET_PREFIX + todayTag;
+  const existing = ss.getSheetByName(backupName);
+  if (existing) {
+    ss.deleteSheet(existing);
+  }
+  ensureDailyBackupSheet(ss, sourceSheet);
+  Logger.log('已成功建立/更新備份工作表：' + backupName);
+}
+
+function createRecord(data) {
+  const ss = getTargetSpreadsheet();
+  const sheet = getTargetSheet();
+  const lastDataRow = getEffectiveLastRow(sheet);
+  const targetRow = lastDataRow + 1;
+  const maxCol = Math.max(sheet.getLastColumn(), 12);
+  const ts = data.timestamp || Utilities.formatDate(new Date(), 'Asia/Hong_Kong', 'yyyy/MM/dd HH:mm:ss');
+
+  let photoUrl = '';
+  let photoText = (data.photoUpload === '有') ? '有' : '';
+  let driveError = '';
+
+  if (data.photoBase64 && String(data.photoBase64).indexOf('base64,') !== -1) {
+    try {
+      photoUrl = saveMediaToDrive(data.photoBase64, data.photoName, data.mimeType, data.location, ts);
+      photoText = '有';
+      saveMediaIndexEntry(cleanStr(ts) + '||' + cleanStr(data.reporter) + '||' + cleanStr(data.location), photoUrl);
+    } catch (err) {
+      photoText = '有';
+      driveError = err && err.message ? err.message : String(err);
+    }
+  }
+
+  // 嚴格對應 A~L 欄（G 欄顯示「有」並附上雲端資料夾檔案超連結，試算表內不插入浮動圖片）
+  const cellWrites = [
+    [1, ts],
+    [2, data.reporter || ''],
+    [3, data.type || ''],
+    [4, data.colD || '日校'],
+    [5, data.location || ''],
+    [6, data.description || ''],
+    [7, photoText],
+    [8, data.buy || '不需要購買'],
+    [10, data.support || '不需要'],
+    [12, '待處理']
+  ];
+
+  cellWrites.forEach(pair => {
+    const cell = sheet.getRange(targetRow, pair[0]);
+    if (!cell.getFormula()) {
+      if (pair[0] === 7 && photoUrl) {
+        const richText = SpreadsheetApp.newRichTextValue()
+          .setText('有')
+          .setLinkUrl(photoUrl)
+          .build();
+        cell.setRichTextValue(richText);
+      } else {
+        cell.setValue(pair[1]);
+      }
+    }
+  });
+
+  return {
+    status: 'success',
+    message: driveError ? ('紀錄已寫入試算表，但相片存入雲端資料夾失敗：' + driveError) : '已成功新增維修呈報紀錄',
+    photoUrl: photoUrl,
+    driveError: driveError
+  };
+}
+
+function findMatchingRowIndex(sheet, data) {
+  const effectiveLastRow = getEffectiveLastRow(sheet);
+  if (effectiveLastRow < 2) return -1;
+  const values = sheet.getRange(2, 1, effectiveLastRow - 1, 6).getDisplayValues();
+  const targetTs = cleanStr(data.timestamp);
+  const targetReporter = cleanStr(data.reporter);
+  const targetLoc = cleanStr(data.location);
+
+  for (let i = 0; i < values.length; i++) {
+    if (cleanStr(values[i][0]) === targetTs && cleanStr(values[i][1]) === targetReporter && cleanStr(values[i][4]) === targetLoc) {
+      return i + 2;
+    }
+  }
+  const fallbackRow = Number(data.rowIndex);
+  return (fallbackRow >= 2 && fallbackRow <= effectiveLastRow) ? fallbackRow : -1;
+}
+
+function updateRecordField(data) {
+  const ss = getTargetSpreadsheet();
+  const sheet = getTargetSheet();
+  const rowIdx = findMatchingRowIndex(sheet, data);
+  if (rowIdx === -1) return { status: 'error', message: '找不到對應的維修紀錄列' };
+
+  // H=8(材料購買), I=9(完成日期), J=10(須外界支援), K=11(備註欄), L=12(狀態列)
+  const fieldToCol = {
+    buy: 8,
+    completionDate: 9,
+    support: 10,
+    remark: 11,
+    status: 12
+  };
+
+  const changedField = data.changedField || '';
+  if (changedField && fieldToCol[changedField]) {
+    const cell = sheet.getRange(rowIdx, fieldToCol[changedField]);
+    if (!cell.getFormula()) cell.setValue(data[changedField]);
+    if (changedField === 'status' && data.completionDate !== undefined) {
+      const dCell = sheet.getRange(rowIdx, 9);
+      if (!dCell.getFormula()) dCell.setValue(data.completionDate);
+    }
+    if (changedField === 'completionDate' && data.status !== undefined) {
+      const sCell = sheet.getRange(rowIdx, 12);
+      if (!sCell.getFormula()) sCell.setValue(data.status);
+    }
+  }
+  return { status: 'success', message: '已更新雲端紀錄' };
+}
+
+function deleteRecord(data) {
+  const ss = getTargetSpreadsheet();
+  const sheet = getTargetSheet();
+  createPreDeleteBackupSheet(ss, sheet);
+  const rowIdx = findMatchingRowIndex(sheet, data);
+  if (rowIdx === -1) {
+    // 試算表內已無此筆資料，視為已完成移除，通知前端清除待同步佇列
+    return { status: 'success', message: '雲端已無此紀錄，已自動清除待同步項目' };
+  }
+  sheet.deleteRow(rowIdx);
+  return { status: 'success', message: '已從雲端刪除紀錄' };
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * 測試並授權 Google Drive 雲端資料夾寫入權限（可直接在 Apps Script 編輯器上方選取此函式並按「執行」）
+ */
+function testDriveFolderAccess() {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  Logger.log('成功連線雲端資料夾：' + folder.getName() + ' (' + folder.getUrl() + ')');
+  return '成功連線雲端資料夾：' + folder.getName();
+}
+
+function authorizeDriveWrite() {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const testFile = folder.createFile('auth_test.txt', 'ok', MimeType.PLAIN_TEXT);
+  testFile.setTrashed(true);
+  Logger.log('已成功取得 Google Drive 寫入權限！');
+}
+
+// =========================================================================
+// 自動定時備份模組（方案 A：同試算表新增備份分頁 + 自動清理超過 15 天舊備份）
+// =========================================================================
+const BACKUP_CONFIG = {
+  SOURCE_SHEET_NAME: '',       // 留空 '' 代表自動抓取試算表的第一個工作表（主維修表），亦可填入指定工作表名稱
+  BACKUP_PREFIX: '備份_',       // 備份分頁名稱前綴，例如：備份_2026-11-24
+  RETENTION_DAYS: 15,          // 自動保留天數（超過 15 天自動刪除）
+  DELAY_MS: 10 * 1000          // 更新後 10 秒執行備份
+};
+
+/**
+ * 1. 排程 10 秒後執行備份（具備防抖動機制：若 10 秒內連續多次修改，只會在最後一次更新的 10 秒後執行一次）
+ * 請在您原本處理新增(create)、修改(update_field)、刪除(delete_record)成功後呼叫此函式：scheduleAutoBackup10s();
+ */
+function scheduleAutoBackup10s() {
+  try {
+    // 清除尚未執行的舊 10 秒排程，避免短時間內重複建立多個觸發器
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'runScheduledBackupAndCleanup') {
+        ScriptApp.deleteTrigger(triggers[i]);
       }
     }
 
-    function handleCompletionDateChange(id, inputEl) {
-      inputEl.dataset.userChanged = '1';
-      const newVal = inputEl.value || '';
-      inputEl.dataset.origVal = newVal;
-      updateRecordField(id, 'completionDate', newVal);
+    // 建立 10 秒後執行的一次性時間觸發器
+    ScriptApp.newTrigger('runScheduledBackupAndCleanup')
+      .timeBased()
+      .after(BACKUP_CONFIG.DELAY_MS)
+      .create();
+  } catch (err) {
+    Logger.log('排程自動備份失敗：' + err.message);
+  }
+}
+
+/**
+ * 2. 實際執行備份與清理超過 15 天舊備份的主函式
+ */
+function runScheduledBackupAndCleanup() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return; // 避免併發衝突
+
+  try {
+    // 清除本次已觸發的一次性觸發器，保持觸發器列表乾淨
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'runScheduledBackupAndCleanup') {
+        ScriptApp.deleteTrigger(triggers[i]);
+      }
     }
 
-    function handleCompletionDateBlur(id, inputEl) {
-      if (inputEl.dataset.userChanged === '1') {
-        inputEl.dataset.userChanged = '';
-        return;
-      }
-      const origVal = inputEl.dataset.origVal || '';
-      const newVal = inputEl.value || '';
-      if (newVal === origVal) return;
+    const ss = getTargetSpreadsheet();
+    const tz = ss.getSpreadsheetTimeZone() || 'Asia/Hong_Kong';
+    const now = new Date();
+    const todayStr = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+    const backupSheetName = BACKUP_CONFIG.BACKUP_PREFIX + todayStr;
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (!origVal && newVal === todayStr) {
-        if (!confirm('是否將完成日期設為今日（' + todayStr + '）並標記為「已完成」？')) {
-          inputEl.value = '';
-          return;
+    // 取得要備份的主工作表（優先讀取指定名稱或主維修表，絕不會誤抓備份分頁）
+    const sourceSheet = BACKUP_CONFIG.SOURCE_SHEET_NAME
+      ? ss.getSheetByName(BACKUP_CONFIG.SOURCE_SHEET_NAME)
+      : getTargetSheet();
+
+    if (!sourceSheet) {
+      Logger.log('找不到來源工作表，無法備份');
+      return;
+    }
+
+    // 若今天已經有備份分頁（例如：備份_2026-11-24），先刪除舊的同日分頁再重新複製，確保同一天永遠保留最新狀態且不佔多餘分頁
+    const existingTodayBackup = ss.getSheetByName(backupSheetName);
+    if (existingTodayBackup) {
+      ss.deleteSheet(existingTodayBackup);
+    }
+
+    // 複製主工作表作為今日備份分頁，並移至所有分頁的最右側
+    const copiedSheet = sourceSheet.copyTo(ss);
+    copiedSheet.setName(backupSheetName);
+    ss.setActiveSheet(copiedSheet);
+    ss.moveActiveSheet(ss.getSheets().length);
+
+    // 切回主工作表，避免影響日常操作視角
+    ss.setActiveSheet(sourceSheet);
+
+    // 執行清理：刪除超過 15 天的舊備份分頁
+    cleanupOldBackupSheets_(ss, now, tz);
+
+    Logger.log('已完成自動備份：' + backupSheetName);
+  } catch (err) {
+    Logger.log('執行自動備份發生錯誤：' + err.message);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * 3. 自動刪除超過 15 天的舊備份分頁（比對分頁名稱中的 yyyy-MM-dd 日期）
+ */
+function cleanupOldBackupSheets_(ss, now, tz) {
+  const sheets = ss.getSheets();
+  const cutoffMs = BACKUP_CONFIG.RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const todayMidnight = new Date(Utilities.formatDate(now, tz, 'yyyy/MM/dd') + ' 00:00:00');
+  const prefix = BACKUP_CONFIG.BACKUP_PREFIX;
+
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    const name = sheet.getName();
+
+    let datePart = '';
+    if (name.indexOf(prefix) === 0) {
+      datePart = name.substring(prefix.length).trim(); // 預期格式：yyyy-MM-dd
+    } else if (name.indexOf(BACKUP_SHEET_PREFIX) === 0) {
+      datePart = name.substring(BACKUP_SHEET_PREFIX.length).trim(); // 兼容舊版 自動備份_yyyy-MM-dd
+    }
+    if (datePart) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const parts = datePart.split('-');
+        const sheetDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const diffMs = todayMidnight.getTime() - sheetDate.getTime();
+
+        // 超過 15 天（diffMs > 15 天毫秒數）即刪除該備份分頁
+        if (diffMs > cutoffMs) {
+          // 安全保護：確保試算表至少保留 1 個工作表
+          if (ss.getSheets().length > 1) {
+            ss.deleteSheet(sheet);
+            Logger.log('已自動清理超過 15 天的舊備份分頁：' + name);
+          }
         }
       }
-
-      inputEl.dataset.origVal = newVal;
-      updateRecordField(id, 'completionDate', newVal);
     }
+  }
+}
 
-    function clearCompletionDate(id) {
-      const inputEl = document.getElementById('date-input-' + id);
-      if (inputEl) {
-        inputEl.value = '';
-        inputEl.dataset.origVal = '';
-        inputEl.dataset.userChanged = '';
-      }
-      updateRecordField(id, 'completionDate', '');
-      showToast('已清除完成日期（回復空白）', 'info');
-    }
-
-    async function updateRecordField(id, field, value) {
-      const idx = records.findIndex(r => r.id === id);
-      if (idx === -1) return;
-
-      records[idx][field] = value;
-      if (field === 'status') {
-        if (value === '已完成' && !records[idx].completionDate) {
-          records[idx].completionDate = new Date().toISOString().split('T')[0];
-        } else if (value === '待處理') {
-          records[idx].completionDate = '';
-        }
-      } else if (field === 'completionDate') {
-        records[idx].status = value ? '已完成' : '待處理';
-      }
-
-      saveLocalData();
-      renderCards();
-
-      const updatePayload = {
-        action: 'update_field',
-        changedField: field,
-        rowIndex: records[idx].rowIndex || '',
-        timestamp: records[idx].timestamp,
-        reporter: records[idx].reporter,
-        location: records[idx].location,
-        buy: records[idx].buy,
-        completionDate: records[idx].completionDate,
-        support: records[idx].support,
-        remark: records[idx].remark,
-        status: records[idx].status
-      };
-
-      try {
-        const res = await postToGas(updatePayload);
-        if (res && res.status === 'success') {
-          showToast('已同步更新至雲端', 'success');
-        } else {
-          pendingSyncOps.push(updatePayload);
-          saveLocalData();
-          showToast('已暫存修改，請點擊頂部同步圖示', 'info');
-        }
-      } catch (err) {
-        pendingSyncOps.push(updatePayload);
-        saveLocalData();
-        showToast('已暫存修改，稍後自動同步', 'info');
-      }
-    }
-
-    // =========================================================================
-    // 9. 刪除紀錄與彈窗管理
-    // =========================================================================
-    let pendingDeleteId = null;
-
-    function openDeleteConfirmModal(id) {
-      const rec = records.find(r => r.id === id);
-      if (!rec) return;
-      pendingDeleteId = id;
-      document.getElementById('deleteConfirmDesc').textContent =
-        '確定要刪除「' + rec.location + '」（呈報人：' + rec.reporter + '）的維修紀錄嗎？';
-      openModal('deleteConfirmModal');
-    }
-
-    async function confirmDeleteRecord() {
-      if (!pendingDeleteId) return;
-      const idx = records.findIndex(r => r.id === pendingDeleteId);
-      if (idx === -1) {
-        closeModal('deleteConfirmModal');
-        return;
-      }
-
-      const target = records[idx];
-      records.splice(idx, 1);
-      saveLocalData();
-      renderCards();
-      closeModal('deleteConfirmModal');
-
-      const delPayload = {
-        action: 'delete_record',
-        rowIndex: target.rowIndex || '',
-        timestamp: target.timestamp,
-        reporter: target.reporter,
-        location: target.location
-      };
-
-      try {
-        const res = await postToGas(delPayload);
-        if (res && res.status === 'success') showToast('已從雲端刪除該筆紀錄', 'success');
-        else {
-          pendingSyncOps.push(delPayload);
-          saveLocalData();
-          showToast('已暫存刪除，請點擊頂部同步圖示', 'info');
-        }
-      } catch (err) {
-        pendingSyncOps.push(delPayload);
-        saveLocalData();
-        showToast('已暫存刪除，稍後自動同步', 'info');
-      }
-    }
-
-    function openModal(id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('hidden');
-    }
-
-    function closeModal(id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
-      if (id === 'deleteConfirmModal') pendingDeleteId = null;
-    }
-
-
-
-    let toastTimer = null;
-    function showToast(message, type = 'success') {
-      const toast = document.getElementById('appToast');
-      const dot = document.getElementById('toastDot');
-      const msgEl = document.getElementById('toastMessage');
-      if (!toast || !msgEl) return;
-
-      msgEl.textContent = message;
-      if (dot) {
-        dot.className = 'w-2.5 h-2.5 rounded-full shrink-0 ' +
-          (type === 'error' ? 'bg-rose-400' : (type === 'info' ? 'bg-sky-300' : 'bg-emerald-400'));
-      }
-
-      toast.classList.remove('translate-y-[160%]', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-[160%]', 'opacity-0');
-      }, 3000);
-    }
-
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-    }
-  </script>
-</body>
-</html>
+/**
+ * 4. 選用：若有人直接在 Google 試算表內手動修改儲存格，也能觸發 10 秒後自動備份
+ * （需在 GAS「觸發條件」中新增「編輯時 (On edit)」執行此函式）
+ */
+function onSpreadsheetEditBackup(e) {
+  if (!e || !e.range) return;
+  const sheetName = e.range.getSheet().getName();
+  // 避免修改備份分頁時重複觸發
+  if (isBackupSheetName_(sheetName)) return;
+  scheduleAutoBackup10s();
+}
