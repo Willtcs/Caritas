@@ -523,6 +523,907 @@
     })();
   </script>
 
-  <?!= include('Staff_JS'); ?>
+  <script>
+  const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyCHwbGTPm_C4C5ekBjIBmwKx7yXzZQC_rSeFQaGHrjvbrSTUhvQVDFedLPD3AEIfm31g/exec';
+
+  const STORAGE_KEY = 'caritas_lok_yi_repair_records_v12';
+  const LOCATIONS_STORAGE_KEY = 'caritas_lok_yi_locations_v12';
+  const LOCATIONS_BY_AREA_KEY = 'caritas_lok_yi_locations_by_area_v12';
+  const WEB_MEDIA_MAP_KEY = 'caritas_lok_yi_web_media_v9';
+  const PAGE_SIZE = 12;
+
+  const DEFAULT_LOCATIONS = [
+    '011 明見班 / 廁所', '013 明智班 / 廁所', '014 明恕課室', '021 明毅班 / 廁所',
+    '023 明考班 / 廁所', '024 明柔A班 / 廁所', '030 廚房', '031 看更房',
+    'A003 校長室', 'A004 女廁', 'A007 會議室', 'A008 明達班', 'A009 殘廁',
+    'A012 明恕班 / A013 廁所', 'A014 明耐班 / 廁所', 'A101 TA房',
+    'N006 愛地球餐廳 / 洗碗區', 'N007 教員室', 'N008 教員休息室',
+    'N011 / 士多房', 'N013 - N015 ST 語言室', 'N017 課室 / 廁所',
+    'N018 明柔B班 / 廁所', 'N019 明容班 / 廁所', 'N020 明敏班 / 廁所',
+    'N109 視藝室', 'N112 明正班 / 廁所', 'N115 音樂室 / 廁所',
+    '101 OT房 / 廁所', '129 感官室', '130 圖書館', '132 感統室', '禮堂 / 廁所',
+    '105 洗衣房', '106 細洗衣房', '107 - 108 寢室 / 廁所', '109 寢室 / 廁所',
+    '112 - 113 寢室 / 廁所', '114 護士室', '128 宿舍家長辦公室',
+    'A102 舍監室', 'A103 寢室 / 廁所', 'A104 寢室 / 廁所',
+    'N110 家長宿舍辦公室', 'N122 寢室 / 廁所', 'N123 寢室 / 廁所', 'N124 士多房',
+    '其他 ( 請註明位置 )'
+  ];
+
+  let records = [];
+  let locationOptions = [...DEFAULT_LOCATIONS];
+  let locationsByArea = { '日校': [], '宿舍': [] };
+  let uploadedMedia = null;
+  let currentPage = 1;
+  let isFetchingFromGas = false;
+  let pendingSubmitDraft = null;
+  const sessionMediaCache = {};
+  const inflightMediaPromises = {};
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadLocalData();
+    renderLocationDropdown();
+    applyUrlPrefill();
+    setupPhotoInput();
+    setupRealtimeNameCheck();
+    updateCounters();
+    switchTab('form');
+
+    document.querySelectorAll('input[name="locationArea"]').forEach(radio => {
+      radio.addEventListener('change', () => renderLocationDropdown());
+    });
+
+    fetchRecordsFromGas(false, false);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !isFetchingFromGas) {
+        fetchRecordsFromGas(false, true);
+      }
+    });
+
+    // 每 5 秒觸發一次全樣式即時備份檢查（「水電及其他 2627 - 備份」）
+      setInterval(function() {
+        if (document.visibilityState === 'visible') {
+          if (isGasNativeAvailable()) {
+            runGasServerFunction('apiEnsureStyledBackup', false, 8000).catch(function() {});
+          } else if (GAS_WEB_APP_URL) {
+            const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+            fetch(GAS_WEB_APP_URL + sep + 'action=backup_tick&t=' + Date.now(), { method: 'GET', redirect: 'follow' }).catch(function() {});
+          }
+        }
+      }, 5000);
+  });
+
+  function applyUrlPrefill() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const locParam = (params.get('loc') || '').trim();
+      if (!locParam) return;
+
+      const inDorm = (locationsByArea['宿舍'] && locationsByArea['宿舍'].includes(locParam)) || locParam.includes('宿舍');
+      const inDay = (locationsByArea['日校'] && locationsByArea['日校'].includes(locParam));
+
+      if (inDorm) {
+        const dormRadio = document.querySelector('input[name="locationArea"][value="宿舍"]');
+        if (dormRadio) dormRadio.checked = true;
+      } else if (inDay) {
+        const dayRadio = document.querySelector('input[name="locationArea"][value="日校"]');
+        if (dayRadio) dayRadio.checked = true;
+      }
+
+      if (!locationOptions.includes(locParam)) {
+        locationOptions.unshift(locParam);
+      }
+      renderLocationDropdown();
+
+      const selectEl = document.getElementById('locationDetail');
+      if (selectEl) {
+        if (!Array.from(selectEl.options).some(opt => opt.value === locParam)) {
+          const opt = document.createElement('option');
+          opt.value = locParam;
+          opt.textContent = locParam;
+          selectEl.insertBefore(opt, selectEl.options[1] || null);
+        }
+        selectEl.value = locParam;
+      }
+    } catch (e) {}
+  }
+
+  // 同時控制電腦版左側側邊欄與手機版底部導覽列切換
+  function switchTab(tab) {
+    const formView = document.getElementById('view-form');
+    const pendingView = document.getElementById('view-pending');
+
+    ['form', 'pending'].forEach(k => {
+      // 1. 手機版底部導覽列樣式
+      const bBtn = document.getElementById('bnav-' + k);
+      if (bBtn) {
+        const pill = bBtn.querySelector('.bnav-pill');
+        if (k === tab) {
+          bBtn.classList.remove('text-[#5B81B2]');
+          bBtn.classList.add('text-[#415E91]');
+          if (pill) pill.classList.add('bg-[#BDF2F6]', 'text-[#415E91]');
+        } else {
+          bBtn.classList.remove('text-[#415E91]');
+          bBtn.classList.add('text-[#5B81B2]');
+          if (pill) pill.classList.remove('bg-[#BDF2F6]', 'text-[#415E91]');
+        }
+      }
+
+      // 2. 電腦版側邊欄選單樣式
+      const sBtn = document.getElementById('snav-' + k);
+      if (sBtn) {
+        if (k === tab) {
+          sBtn.className = 'w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[14px] font-bold bg-[#BDF2F6] text-[#415E91] shadow-sm transition-all cursor-pointer';
+        } else {
+          sBtn.className = 'w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[14px] font-semibold text-[#BDF2F6] hover:bg-[#5B81B2]/60 transition-all cursor-pointer';
+        }
+      }
+    });
+
+    const topTitle = document.getElementById('desktopTopTitle');
+    const topDesc = document.getElementById('desktopTopDesc');
+
+    if (tab === 'form') {
+      formView.classList.remove('hidden');
+      pendingView.classList.add('hidden');
+      if (topTitle) topTitle.textContent = '填寫維修呈報';
+      if (topDesc) topDesc.textContent = '教職員校內設施損壞呈報工作台（標示 * 為必填欄位）';
+    } else {
+      formView.classList.add('hidden');
+      pendingView.classList.remove('hidden');
+      if (topTitle) topTitle.textContent = '待處理維修進度總覽';
+      if (topDesc) topDesc.textContent = '即時檢視校內尚未完成維修的呈報項目';
+      currentPage = 1;
+      renderPendingViews();
+      fetchRecordsFromGas(false, false);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function getPendingRecords() {
+    return records.filter(rec => !(rec.status === '已完成' || Boolean(rec.completionDate)));
+  }
+
+  function changePage(delta) {
+    const filtered = getPendingRecords();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const next = currentPage + delta;
+    if (next >= 1 && next <= totalPages) {
+      currentPage = next;
+      renderPendingViews();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function renderPendingViews() {
+    const mobileContainer = document.getElementById('mobileCardsContainer');
+    const desktopTbody = document.getElementById('desktopTableBody');
+    const desktopTableWrap = document.getElementById('desktopTableContainer');
+    const emptyState = document.getElementById('emptyCardsState');
+    const loadingState = document.getElementById('loadingCardsState');
+
+    const filtered = getPendingRecords();
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+    document.getElementById('mobileFooterCount').textContent =
+      '顯示 ' + (totalItems === 0 ? 0 : startIdx + 1) + '-' + Math.min(startIdx + PAGE_SIZE, totalItems) + ' / 共 ' + totalItems + ' 筆';
+    document.getElementById('mobilePageIndicator').textContent = '第 ' + currentPage + ' / ' + totalPages + ' 頁';
+    document.getElementById('mobilePrevPageBtn').disabled = currentPage <= 1;
+    document.getElementById('mobileNextPageBtn').disabled = currentPage >= totalPages;
+
+    if (pageItems.length === 0) {
+      mobileContainer.innerHTML = '';
+      if (desktopTbody) desktopTbody.innerHTML = '';
+      if (desktopTableWrap) desktopTableWrap.classList.add('md:hidden');
+      if (isFetchingFromGas) {
+        loadingState.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+      } else {
+        loadingState.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+      }
+      return;
+    }
+
+    loadingState.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    if (desktopTableWrap) desktopTableWrap.classList.remove('md:hidden');
+
+    // 1. 渲染手機版卡片
+    mobileContainer.innerHTML = pageItems.map(rec => {
+      const isPlumbing = String(rec.type || '').startsWith('水電');
+      const typeIcon = isPlumbing ? '⚡' : '🔨';
+      const areaBadge = rec.colD === '日校'
+        ? '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#BDF2F6]/80 text-[#415E91] border border-[#9BD2E4]">日校</span>'
+        : '<span class="px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-[#9BD2E4]/50 text-[#415E91] border border-[#779EC8]">宿舍</span>';
+
+      const rawMediaText = String(rec.photoUpload || '').trim();
+      const isEmptyMediaText = !rawMediaText || ['無', '沒有', '否', '-', '—', 'N/A'].includes(rawMediaText);
+      const hasMediaFlag = !isEmptyMediaText || Boolean(rec.photoUrl || rec.mediaDataUrl);
+      const thumbSrc = getRecordThumbnailUrl(rec);
+
+      let mediaBlock = '';
+      if (hasMediaFlag) {
+        mediaBlock =
+          '<button type="button" onclick="openMediaPreview(\'' + rec.id + '\')" class="w-full mt-2.5 p-2 rounded-xl bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#779EC8] text-[#415E91] flex items-center justify-between gap-2.5 transition-colors cursor-pointer">' +
+            '<div class="flex items-center gap-2.5 min-w-0 pointer-events-none">' +
+              (thumbSrc
+                ? '<img id="card-thumb-' + rec.id + '" src="' + escapeHtml(thumbSrc) + '" alt="縮圖" class="w-11 h-11 rounded-lg object-cover border border-[#779EC8]/70 bg-white shrink-0" onerror="this.style.display=\'none\'" />'
+                : '<div class="w-11 h-11 rounded-lg bg-[#BDF2F6] text-[#415E91] flex items-center justify-center shrink-0 font-bold">📷</div>') +
+              '<div class="text-left min-w-0">' +
+                '<p class="text-[13px] font-bold text-[#415E91] truncate">檢視現場相片</p>' +
+                '<p class="text-[11px] text-[#5B81B2]">點擊直接開啟放大預覽</p>' +
+              '</div>' +
+            '</div>' +
+            '<span class="px-2.5 py-1 rounded-lg bg-[#415E91] text-white text-[11.5px] font-bold shrink-0 pointer-events-none">開啟</span>' +
+          '</button>';
+      }
+
+      const remarkHtml = rec.remark
+        ? '<div class="mt-2.5 px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[12.5px] text-amber-900"><span class="font-bold">跟進備註：</span>' + escapeHtml(rec.remark) + '</div>'
+        : '';
+
+      return '<article class="bg-white rounded-2xl p-4 border border-[#9BD2E4] shadow-card">' +
+        '<div class="flex items-start justify-between gap-2">' +
+          '<div class="flex items-center gap-1.5 flex-wrap">' +
+            '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[14px] bg-[#BDF2F6]/70 border border-[#9BD2E4]">' + typeIcon + '</span>' +
+            areaBadge +
+            '<span class="text-[16px] font-bold text-[#415E91]">' + escapeHtml(rec.location) + '</span>' +
+          '</div>' +
+          '<span class="px-2.5 py-0.5 rounded-full text-[11.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">待處理</span>' +
+        '</div>' +
+        '<p class="text-[14px] text-[#415E91] mt-2.5 bg-[#f0fbfc] p-3 rounded-xl border border-[#BDF2F6] leading-relaxed break-words">' + escapeHtml(rec.description) + '</p>' +
+        '<div class="flex items-center justify-between text-[12px] text-[#5B81B2] mt-2.5">' +
+          '<span>呈報人：<strong class="text-[#415E91]">' + escapeHtml(rec.reporter) + '</strong></span>' +
+          '<span class="font-mono text-[11px]">' + escapeHtml(rec.timestamp) + '</span>' +
+        '</div>' +
+        remarkHtml + mediaBlock +
+      '</article>';
+    }).join('');
+
+    // 2. 渲染電腦版執行人同款資料表格
+    if (desktopTbody) {
+      desktopTbody.innerHTML = pageItems.map(rec => {
+        const isPlumbing = String(rec.type || '').startsWith('水電');
+        const typeBadge = isPlumbing
+          ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-sky-50 text-sky-700 border border-sky-200">⚡ 水電</span>'
+          : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11.5px] font-bold bg-slate-100 text-slate-700 border border-slate-200">🔨 其他</span>';
+
+        const areaBadge = rec.colD === '日校'
+          ? '<span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-[#BDF2F6]/80 text-[#415E91] border border-[#9BD2E4]">日校</span>'
+          : '<span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-[#9BD2E4]/50 text-[#415E91] border border-[#779EC8]">宿舍</span>';
+
+        const rawMediaText = String(rec.photoUpload || '').trim();
+        const isEmptyMediaText = !rawMediaText || ['無', '沒有', '否', '-', '—', 'N/A'].includes(rawMediaText);
+        const hasMediaFlag = !isEmptyMediaText || Boolean(rec.photoUrl || rec.mediaDataUrl);
+        const thumbSrc = getRecordThumbnailUrl(rec);
+
+        const mediaCell = hasMediaFlag
+          ? '<button type="button" onclick="openMediaPreview(\'' + rec.id + '\')" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#f0fbfc] hover:bg-[#BDF2F6] border border-[#779EC8] text-[#415E91] text-[12px] font-bold transition-colors cursor-pointer">' +
+              (thumbSrc
+                ? '<img id="tbl-thumb-' + rec.id + '" src="' + escapeHtml(thumbSrc) + '" alt="縮圖" class="w-6 h-6 rounded object-cover border border-[#9BD2E4]" onerror="this.style.display=\'none\'" />'
+                : '<span>📷</span>') +
+              '<span>檢視</span>' +
+            '</button>'
+          : '<span class="text-[12px] text-[#779EC8]">—</span>';
+
+        return '<tr class="hover:bg-[#f0fbfc]/80 transition-colors">' +
+          '<td class="py-3 px-4 font-mono text-[12px] text-[#5B81B2] whitespace-nowrap">' + escapeHtml(rec.timestamp) + '</td>' +
+          '<td class="py-3 px-3 whitespace-nowrap">' + typeBadge + '</td>' +
+          '<td class="py-3 px-3 whitespace-nowrap"><div class="flex items-center gap-1.5">' + areaBadge + '<span class="font-bold text-[#415E91]">' + escapeHtml(rec.location) + '</span></div></td>' +
+          '<td class="py-3 px-4 text-[#415E91] max-w-xs break-words leading-snug">' + escapeHtml(rec.description) + '</td>' +
+          '<td class="py-3 px-3 font-semibold text-[#415E91] whitespace-nowrap">' + escapeHtml(rec.reporter) + '</td>' +
+          '<td class="py-3 px-3 text-[12px] text-[#5B81B2] max-w-[180px] break-words">' +
+            '<div>材料：' + escapeHtml(rec.buy) + '</div>' +
+            (rec.remark ? '<div class="text-amber-800 font-medium mt-0.5">備註：' + escapeHtml(rec.remark) + '</div>' : '') +
+          '</td>' +
+          '<td class="py-3 px-3 text-center whitespace-nowrap">' + mediaCell + '</td>' +
+          '<td class="py-3 px-4 text-center whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-[11.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200">待處理</span></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    preloadVisiblePendingMedia();
+  }
+
+  // =========================================================================
+  // 安全通道相片讀取 + 背景預載
+  // =========================================================================
+  function extractGoogleDriveFileId(url) {
+    if (!url) return '';
+    const str = String(url).trim();
+    const dMatch = str.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (dMatch) return dMatch[1];
+    const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch) return idMatch[1];
+    return '';
+  }
+
+  function getRecordThumbnailUrl(rec) {
+    if (rec.mediaDataUrl) return rec.mediaDataUrl;
+    const driveId = extractGoogleDriveFileId(rec.photoUrl || rec.photoUpload);
+    return driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w240') : '';
+  }
+
+  function fetchDriveMediaViaGasProxy(driveId) {
+    if (sessionMediaCache[driveId]) return Promise.resolve(sessionMediaCache[driveId]);
+    if (inflightMediaPromises[driveId]) return inflightMediaPromises[driveId];
+
+    const promise = (async () => {
+      try {
+        let resObj = null;
+        if (isGasNativeAvailable()) {
+          const raw = await runGasServerFunction('apiGetDriveMediaBase64', driveId, 20000);
+          resObj = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+        } else {
+          const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+          const resp = await fetch(GAS_WEB_APP_URL + sep + 'action=get_image&fileId=' + encodeURIComponent(driveId));
+          resObj = await resp.json();
+        }
+        if (resObj && resObj.status === 'success' && resObj.dataUrl) {
+          sessionMediaCache[driveId] = resObj;
+          const matchedRec = records.find(r => extractGoogleDriveFileId(r.photoUrl || r.photoUpload) === driveId);
+          if (matchedRec) matchedRec.mediaDataUrl = resObj.dataUrl;
+        }
+        return resObj;
+      } finally {
+        delete inflightMediaPromises[driveId];
+      }
+    })();
+
+    inflightMediaPromises[driveId] = promise;
+    return promise;
+  }
+
+  function preloadVisiblePendingMedia() {
+    const filtered = getPendingRecords();
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+    let preloadCount = 0;
+    for (const rec of pageItems) {
+      if (preloadCount >= 5) break;
+      if (rec.mediaDataUrl) continue;
+      const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http')) ? rec.photoUrl : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
+      const driveId = extractGoogleDriveFileId(rawUrl);
+      if (driveId && !sessionMediaCache[driveId] && !inflightMediaPromises[driveId]) {
+        preloadCount++;
+        setTimeout(() => {
+          fetchDriveMediaViaGasProxy(driveId).then(res => {
+            if (res && res.status === 'success' && res.dataUrl) {
+              ['card-thumb-', 'tbl-thumb-'].forEach(prefix => {
+                const thumbImg = document.getElementById(prefix + rec.id);
+                if (thumbImg) {
+                  thumbImg.src = res.dataUrl;
+                  thumbImg.style.display = 'inline-block';
+                }
+              });
+            }
+          }).catch(() => {});
+        }, preloadCount * 250);
+      }
+    }
+  }
+
+  async function openMediaPreview(id) {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+
+    document.getElementById('modalMediaTitle').textContent = rec.location + ' — 現場相片';
+    document.getElementById('modalMediaMeta').textContent = '呈報人：' + rec.reporter + ' ・ ' + rec.colD + ' ・ ' + rec.timestamp;
+
+    const content = document.getElementById('modalMediaContent');
+    const rawUrl = (rec.photoUrl && rec.photoUrl.startsWith('http')) ? rec.photoUrl : (rec.photoUpload && rec.photoUpload.startsWith('http') ? rec.photoUpload : '');
+    const driveId = extractGoogleDriveFileId(rawUrl);
+
+    if (rec.mediaDataUrl) {
+      content.innerHTML = '<img src="' + rec.mediaDataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+      openModal('mediaModal');
+      return;
+    }
+
+    if (driveId) {
+      if (sessionMediaCache[driveId]) {
+        content.innerHTML = '<img src="' + sessionMediaCache[driveId].dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+        openModal('mediaModal');
+        return;
+      }
+
+      content.innerHTML =
+        '<div class="flex flex-col items-center justify-center py-10 px-4 text-center space-y-3 text-white">' +
+          '<div class="w-9 h-9 border-4 border-[#BDF2F6] border-t-transparent rounded-full animate-spin"></div>' +
+          '<p class="text-[14px] font-bold text-[#BDF2F6]">正在快速載入現場相片...</p>' +
+        '</div>';
+      openModal('mediaModal');
+
+      try {
+        const proxyRes = await fetchDriveMediaViaGasProxy(driveId);
+        if (proxyRes && proxyRes.status === 'success' && proxyRes.dataUrl) {
+          content.innerHTML = '<img src="' + proxyRes.dataUrl + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" />';
+          return;
+        }
+      } catch (err) {}
+
+      const previewImgUrl = 'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1600';
+      const drivePreviewIframeUrl = 'https://drive.google.com/file/d/' + driveId + '/preview';
+      content.innerHTML = '<img src="' + escapeHtml(previewImgUrl) + '" alt="現場相片" class="w-full max-h-[72vh] rounded-xl shadow-lg object-contain bg-white" onerror="this.outerHTML=\'<iframe src=\\\'' + escapeHtml(drivePreviewIframeUrl) + '\\\' class=\\\'w-full h-[65vh] rounded-xl border-0 bg-white\\\'></iframe>\'" />';
+      return;
+    }
+
+    content.innerHTML = '<div class="bg-white rounded-xl p-6 text-center max-w-xs w-full"><p class="text-[14px] font-bold text-[#415E91]">此為舊版 Google 表單直接上傳，無內嵌預覽圖。</p></div>';
+    openModal('mediaModal');
+  }
+
+  // =========================================================================
+  // GAS 連線與本地資料處理
+  // =========================================================================
+  function isGasNativeAvailable() {
+    try {
+      return typeof window.google !== 'undefined' && Boolean(window.google.script) && Boolean(window.google.script.run);
+    } catch (e) { return false; }
+  }
+
+  function runGasServerFunction(fnName, arg, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('雲端連線逾時')); } }, timeoutMs);
+      try {
+        const runner = window.google.script.run
+          .withSuccessHandler(res => { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } })
+          .withFailureHandler(err => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error(err && err.message ? err.message : String(err))); } });
+        if (arg !== undefined) runner[fnName](arg);
+        else runner[fnName]();
+      } catch (err) {
+        if (!settled) { settled = true; clearTimeout(timer); reject(err); }
+      }
+    });
+  }
+
+  function loadLocalData() {
+    try {
+      const rawRecords = localStorage.getItem(STORAGE_KEY);
+      if (rawRecords) {
+        const parsed = JSON.parse(rawRecords);
+        records = Array.isArray(parsed) ? parsed.map((item, idx) => normalizeRecordItem(item, idx)) : [];
+      }
+      const rawLocations = localStorage.getItem(LOCATIONS_STORAGE_KEY);
+      if (rawLocations) {
+        const parsedLoc = JSON.parse(rawLocations);
+        if (Array.isArray(parsedLoc) && parsedLoc.length > 0) locationOptions = parsedLoc;
+      }
+      const rawByArea = localStorage.getItem(LOCATIONS_BY_AREA_KEY);
+      if (rawByArea) {
+        const parsedArea = JSON.parse(rawByArea);
+        if (parsedArea && typeof parsedArea === 'object') locationsByArea = parsedArea;
+      }
+    } catch (e) { records = []; }
+  }
+
+  function saveLocalData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(locationOptions));
+      localStorage.setItem(LOCATIONS_BY_AREA_KEY, JSON.stringify(locationsByArea));
+    } catch (e) {}
+    updateCounters();
+  }
+
+  function updateCounters() {
+    const pending = getPendingRecords().length;
+    document.getElementById('badge-pending').textContent = pending;
+    document.getElementById('bnavPendingBadge').textContent = pending;
+    const snavBadge = document.getElementById('snavPendingBadge');
+    if (snavBadge) snavBadge.textContent = pending;
+    const desktopBadge = document.getElementById('desktopBadgePending');
+    if (desktopBadge) desktopBadge.textContent = pending;
+  }
+
+  function sanitizeCellText(val) {
+    return (val === null || val === undefined) ? '' : String(val).replace(/[\r\n\t\u0000-\u001F]+/g, ' ').trim();
+  }
+
+  function normalizeDateForInput(rawVal) {
+    if (!rawVal) return '';
+    const str = String(rawVal).trim();
+    if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(str)) {
+      const parts = str.split(' ')[0].split(/[-\/]/);
+      return parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+    }
+    return '';
+  }
+
+  function findWebMediaForRecord(ts, reporter, location) {
+    try {
+      const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
+      return map[ts + '||' + reporter + '||' + location] || null;
+    } catch (e) { return null; }
+  }
+
+  function saveWebMediaForRecord(ts, reporter, location, dataUrl) {
+    if (!dataUrl) return;
+    try {
+      const map = JSON.parse(localStorage.getItem(WEB_MEDIA_MAP_KEY) || '{}');
+      map[ts + '||' + reporter + '||' + location] = { dataUrl, mediaType: 'image' };
+      localStorage.setItem(WEB_MEDIA_MAP_KEY, JSON.stringify(map));
+    } catch (e) {}
+  }
+
+  function normalizeRecordItem(item, idx) {
+    const ts = sanitizeCellText(item.timestamp);
+    const rep = sanitizeCellText(item.reporter);
+    const loc = sanitizeCellText(item.location);
+    const photo = sanitizeCellText(item.photoUpload);
+    const cDate = normalizeDateForInput(sanitizeCellText(item.completionDate));
+    const localMedia = findWebMediaForRecord(ts, rep, loc);
+    const pUrl = sanitizeCellText(item.photoUrl);
+    const driveId = extractGoogleDriveFileId(pUrl || photo);
+    const cachedProxy = driveId ? sessionMediaCache[driveId] : null;
+
+    return {
+      id: 'gas-' + (item.rowIndex || idx) + '-' + String(ts || idx),
+      rowIndex: item.rowIndex || (idx + 2),
+      timestamp: ts,
+      reporter: rep,
+      type: sanitizeCellText(item.type),
+      colD: sanitizeCellText(item.colD) || '日校',
+      location: loc,
+      description: sanitizeCellText(item.description),
+      photoUpload: photo,
+      buy: sanitizeCellText(item.buy) || '不需要購買',
+      completionDate: cDate,
+      support: sanitizeCellText(item.support) || '不需要',
+      remark: sanitizeCellText(item.remark),
+      status: sanitizeCellText(item.status) || (cDate ? '已完成' : '待處理'),
+      photoUrl: pUrl,
+      mediaDataUrl: item.mediaDataUrl || (cachedProxy ? cachedProxy.dataUrl : (localMedia ? localMedia.dataUrl : ''))
+    };
+  }
+
+  async function fetchRecordsFromGas(showFeedback = true, isBackgroundPoll = false) {
+    if (isFetchingFromGas) return;
+    isFetchingFromGas = true;
+    const icon = document.getElementById('refreshBtnIcon');
+    const dIcon = document.getElementById('desktopRefreshIcon');
+    if (icon) icon.classList.add('animate-spin');
+    if (dIcon) dIcon.classList.add('animate-spin');
+
+    if (!isBackgroundPoll && !document.getElementById('view-pending').classList.contains('hidden')) {
+      renderPendingViews();
+    }
+
+    try {
+      let payload = null;
+      if (isGasNativeAvailable()) {
+        const raw = await runGasServerFunction('apiReadAllData', undefined, 10000);
+        payload = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+      } else {
+        const sep = GAS_WEB_APP_URL.includes('?') ? '&' : '?';
+        const res = await fetch(GAS_WEB_APP_URL + sep + 'action=read&t=' + Date.now(), { cache: 'no-store' });
+        payload = await res.json();
+      }
+
+      if (payload && payload.status === 'error') throw new Error(payload.message || '雲端讀取錯誤');
+      const rawList = Array.isArray(payload) ? payload : (payload && payload.records ? payload.records : []);
+      records = rawList.map((item, idx) => normalizeRecordItem(item, idx));
+
+      if (payload && payload.locationsByArea) {
+        locationsByArea = payload.locationsByArea;
+      }
+      if (payload && Array.isArray(payload.locations) && payload.locations.length > 0) {
+        locationOptions = payload.locations;
+        renderLocationDropdown();
+      }
+
+      saveLocalData();
+      const subEl = document.getElementById('syncStatusSubtext');
+      if (subEl) {
+        subEl.textContent = '已同步雲端（' + new Date().toTimeString().slice(0, 5) + ' 更新）・如無顯示則表示已完成維修';
+      }
+      if (showFeedback) showToast('已同步最新 ' + getPendingRecords().length + ' 筆待處理紀錄', 'success');
+    } catch (err) {
+      if (showFeedback) showToast('雲端同步失敗：' + err.message, 'error');
+    } finally {
+      isFetchingFromGas = false;
+      if (icon) icon.classList.remove('animate-spin');
+      if (dIcon) dIcon.classList.remove('animate-spin');
+      if (!document.getElementById('view-pending').classList.contains('hidden')) {
+        renderPendingViews();
+      } else {
+        preloadVisiblePendingMedia();
+      }
+    }
+  }
+
+  async function postToGas(payload) {
+    if (isGasNativeAvailable()) {
+      const rawRes = await runGasServerFunction('apiHandleAction', JSON.stringify(payload), payload.photoBase64 ? 30000 : 12000);
+      return (typeof rawRes === 'string') ? JSON.parse(rawRes) : rawRes;
+    }
+    const jsonStr = JSON.stringify(payload);
+    try {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: jsonStr
+      });
+      return await res.json();
+    } catch (err) {
+      const formBody = new URLSearchParams();
+      formBody.append('payload', jsonStr);
+      await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: formBody });
+      return { status: 'success' };
+    }
+  }
+
+  function renderLocationDropdown() {
+    const selectEl = document.getElementById('locationDetail');
+    if (!selectEl) return;
+    const currentVal = selectEl.value;
+    const areaRadio = document.querySelector('input[name="locationArea"]:checked');
+    const selectedArea = areaRadio ? areaRadio.value : '日校';
+
+    const areaList = (locationsByArea && Array.isArray(locationsByArea[selectedArea]) && locationsByArea[selectedArea].length > 0)
+      ? locationsByArea[selectedArea]
+      : locationOptions;
+
+    selectEl.innerHTML = ['<option value="">請選擇須維修項目位置</option>']
+      .concat(areaList.map(loc => '<option value="' + escapeHtml(loc) + '">' + escapeHtml(loc) + '</option>'))
+      .join('');
+
+    if (currentVal && areaList.includes(currentVal)) {
+      selectEl.value = currentVal;
+    }
+  }
+
+  // =========================================================================
+  // 表單驗證與相片上傳（支援 iPhone 彈出「拍照 / 相片圖庫」選單及電腦拖放）
+  // =========================================================================
+  function isValidChineseName(name) {
+    return /^[\u4e00-\u9fa5·]{2,10}$/.test(name.trim());
+  }
+
+  function setupRealtimeNameCheck() {
+    const input = document.getElementById('reporterName');
+    const tag = document.getElementById('nameValidationTag');
+    const err = document.getElementById('err-reporterName');
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (!val) { tag.classList.add('hidden'); err.classList.add('hidden'); return; }
+      tag.classList.remove('hidden');
+      if (isValidChineseName(val)) {
+        tag.textContent = '✓ 正確';
+        tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
+        err.classList.add('hidden');
+      } else {
+        tag.textContent = '請填全中文';
+        tag.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200';
+      }
+    });
+  }
+
+  function setupPhotoInput() {
+    const dropZone = document.getElementById('dropZone');
+    const mediaInput = document.getElementById('mediaInput');
+    if (!dropZone || !mediaInput) return;
+
+    dropZone.addEventListener('click', (e) => { if (!e.target.closest('button')) mediaInput.click(); });
+    mediaInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) handleSelectedPhoto(e.target.files[0]); });
+
+    // 電腦版拖放相片支援
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-[#415E91]', 'bg-[#BDF2F6]/50');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-[#415E91]', 'bg-[#BDF2F6]/50');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-[#415E91]', 'bg-[#BDF2F6]/50');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleSelectedPhoto(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  function compressImageDataUrl(rawDataUrl, maxDim = 1024, quality = 0.75) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        try { resolve(canvas.toDataURL('image/jpeg', quality)); }
+        catch (err) { resolve(rawDataUrl); }
+      };
+      img.onerror = () => resolve(rawDataUrl);
+      img.src = rawDataUrl;
+    });
+  }
+
+  function handleSelectedPhoto(file) {
+    if (!file.type.startsWith('image/')) {
+      showToast('僅支援相片上傳（JPG / PNG / HEIC）', 'error');
+      document.getElementById('mediaInput').value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const compressedDataUrl = await compressImageDataUrl(e.target.result, 1024, 0.75);
+      const approxBytes = Math.round((compressedDataUrl.length * 3) / 4);
+      uploadedMedia = {
+        dataUrl: compressedDataUrl,
+        name: (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg',
+        mimeType: 'image/jpeg',
+        size: (approxBytes / 1024).toFixed(1) + ' KB'
+      };
+
+      document.getElementById('dropZonePlaceholder').classList.add('hidden');
+      document.getElementById('mediaPreviewBox').classList.remove('hidden');
+      document.getElementById('mediaFileName').textContent = uploadedMedia.name;
+      document.getElementById('mediaFileSize').textContent = uploadedMedia.size;
+      document.getElementById('mediaThumbContainer').innerHTML =
+        '<img src="' + uploadedMedia.dataUrl + '" alt="預覽" class="w-full h-full object-cover" />';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearUploadedMedia(e) {
+    if (e) e.stopPropagation();
+    uploadedMedia = null;
+    document.getElementById('mediaInput').value = '';
+    document.getElementById('dropZonePlaceholder').classList.remove('hidden');
+    document.getElementById('mediaPreviewBox').classList.add('hidden');
+  }
+
+  function resetFormFields() {
+    document.getElementById('repairForm').reset();
+    clearUploadedMedia();
+    renderLocationDropdown();
+    document.getElementById('nameValidationTag').classList.add('hidden');
+    document.querySelectorAll('[id^="err-"]').forEach(el => el.classList.add('hidden'));
+  }
+
+  document.getElementById('repairForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const reporterName = document.getElementById('reporterName').value.trim();
+    const repairTypeEl = document.querySelector('input[name="repairType"]:checked');
+    const locationAreaEl = document.querySelector('input[name="locationArea"]:checked');
+    const locationDetail = document.getElementById('locationDetail').value.trim();
+    const issueDescription = document.getElementById('issueDescription').value.trim();
+    const materialEl = document.querySelector('input[name="materialPurchase"]:checked');
+
+    let hasError = false;
+    if (!isValidChineseName(reporterName)) { document.getElementById('err-reporterName').classList.remove('hidden'); hasError = true; }
+    else { document.getElementById('err-reporterName').classList.add('hidden'); }
+
+    if (!repairTypeEl) { document.getElementById('err-repairType').classList.remove('hidden'); hasError = true; }
+    else { document.getElementById('err-repairType').classList.add('hidden'); }
+
+    if (!locationDetail) { document.getElementById('err-locationDetail').classList.remove('hidden'); hasError = true; }
+    else { document.getElementById('err-locationDetail').classList.add('hidden'); }
+
+    if (!issueDescription) { document.getElementById('err-issueDescription').classList.remove('hidden'); hasError = true; }
+    else { document.getElementById('err-issueDescription').classList.add('hidden'); }
+
+    if (hasError) { showToast('請填寫所有標有 * 的必填欄位', 'error'); return; }
+
+    pendingSubmitDraft = {
+      reporterName,
+      repairType: repairTypeEl.value,
+      locationArea: locationAreaEl ? locationAreaEl.value : '日校',
+      locationDetail,
+      issueDescription,
+      materialPurchase: materialEl ? materialEl.value : '不需要購買'
+    };
+
+    document.getElementById('submitConfirmPromptBody').classList.remove('hidden');
+    document.getElementById('submitConfirmLoadingBody').classList.add('hidden');
+    document.getElementById('submitConfirmFooter').classList.remove('hidden');
+    openModal('submitConfirmModal');
+  });
+
+  async function executeConfirmedSubmit() {
+    if (!pendingSubmitDraft) return;
+    document.getElementById('submitConfirmPromptBody').classList.add('hidden');
+    document.getElementById('submitConfirmFooter').classList.add('hidden');
+    document.getElementById('submitConfirmLoadingBody').classList.remove('hidden');
+
+    const draft = pendingSubmitDraft;
+    const now = new Date();
+    const ts = now.getFullYear() + '/' +
+      String(now.getMonth() + 1).padStart(2, '0') + '/' +
+      String(now.getDate()).padStart(2, '0') + ' ' +
+      String(now.getHours()).padStart(2, '0') + ':' +
+      String(now.getMinutes()).padStart(2, '0') + ':' +
+      String(now.getSeconds()).padStart(2, '0');
+
+    if (uploadedMedia && uploadedMedia.dataUrl) {
+      saveWebMediaForRecord(ts, draft.reporterName, draft.locationDetail, uploadedMedia.dataUrl);
+    }
+
+    try {
+      const res = await postToGas({
+        action: 'create',
+        timestamp: ts,
+        reporter: draft.reporterName,
+        type: draft.repairType,
+        colD: draft.locationArea,
+        location: draft.locationDetail,
+        description: draft.issueDescription,
+        photoUpload: uploadedMedia ? '有' : '',
+        buy: draft.materialPurchase,
+        support: '不需要',
+        photoBase64: uploadedMedia ? uploadedMedia.dataUrl : '',
+        photoName: uploadedMedia ? uploadedMedia.name : '',
+        mimeType: uploadedMedia ? uploadedMedia.mimeType : ''
+      });
+
+      if (res && res.status === 'error') throw new Error(res.message || '雲端寫入失敗');
+      await fetchRecordsFromGas(false, false);
+      closeModal('submitConfirmModal');
+      showToast('已成功呈報「' + draft.locationDetail + '」維修項目', 'success');
+      resetFormFields();
+      pendingSubmitDraft = null;
+      switchTab('pending');
+    } catch (err) {
+      closeModal('submitConfirmModal');
+      showToast('提交失敗：' + err.message, 'error');
+    }
+  }
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+
+  let toastTimer = null;
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('appToast');
+    const dot = document.getElementById('toastDot');
+    const msgEl = document.getElementById('toastMessage');
+    if (!toast || !msgEl) return;
+
+    msgEl.textContent = message;
+    if (dot) {
+      dot.className = 'w-2.5 h-2.5 rounded-full shrink-0 ' +
+        (type === 'error' ? 'bg-rose-400' : (type === 'info' ? 'bg-sky-300' : 'bg-emerald-400'));
+    }
+
+    toast.classList.remove('translate-y-[160%]', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('translate-y-0', 'opacity-100');
+      toast.classList.add('translate-y-[160%]', 'opacity-0');
+    }, 3000);
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+  </script>
 </body>
 </html>
