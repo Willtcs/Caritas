@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>明愛樂義學校維修管理平台 - 執行人工作台</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="樂義維修(執行)" />
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s512" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans TC"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fbfc',
+              100: '#BDF2F6',
+              200: '#9BD2E4',
+              300: '#779EC8',
+              500: '#5B81B2',
+              600: '#415E91',
+              700: '#415E91',
+            }
+          },
+          boxShadow: {
+            card: '0 2px 6px -1px rgba(65, 94, 145, 0.08), 0 1px 3px -1px rgba(65, 94, 145, 0.04)',
+            modal: '0 20px 25px -5px rgba(15, 23, 42, 0.16), 0 8px 10px -6px rgba(15, 23, 42, 0.1)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #f0fbfc;
+      color: #415E91;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (max-width: 767px) {
+      .saas-input, select, input[type="text"], input[type="password"], input[type="date"], textarea {
+        font-size: 16px !important;
+      }
+    }
+    .saas-input:focus {
+      outline: none;
+      border-color: #5B81B2;
+      box-shadow: 0 0 0 3px rgba(155, 210, 228, 0.45);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f0fbfc; }
+    ::-webkit-scrollbar-thumb { background: #9BD2E4; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #779EC8; }
+    svg { flex-shrink: 0; }
+    .accordion-chevron { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    .accordion-chevron.is-open { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row bg-[#f0fbfc] text-[#415E91] pb-24 md:pb-0">
+
+  <!-- 電腦版左側固定側邊欄 -->
+  <aside class="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-[#415E91] text-white border-r border-[#5B81B2] z-30 shadow-md">
+    <div class="p-5 border-b border-[#5B81B2]/70 flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-white border border-[#9BD2E4]/60 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+        <img src="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" alt="校徽" class="w-full h-full object-cover" />
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5">
+          <h1 class="text-[15.5px] font-bold tracking-tight text-white truncate">明愛樂義學校</h1>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#5B81B2] text-[#BDF2F6] border border-[#9BD2E4]/40 shrink-0">執行人</span>
+        </div>
+        <p class="text-[12px] text-[#BDF2F6] truncate mt-0.5">校內維修管理工作台</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3.5 space-y-4 overflow-y-auto">
+      <div>
+        <p class="px-3.5 pt-1 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-[#9BD2E4]">選單</p>
+        <div class="space-y-1.5">
+          <button type="button" onclick="applyFilter('ALL', 'ALL', 'ALL', '全部紀錄')" id="dnav-ALL-ALL-ALL" class="dnav-btn w-full flex items-center justify-between text-left px-3.5 py-3 rounded-xl text-[14px] font-bold bg-[#BDF2F6] text-[#415E91] shadow-sm transition-all cursor-pointer">
+            <span class="flex items-center gap-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+              <span>全部維修紀錄</span>
+            </span>
+            <span id="dcount-all" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#415E91] text-white pointer-events-none">0</span>
+          </button>
+
+          <button type="button" onclick="applyFilter('ALL', 'pending', 'ALL', '待處理維修')" id="dnav-ALL-pending-ALL" class="dnav-btn w-full flex items-center justify-between text-left px-3.5 py-3 rounded-xl text-[14px] font-semibold text-[#BDF2F6] hover:bg-[#5B81B2]/60 transition-all cursor-pointer">
+            <span class="flex items-center gap-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>待處理維修</span>
+            </span>
+            <span id="dcount-pending" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-[#1e293b] pointer-events-none">0</span>
+          </button>
+
+          <button type="button" onclick="applyFilter('ALL', 'completed', 'ALL', '已完成維修')" id="dnav-ALL-completed-ALL" class="dnav-btn w-full flex items-center justify-between text-left px-3.5 py-3 rounded-xl text-[14px] font-semibold text-[#BDF2F6] hover:bg-[#5B81B2]/60 transition-all cursor-pointer">
+            <span class="flex items-center gap-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>已完成維修</span>
+            </span>
+            <span id="dcount-completed" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-400 text-[#1e293b] pointer-events-none">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 刪除「需購買物料」，7. 區域數目加上膠囊內框及文字顏色 -->
+      <div class="pt-2 border-t border-[#5B81B2]/50">
+        <p class="px-3.5 pt-1 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-[#9BD2E4]">區域分類</p>
+        <div class="space-y-1.5">
+          <button type="button" onclick="applyFilter('日校', 'ALL', 'ALL', '日校區域')" id="dnav-日校-ALL-ALL" class="dnav-btn w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-xl text-[13.5px] font-semibold text-[#BDF2F6] hover:bg-[#5B81B2]/60 transition-all cursor-pointer">
+            <span class="flex items-center gap-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M14 22v-4a2 2 0 1 0-4 0v4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M18 5v17"/><path d="m4 6 8-4 8 4"/><path d="M6 5v17"/></svg>
+              <span>日校區域</span>
+            </span>
+            <span id="dcount-day" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-200 text-sky-950 border border-sky-300/70 pointer-events-none">0</span>
+          </button>
+
+          <button type="button" onclick="applyFilter('宿舍', 'ALL', 'ALL', '宿舍區域')" id="dnav-宿舍-ALL-ALL" class="dnav-btn w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-xl text-[13.5px] font-semibold text-[#BDF2F6] hover:bg-[#5B81B2]/60 transition-all cursor-pointer">
+            <span class="flex items-center gap-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+              <span>宿舍區域</span>
+            </span>
+            <span id="dcount-dorm" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-200 text-indigo-950 border border-indigo-300/70 pointer-events-none">0</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 底部雲端連線與同步圖示按鈕 -->
+    <div class="p-4 border-t border-[#5B81B2]/70 bg-[#36507d]/60">
+      <div class="flex items-center justify-between gap-2 text-[12px] text-[#BDF2F6]">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          <span class="truncate">雲端試算表即時連線</span>
+        </div>
+        <button type="button" id="syncBtn" onclick="syncToCloud(true)" title="立即同步雲端" aria-label="立即同步雲端" class="relative p-1.5 rounded-lg text-[#415E91] bg-[#BDF2F6] hover:bg-[#9BD2E4] active:scale-95 transition-all cursor-pointer shrink-0">
+          <svg id="syncBtnIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          <span id="syncBtnBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 手機版頂部導覽列 -->
+  <header class="md:hidden sticky top-0 z-30 bg-[#415E91] text-white border-b border-[#5B81B2] px-3.5 py-2.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 rounded-xl bg-white border border-[#9BD2E4]/50 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+        <img src="https://lh3.googleusercontent.com/d/1SjJS7Y3Gq0paTjQMf9qVQoQiJLiLvn3E=s256" alt="校徽" class="w-full h-full object-cover" />
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5">
+          <h1 class="text-[15px] font-bold tracking-tight text-white truncate">明愛樂義學校維修平台</h1>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#5B81B2] text-[#BDF2F6] border border-[#9BD2E4]/40 shrink-0">執行人</span>
+        </div>
+        <p class="text-[11.5px] text-[#BDF2F6] truncate">巡查維修進度管理與雲端同步</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button type="button" onclick="openPinSettingsModal()" title="安全鎖設定" aria-label="安全鎖設定" class="p-2.5 rounded-xl text-[#BDF2F6] bg-[#5B81B2]/80 active:bg-[#5B81B2] border border-[#9BD2E4]/40 transition-colors cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </button>
+
+      <button type="button" onclick="syncToCloud(true)" title="同步雲端" aria-label="同步雲端" class="p-2.5 rounded-xl text-[#415E91] bg-[#BDF2F6] active:bg-[#9BD2E4] border border-[#9BD2E4] shadow-card transition-colors cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主內容工作區 -->
+  <div class="flex-1 md:pl-64 flex flex-col min-w-0">
+    <!-- 電腦版頂部狀態列（6. 標題不要括號及括號內文字；3. 刪除「欠料：X 筆」） -->
+    <div class="hidden md:flex sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-[#9BD2E4] px-8 py-3.5 items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <h2 id="sheetViewTitle" class="text-[17px] font-bold text-[#415E91] truncate">維修總表</h2>
+        <span id="activeFilterPill" class="px-3 py-0.5 rounded-full text-[11.5px] font-bold bg-[#BDF2F6] text-[#415E91] border border-[#779EC8] shrink-0">全部紀錄</span>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0 flex-wrap">
+        <button type="button" onclick="applyFilter('ALL', 'pending', 'ALL', '待處理維修')" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[12px] font-bold transition-colors cursor-pointer">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>待處理：<span id="badge-pending">0</span> 筆
+        </button>
+
+        <button type="button" onclick="applyFilter('ALL', 'completed', 'ALL', '已完成維修')" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[12px] font-bold transition-colors cursor-pointer">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>已完成：<span id="badge-completed">0</span> 筆
+        </button>
+
+        <button type="button" onclick="openPinSettingsModal()" title="執行人 PIN 碼保護設定" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12px] font-bold text-[#415E91] bg-[#f0fbfc] hover:bg-[#BDF2F6]/60 border border-[#9BD2E4] transition-colors cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-[#5B81B2]"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>安全鎖設定</span>
+        </button>
+      </div>
+    </div>
+
+    <main class="flex-1 w-full max-w-xl md:max-w-full mx-auto px-3.5 md:px-8 pt-3.5 md:pt-5 pb-8 space-y-3.5">
+
+      <!-- 搜尋與排序工具列 -->
+      <div class="bg-white rounded-2xl p-3 sm:px-4 sm:py-3 border border-[#9BD2E4] shadow-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div class="relative flex-1 max-w-md">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-[#779EC8] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="searchKeywordInput" oninput="handleSearchInput(this.value)" placeholder="搜尋房號、損壞描述、呈報人或備註..." class="saas-input w-full pl-9 pr-8 py-2 rounded-xl border border-[#9BD2E4] bg-[#f0fbfc] focus:bg-white text-[13.5px] text-[#415E91] placeholder-[#779EC8]" />
+          <button type="button" id="clearSearchBtn" onclick="clearSearchInput()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[#779EC8] hover:text-[#415E91] text-[12px] font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex items-center gap-2 justify-between sm:justify-end">
+          <div class="inline-flex rounded-xl bg-[#f0fbfc] p-1 border border-[#9BD2E4]">
+            <button type="button" id="sort-time" onclick="setSortMode('time')" class="px-3 py-1 rounded-lg text-[12px] font-bold bg-[#415E91] text-white transition-colors cursor-pointer">🕒 最新時間</button>
+            <button type="button" id="sort-location" onclick="setSortMode('location')" class="px-3 py-1 rounded-lg text-[12px] font-bold text-[#5B81B2] hover:text-[#415E91] transition-colors cursor-pointer">📍 依地點巡查</button>
+          </div>
+          <button type="button" id="expandAllToggleBtn" onclick="toggleAllAccordions()" class="md:hidden px-3 py-1.5 rounded-xl text-[12px] font-bold text-[#5B81B2] bg-[#f0fbfc] active:bg-[#BDF2F6] border border-[#9BD2E4] shrink-0">展開全部</button>
+        </div>
+      </div>
+
+      <!-- 電腦版全寬管理表格 -->
+      <div class="hidden md:block w-full bg-white rounded-2xl border border-[#9BD2E4] shadow-card overflow-hidden">
+        <div class="overflow-x-auto w-full">
+          <table class="min-w-full w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#415E91] text-white text-[12.5px] font-bold">
+                <th class="py-3.5 px-3.5 whitespace-nowrap">時間戳記</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">呈報人</th>
+                <th class="py-3.5 px-2.5 text-center whitespace-nowrap">類型</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">區域</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">房號 / 地點</th>
+                <th class="py-3.5 px-3.5 min-w-[200px]">須維修項目具體資料</th>
+                <th class="py-3.5 px-3 whitespace-nowrap text-center">現場相片</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">材料購買</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">完成日期</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">須外界支援</th>
+                <th class="py-3.5 px-3 min-w-[140px]">備註欄</th>
+                <th class="py-3.5 px-3 whitespace-nowrap">狀態</th>
+                <th class="py-3.5 px-3.5 text-center whitespace-nowrap">快捷操作</th>
+              </tr>
+            </thead>
+            <tbody id="desktopTableBody" class="divide-y divide-[#BDF2F6] text-[13px] text-[#415E91]"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 手機版卡片容器 -->
+      <div id="mobileCardsContainer" class="md:hidden space-y-3"></div>
+
+      <!-- 共用空資料提示 -->
+      <div id="emptyStateBox" class="hidden bg-white rounded-2xl border border-[#9BD2E4] py-14 px-4 text-center shadow-card">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3 text-[22px]">✓</div>
+        <p class="text-[15px] font-bold text-[#415E91]">目前沒有符合條件的維修紀錄</p>
+        <p class="text-[12.5px] text-[#779EC8] mt-1">可清除搜尋關鍵字，或切換其他篩選條件</p>
+      </div>
+
+      <!-- 共用分頁控制列 -->
+      <div id="paginationBar" class="bg-white rounded-2xl px-4 py-3 border border-[#9BD2E4] shadow-card flex items-center justify-between text-[13px] text-[#5B81B2]">
+        <span id="footerCountText" class="font-medium">共 0 筆紀錄</span>
+        <div class="flex items-center gap-2">
+          <span id="pageIndicatorText" class="font-bold text-[#415E91]">第 1 / 1 頁</span>
+          <button type="button" id="prevPageBtn" onclick="changePage(-1)" disabled class="p-2 rounded-xl border border-[#779EC8] bg-[#f0fbfc] hover:bg-[#BDF2F6] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none cursor-pointer">◀</button>
+          <button type="button" id="nextPageBtn" onclick="changePage(1)" disabled class="p-2 rounded-xl border border-[#779EC8] bg-[#f0fbfc] hover:bg-[#BDF2F6] text-[#415E91] disabled:opacity-40 disabled:pointer-events-none cursor-pointer">▶</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 手機版底部固定導覽列 -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#9BD2E4] shadow-[0_-4px_16px_rgba(65,94,145,0.12)]">
+    <div class="max-w-xl mx-auto flex items-stretch justify-around h-[68px] px-2">
+      <button type="button" id="bnav-sheet" onclick="applyFilter('ALL', 'ALL', 'ALL', '全部紀錄')" class="flex-1 flex flex-col items-center justify-center gap-1 text-[#415E91] font-bold cursor-pointer">
+        <div class="bnav-pill px-5 py-1 rounded-full bg-[#BDF2F6] text-[#415E91] relative">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+          <span id="bnavTotalBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#415E91] text-white text-[10px] font-bold flex items-center justify-center">0</span>
+        </div>
+        <span class="text-[12px]">維修總表</span>
+      </button>
+      <button type="button" id="bnav-pending-quick" onclick="applyFilter('ALL', 'pending', 'ALL', '待處理維修')" class="flex-1 flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold cursor-pointer">
+        <div class="bnav-pill px-5 py-1 rounded-full relative">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="bnavPendingBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+        </div>
+        <span class="text-[12px]">待處理</span>
+      </button>
+      <button type="button" id="bnav-filter" onclick="openFilterDrawer()" class="flex-1 flex flex-col items-center justify-center gap-1 text-[#5B81B2] font-semibold cursor-pointer">
+        <div class="bnav-pill px-5 py-1 rounded-full relative">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span id="bnavFilterDot" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-purple-600 ring-2 ring-white"></span>
+        </div>
+        <span class="text-[12px]">更多篩選</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 手機版篩選抽屜（已刪除需購買物料） -->
+  <div id="filterDrawerBackdrop" onclick="if(event.target===this) closeFilterDrawer()" class="hidden fixed inset-0 z-40 bg-[#415E91]/55 backdrop-blur-xs flex items-end justify-center">
+    <div class="bg-white w-full max-w-xl rounded-t-3xl border-t border-[#9BD2E4] shadow-modal p-5 pb-8 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-[17px] font-bold text-[#415E91]">篩選分類</h3>
+        <button type="button" onclick="closeFilterDrawer()" class="w-9 h-9 rounded-xl bg-[#f0fbfc] text-[#415E91] font-bold">✕</button>
+      </div>
+      <button type="button" onclick="selectDrawerFilter('ALL', 'ALL', 'ALL', '全部紀錄')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] font-bold"><span>📋 全部紀錄</span><span id="mcount-all" class="px-2.5 py-0.5 rounded-full bg-[#415E91] text-white text-[12px]">0</span></button>
+      <button type="button" onclick="selectDrawerFilter('ALL', 'pending', 'ALL', '待處理維修')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] font-bold"><span>⏳ 待處理維修</span><span id="mcount-pending" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[12px]">0</span></button>
+      <button type="button" onclick="selectDrawerFilter('ALL', 'completed', 'ALL', '已完成維修')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-[#9BD2E4] bg-[#f0fbfc] font-bold"><span>✅ 已完成維修</span><span id="mcount-completed" class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[12px]">0</span></button>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="selectDrawerFilter('日校', 'ALL', 'ALL', '日校區域')" class="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#9BD2E4] bg-white font-bold"><span>🏫 日校</span><span id="mcount-day" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-900">0</span></button>
+        <button type="button" onclick="selectDrawerFilter('宿舍', 'ALL', 'ALL', '宿舍區域')" class="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#9BD2E4] bg-white font-bold"><span>🛏️ 宿舍</span><span id="mcount-dorm" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-900">0</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗：PIN 碼驗證門檻 -->
+  <div id="pinGateModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="bg-[#415E91] px-5 py-4 text-white">
+        <h3 class="text-[16px] font-bold">執行人工作台安全驗證</h3>
+        <p class="text-[12px] text-[#BDF2F6]">本裝置首次進入需驗證執行人 PIN 碼</p>
+      </div>
+      <form onsubmit="verifyExecutorPin(event)" class="p-5 space-y-4">
+        <input type="password" id="pinGateInput" inputmode="numeric" placeholder="預設為 577" required class="saas-input w-full px-3.5 py-2.5 rounded-xl border border-[#779EC8] text-center text-[18px] tracking-widest font-mono" />
+        <p id="pinGateErr" class="hidden text-[12px] text-rose-600 text-center font-bold">PIN 碼不正確，請重新輸入</p>
+        <button type="submit" class="w-full py-3 rounded-xl bg-[#415E91] text-white font-bold cursor-pointer">解鎖並記憶此裝置</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 彈窗：PIN 碼設定 -->
+  <div id="pinSettingsModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="px-5 py-3.5 border-b border-[#9BD2E4] bg-[#f0fbfc] flex items-center justify-between">
+        <h3 class="text-[15.5px] font-bold text-[#415E91]">安全鎖設定</h3>
+        <button type="button" onclick="closeModal('pinSettingsModal')" class="w-8 h-8 rounded-lg text-[#5B81B2] font-bold cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="savePinSettings(event)" class="p-5 space-y-4">
+        <label class="flex items-center justify-between p-3 rounded-xl bg-[#f0fbfc] border border-[#9BD2E4] cursor-pointer">
+          <div>
+            <p class="text-[13.5px] font-bold text-[#415E91]">啟用新裝置 PIN 碼驗證</p>
+            <p class="text-[11.5px] text-[#5B81B2]">已驗證裝置免重複輸入</p>
+          </div>
+          <input type="checkbox" id="pinEnabledToggle" class="w-5 h-5 accent-[#415E91]" />
+        </label>
+        <div>
+          <label class="block text-[13px] font-bold text-[#415E91] mb-1">執行人 PIN 碼（預設 577）：</label>
+          <input type="text" id="pinCodeSettingInput" class="saas-input w-full px-3.5 py-2 rounded-xl border border-[#779EC8] font-mono" />
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="lockThisDeviceNow()" class="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-[13px] font-bold cursor-pointer">立即鎖定本機</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#415E91] text-white text-[13px] font-bold cursor-pointer">儲存設定</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 彈窗：相片/影片檢視 -->
+  <div id="mediaModal" onclick="if(event.target===this) closeModal('mediaModal')" class="hidden fixed inset-0 z-50 bg-[#1e293b]/85 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white rounded-2xl shadow-modal max-w-2xl w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="px-4 py-3 border-b border-[#9BD2E4] flex items-center justify-between bg-[#f0fbfc]">
+        <div class="min-w-0 pr-2">
+          <h3 id="modalMediaTitle" class="text-[15px] font-bold text-[#415E91] truncate">現場附件檢視</h3>
+          <p id="modalMediaMeta" class="text-[11.5px] text-[#5B81B2] truncate"></p>
+        </div>
+        <button type="button" onclick="closeModal('mediaModal')" class="w-9 h-9 rounded-xl bg-white border border-[#9BD2E4] flex items-center justify-center text-[#415E91] shrink-0 cursor-pointer font-bold">✕</button>
+      </div>
+      <div id="modalMediaContent" class="p-3 sm:p-4 bg-slate-950 flex items-center justify-center min-h-[280px] max-h-[78vh] overflow-auto"></div>
+    </div>
+  </div>
+
+  <!-- 彈窗：刪除確認 -->
+  <div id="deleteConfirmModal" class="hidden fixed inset-0 z-50 bg-[#415E91]/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-modal max-w-sm w-full overflow-hidden border border-[#9BD2E4]">
+      <div class="px-5 py-3.5 border-b border-[#9BD2E4] bg-[#f0fbfc]">
+        <h3 class="text-[16px] font-bold text-[#415E91]">確認刪除此筆維修紀錄？</h3>
+      </div>
+      <div class="p-5">
+        <p id="deleteConfirmDesc" class="text-[13.5px] text-[#5B81B2]">刪除後將無法復原，確定要移除嗎？</p>
+      </div>
+      <div class="px-4 py-3 bg-[#f0fbfc] border-t border-[#9BD2E4] flex items-center gap-2.5">
+        <button type="button" onclick="closeModal('deleteConfirmModal')" class="flex-1 py-2.5 rounded-xl bg-white border border-[#779EC8] text-[14px] font-bold cursor-pointer">取消</button>
+        <button type="button" onclick="confirmDeleteRecord()" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-[14px] font-bold cursor-pointer">確認刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示訊息 -->
+  <div id="appToast" class="fixed bottom-20 md:bottom-6 inset-x-3.5 md:inset-x-auto md:right-6 z-50 translate-y-[160%] opacity-0 transition-all duration-300 max-w-md mx-auto md:mx-0 bg-[#415E91] text-white shadow-modal rounded-2xl p-3.5 flex items-center gap-3 border border-[#779EC8]/50">
+    <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+    <p id="toastMessage" class="text-[13.5px] font-medium leading-snug flex-1">操作已完成</p>
+  </div>
+
+  <!-- 自動引入獨立 JS 檔案 -->
+  <?!= HtmlService.createHtmlOutputFromFile('Executor_JS').getContent(); ?>
+</body>
+</html>
